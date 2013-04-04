@@ -1,0 +1,9 @@
+{
+	"database": {
+		"type": "mysql",
+		"hostname": "localhost",
+		"username": "root",
+		"password": "",
+		"database": "envoy"
+	}
+}
