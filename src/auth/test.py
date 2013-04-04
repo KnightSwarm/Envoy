@@ -19,6 +19,12 @@ elif sys.argv[1] == "auth":
 	result = do_request("auth:testuser:envoy.local:testpass")
 elif sys.argv[1] == "auth_false":
 	result = do_request("auth:testuser:envoy.local:wrongpass")
+elif sys.argv[1] == "remove":
+	result = do_request("removeuser:testuser:envoy.local")
+elif sys.argv[1] == "removesafe":
+	result = do_request("removeuser3:testuser:envoy.local:testpass")
+elif sys.argv[1] == "removesafe_false":
+	result = do_request("removeuser3:testuser:envoy.local:wrongpass")
 else:
 	sys.stderr.write("Invalid argument\n")
 	exit(1)

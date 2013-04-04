@@ -95,6 +95,18 @@ def register(username, hostname, password):
 	            (username, hostname, base64.b64encode(digest), base64.b64encode(salt), 1))
 	
 	return True
+	
+def remove_user(username, hostname):
+	cur = db.cursor()
+	cur.execute("DELETE FROM users WHERE `Username` = ? AND `Fqdn` = ?", (username, hostname))
+	
+	return (cur.rowcount > 0)
+	
+def remove_user_safe(username, hostname, password):
+	if authenticate(username, hostname, password):
+		return remove_user(username, hostname)
+	else:
+		return False
 
 configuration = json.load(open(get_relative_path("../config.json"), "r"))
 
