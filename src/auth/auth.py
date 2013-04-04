@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-import sys, logging, struct, hashlib
+import sys, logging, struct, oursql, json, os, envoyxmpp, base64
 
 sys.stderr = open("/var/log/ejabberd/extauth_err.log", "a")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s", filename="/var/log/ejabberd/extauth.log", filemode="a")
@@ -11,7 +11,11 @@ class EjabberdInputError(Exception):
 		
 	def __str__(self):
 		return repr(self.value)
-		
+
+def get_relative_path(path):
+	my_path = os.path.dirname(os.path.abspath(__file__))
+	return os.path.normpath(os.path.join(my_path, path))
+
 def ejabberd_read():
 	logging.debug("trying to read 2 bytes from ejabberd...")
 	
@@ -47,27 +51,57 @@ def ejabberd_write(response):
 	
 	sys.stdout.write(data)
 	sys.stdout.flush()
+
+def get_user(username, hostname):
+	cursor = db.cursor()
+	cursor.execute("SELECT * FROM users WHERE `Username` = ? AND `Fqdn` = ?", (username, hostname))
+	result = cursor.fetchone()
 	
+	if result is None:
+		logging.info("Invalid username specified (%s@%s)" % (username, hostname))
+	
+	return result
+
 def user_exists(username, hostname):
-	if hostname not in ["envoy.local"]:
-		logging.info("Invalid host specified on login (%s@%s)" % (username, hostname))
-		return False
-		
-	if username not in ["joepie91"]:
-		logging.info("Invalid username specified on login (%s@%s)" % (username, hostname))
-		return False
+	return (get_user(username, hostname) is not None)
 
 def authenticate(username, hostname, password):
-	if user_exists(username, hostname) == False:
+	user = get_user(username, hostname)
+	
+	if user is None:
 		return False
 	
-	if password not in ["test"]:
+	_id, _username, _fqdn, _hash, _salt, _active = user
+	digest, _, _ = envoyxmpp.util.hash.pbkdf2_sha512(password, base64.b64decode(_salt))
+	
+	if digest == _hash:
+		logging.debug("Successful authentication (%s@%s)" % (username, hostname))
+		return True
+	else:
 		logging.info("Invalid password specified (%s@%s)" % (username, hostname))
 		return False
-		
-	logging.debug("User %s@%s successfully authenticated." % (username, hostname))
-	return True
+
+def register(username, hostname, password):
+	user = get_user(username, hostname)
 	
+	if user is not None:
+		logging.info("Attempt to register account that already exists (%s@%s)" % (username, hostname))
+		return False
+		
+	digest, salt, rounds = envoyxmpp.util.hash.pbkdf2_sha512(password)
+	
+	cur = db.cursor()
+	cur.execute("INSERT INTO users (`Username`, `Fqdn`, `Hash`, `Salt`, `Active`) VALUES (?, ?, ?, ?, ?)",
+	            (username, hostname, digest, salt, 1))
+	
+	return True
+
+configuration = json.load(open(get_relative_path("../config.json"), "r"))
+
+db = oursql.connect(host=configuration['database']['hostname'], user=configuration['database']['username'], 
+                    passwd=configuration['database']['password'], db=configuration['database']['database'])
+                    
+logging.debug("Connected to database on %s@%s" % (configuration['database']['username'], configuration['database']['hostname']))
 logging.info("External authentication script started, waiting for ejabberd requests...")
 
 while True:
@@ -80,23 +114,29 @@ while True:
 	logging.debug("Requested operation: %s" % request[0])
 	
 	if request[0] == "auth":
+		# username:hostname:password
 		result = authenticate(request[1], request[2], request[3])
 		logging.debug("Result of authentication call for %s@%s: %s" % (request[1], request[2], result))
 	elif request[0] == "isuser":
+		# username:hostname
 		result = user_exists(request[1], request[2])
 		logging.debug("Result of isuser call for %s@%s: %s" % (request[1], request[2], result))
 	elif request[0] == "setpass":
-		result = True
-		logging.debug("Sent fake True response for setpass call.")
+		# username:hostname:password
+		result = set_password(request[1], request[2], request[3])
+		logging.debug("Result of setpass call for %s@%s: %s" % (request[1], request[2], result))
 	elif request[0] == "tryregister":
-		pass
-		# Register user, username:hostname:password
+		# username:hostname:password
+		result = register(request[1], request[2], request[3])
+		logging.debug("Result of tryregister call for %s@%s: %s" % (request[1], request[2], result))
 	elif request[0] == "removeuser":
-		pass
-		# Remove (unregister) user, username:hostname
+		# username:hostname:password
+		result = remove_user(request[1], request[2])
+		logging.debug("Result of removeuser call for %s@%s: %s" % (request[1], request[2], result))
 	elif request[0] == "removeuser3":
-		pass
-		# Safely remove (unregister) user, username:hostname:password
+		# username:hostname:password
+		result = remove_user_safe(request[1], request[2], request[3])
+		logging.debug("Result of removeuser3 call for %s@%s: %s" % (request[1], request[2], result))
 	else:
 		ejabberd.info("Unsupported method encountered: %s" % request[0])
 		continue
