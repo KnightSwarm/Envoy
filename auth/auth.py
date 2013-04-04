@@ -88,6 +88,15 @@ while True:
 	elif request[0] == "setpass":
 		result = True
 		logging.debug("Sent fake True response for setpass call.")
+	elif request[0] == "tryregister":
+		pass
+		# Register user, username:hostname:password
+	elif request[0] == "removeuser":
+		pass
+		# Remove (unregister) user, username:hostname
+	elif request[0] == "removeuser3":
+		pass
+		# Safely remove (unregister) user, username:hostname:password
 	else:
 		ejabberd.info("Unsupported method encountered: %s" % request[0])
 		continue
