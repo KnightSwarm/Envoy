@@ -74,7 +74,7 @@ def authenticate(username, hostname, password):
 	_id, _username, _fqdn, _hash, _salt, _active = user
 	digest, _, _ = envoyxmpp.util.hash.pbkdf2_sha512(password, base64.b64decode(_salt))
 	
-	if digest == _hash:
+	if digest == base64.b64decode(_hash):
 		logging.debug("Successful authentication (%s@%s)" % (username, hostname))
 		return True
 	else:
@@ -92,7 +92,7 @@ def register(username, hostname, password):
 	
 	cur = db.cursor()
 	cur.execute("INSERT INTO users (`Username`, `Fqdn`, `Hash`, `Salt`, `Active`) VALUES (?, ?, ?, ?, ?)",
-	            (username, hostname, digest, salt, 1))
+	            (username, hostname, base64.b64encode(digest), base64.b64encode(salt), 1))
 	
 	return True
 
