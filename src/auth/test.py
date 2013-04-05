@@ -19,6 +19,10 @@ elif sys.argv[1] == "auth":
 	result = do_request("auth:testuser:envoy.local:testpass")
 elif sys.argv[1] == "auth_false":
 	result = do_request("auth:testuser:envoy.local:wrongpass")
+elif sys.argv[1] == "auth_changed":
+	result = do_request("auth:testuser:envoy.local:changedpass")
+elif sys.argv[1] == "setpass":
+	result = do_request("setpass:testuser:envoy.local:changedpass")
 elif sys.argv[1] == "remove":
 	result = do_request("removeuser:testuser:envoy.local")
 elif sys.argv[1] == "removesafe":

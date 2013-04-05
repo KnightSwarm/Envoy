@@ -96,6 +96,26 @@ def register(username, hostname, password):
 	
 	return True
 	
+def set_password(username, hostname, password):
+	user = get_user(username, hostname)
+	
+	if user is None:
+		logging.info("Attempted to set password for non-existent user (%s@%s)" % (username, hostname))
+		return False
+	
+	_id, _username, _fqdn, _hash, _salt, _active = user
+	digest, salt, rounds = envoyxmpp.util.hash.pbkdf2_sha512(password, salt=base64.b64decode(_salt))
+	
+	cur = db.cursor()
+	cur.execute("UPDATE users SET `Hash` = ? WHERE `Id` = ?", (base64.b64encode(digest), _id))
+	
+	if cur.rowcount > 0:
+		logging.info("Password changed (%s@%s)" % (username, hostname))
+		return True
+	else:
+		logging.warn("Failed to set password for unknown reason (%s@%s)" % (username, hostname))
+		return False
+		
 def remove_user(username, hostname):
 	cur = db.cursor()
 	cur.execute("DELETE FROM users WHERE `Username` = ? AND `Fqdn` = ?", (username, hostname))
