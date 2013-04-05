@@ -120,7 +120,12 @@ def remove_user(username, hostname):
 	cur = db.cursor()
 	cur.execute("DELETE FROM users WHERE `Username` = ? AND `Fqdn` = ?", (username, hostname))
 	
-	return (cur.rowcount > 0)
+	if cur.rowcount > 0:
+		logging.info("Removed user (%s@%s)" % (username, hostname))
+		return True
+	else:
+		logging.info("Attempted to remove non-existent user (%s@%s)" % (username, hostname))
+		return False
 	
 def remove_user_safe(username, hostname, password):
 	if authenticate(username, hostname, password):
