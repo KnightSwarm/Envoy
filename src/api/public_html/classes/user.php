@@ -31,8 +31,14 @@ class User extends CPHPDatabaseRecordClass
 			'Hash'			=> "Hash",
 			'Salt'			=> "Salt",
 		),
+		'numeric' => array(
+			'FqdnId'		=> "FqdnId"
+		),
 		'boolean' => array(
 			'Active'		=> "Active"
+		),
+		'fqdn' => array(
+			'FqdnObject'		=> "FqdnId"
 		)
 	);
 	
