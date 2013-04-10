@@ -35,4 +35,24 @@ class User extends CPHPDatabaseRecordClass
 			'Active'		=> "Active"
 		)
 	);
+	
+	public function CreateHash($input)
+	{
+		return base64_encode(pbkdf2("sha256", $input, base64_decode($this->uSalt), 30000, 32, true));
+	}
+	
+	public function GenerateSalt()
+	{
+		$this->uSalt = base64_encode(mcrypt_create_iv(24, MCRYPT_DEV_URANDOM));
+	}
+	
+	public function GenerateHash()
+	{
+		$this->uHash = $this->CreateHash($this->uPassword);
+	}
+	
+	public function VerifyPassword($input)
+	{
+		return ($this->uHash == $this->CreateHash($input));
+	}
 }
