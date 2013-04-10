@@ -16,4 +16,14 @@
  * You should have received a copy of the GNU General Public License
  * along with Envoy.  If not, see <http://www.gnu.org/licenses/>. */
 
-require("rewrite.php");
+if(!isset($_APP)) { die("Unauthorized."); }
+
+$sResponse = array(
+	"method"	=> strtolower($_SERVER["REQUEST_METHOD"]),
+	"user"		=> $sApiKeypair->sUser->sUsername,
+	"parameters"	=> (strtolower($_SERVER["REQUEST_METHOD"]) == "post") ? $_POST : $_GET,
+	"credentials"	=> array(
+		"id"		=> $uApiId,
+		"key"		=> $uApiKey
+	)
+);

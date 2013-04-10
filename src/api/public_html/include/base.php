@@ -16,4 +16,24 @@
  * You should have received a copy of the GNU General Public License
  * along with Envoy.  If not, see <http://www.gnu.org/licenses/>. */
 
-require("rewrite.php");
+if(!isset($_APP)) { die("Unauthorized."); }
+
+$_CPHP = true;
+$_CPHP_CONFIG = "../../config.json";
+require("cphp/base.php");
+
+function autoload_class($class_name) 
+{
+	global $_APP;
+	
+	$class_name = str_replace("\\", "/", strtolower($class_name));
+	
+	if(file_exists("classes/{$class_name}.php"))
+	{
+		require_once("classes/{$class_name}.php");
+	}
+}
+
+spl_autoload_register('autoload_class');
+
+require("lib/pbkdf2.php");

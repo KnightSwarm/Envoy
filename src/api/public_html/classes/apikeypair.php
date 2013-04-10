@@ -16,4 +16,26 @@
  * You should have received a copy of the GNU General Public License
  * along with Envoy.  If not, see <http://www.gnu.org/licenses/>. */
 
-require("rewrite.php");
+if(!isset($_APP)) { die("Unauthorized."); }
+
+class ApiKeypair extends CPHPDatabaseRecordClass
+{
+	public $table_name = "api_keys";
+	public $fill_query = "SELECT * FROM api_keys WHERE `Id` = :Id";
+	public $verify_query = "SELECT * FROM api_keys WHERE `Id` = :Id";
+	
+	public $prototype = array(
+		'string' => array(
+			'Description'		=> "Description",
+			'ApiId'			=> "ApiId",
+			'ApiKey'		=> "ApiKey"
+		),
+		'numeric' => array(
+			'Type'			=> "Type",
+			'UserId'		=> "UserId"
+		),
+		'user' => array(
+			'User'			=> "UserId"
+		)
+	);
+}

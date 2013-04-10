@@ -16,4 +16,23 @@
  * You should have received a copy of the GNU General Public License
  * along with Envoy.  If not, see <http://www.gnu.org/licenses/>. */
 
-require("rewrite.php");
+if(!isset($_APP)) { die("Unauthorized."); }
+
+class User extends CPHPDatabaseRecordClass
+{
+	public $table_name = "users";
+	public $fill_query = "SELECT * FROM users WHERE `Id` = :Id";
+	public $verify_query = "SELECT * FROM users WHERE `Id` = :Id";
+	
+	public $prototype = array(
+		'string' => array(
+			'Username'		=> "Username",
+			'Fqdn'			=> "Fqdn",
+			'Hash'			=> "Hash",
+			'Salt'			=> "Salt",
+		),
+		'boolean' => array(
+			'Active'		=> "Active"
+		)
+	);
+}
