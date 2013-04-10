@@ -44,6 +44,7 @@ catch (NotFoundException $e)
 }
 
 $sResponse = array();
+$sError = array();
 $sCode = 200;
 
 $router = new CPHPRouter();
@@ -57,6 +58,10 @@ $router->routes = array(
 		"^/echo$"	=> array(
 			"methods"	=> array("post", "get"),
 			"target"	=> "modules/echo.php"
+		),
+		"^/user/register$"	=> array(
+			"methods"	=> "post",
+			"target"	=> "modules/user/register.php"
 		)
 	)
 );
@@ -72,6 +77,18 @@ catch (RouterException $e)
 }
 
 http_status_code($sCode);
-echo(json_encode(array(
-	"response" => $sResponse
-)));
+
+if(!empty($sError))
+{
+	echo(json_encode(array(
+		"error" => $sError,
+		"response" => $sResponse
+	)));
+}
+else
+{
+	echo(json_encode(array(
+		"response" => $sResponse
+	)));
+}
+
