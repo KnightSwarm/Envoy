@@ -19,7 +19,10 @@
 		"port": 	11211
 	},
 	"class_map": {
-		"user": "User"
+		"user": "User",
+		"fqdn": "Fqdn",
+		"apikey": "ApiKey",
+		"apipermission": "ApiPermission"
 	},
 	"components": [
 		"router",
