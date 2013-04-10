@@ -1,2 +1,3 @@
 src/config.json
 *.pyc
+src/api/test/testconfig.json
