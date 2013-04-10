@@ -18,23 +18,8 @@
 
 if(!isset($_APP)) { die("Unauthorized."); }
 
-$_CPHP = true;
-$_CPHP_CONFIG = "../../config.json";
-require("cphp/base.php");
+class ApiException extends Exception {}
 
-function autoload_class($class_name) 
-{
-	global $_APP;
-	
-	$class_name = str_replace("\\", "/", strtolower($class_name));
-	
-	if(file_exists("classes/{$class_name}.php"))
-	{
-		require_once("classes/{$class_name}.php");
-	}
-}
-
-spl_autoload_register('autoload_class');
-
-require("include/exceptions.php");
-require("lib/pbkdf2.php");
+class AlreadyExistsException extends ApiException {}
+class NotAuthorizedException extends ApiException {}
+class MissingParameterException extends ApiException {}

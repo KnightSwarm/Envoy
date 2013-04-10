@@ -25,9 +25,7 @@ if(!isset($_APP)) { die("Unauthorized."); }
 
 if(empty($_POST['username']) || empty($_POST['password']) || empty($_POST['fqdn']))
 {
-	$sCode = 400;
-	$sError = "Missing one or more required fields.";
-	return;
+	throw new MissingParameterException("Missing one or more required fields.");
 }
 
 try
@@ -43,9 +41,7 @@ catch (NotFoundException $e)
 
 if($found === true)
 {
-	$sCode = 409;
-	$sError = "The specified combination of username and FQDN is already in use.";
-	return;
+	throw new AlreadyExistsException("The specified combination of username and FQDN is already in use.");
 }
 
 

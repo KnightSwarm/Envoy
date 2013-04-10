@@ -44,7 +44,6 @@ catch (NotFoundException $e)
 }
 
 $sResponse = array();
-$sError = array();
 $sCode = 200;
 
 $router = new CPHPRouter();
@@ -70,25 +69,32 @@ try
 {
 	$router->RouteRequest();
 }
+catch (MissingParameterException $e)
+{
+	http_status_code(400);
+	echo(json_encode(array("error" => $e->getMessage())));
+	die();
+}
+catch (UnauthorizedException $e)
+{
+	http_status_code(401);
+	echo(json_encode(array("error" => $e->getMessage())));
+	die();
+}
 catch (RouterException $e)
 {
 	http_status_code(404);
 	die();
 }
+catch (AlreadyExistsException $e)
+{
+	http_status_code(409);
+	echo(json_encode(array("error" => $e->getMessage())));
+	die();
+}
 
 http_status_code($sCode);
 
-if(!empty($sError))
-{
-	echo(json_encode(array(
-		"error" => $sError,
-		"response" => $sResponse
-	)));
-}
-else
-{
-	echo(json_encode(array(
-		"response" => $sResponse
-	)));
-}
-
+echo(json_encode(array(
+	"response" => $sResponse
+)));
