@@ -13,9 +13,10 @@ conf = json.load(open("testconfig.json", "r"))
 
 post_data = {}
 
-for parameter in args.parameters:
-	key, value = parameter.split("=", 1)
-	post_data[key] = value
+if args.parameters is not None:
+	for parameter in args.parameters:
+		key, value = parameter.split("=", 1)
+		post_data[key] = value
 
 url = conf["endpoint"] + args.path
 
