@@ -39,6 +39,9 @@ class ApiKeypair extends CPHPDatabaseRecordClass
 		)
 	);
 	
+	const SERVER = 0;
+	const USER = 1;
+	
 	public function RequireAdministrativeAccess($fqdn)
 	{
 		$sFqdn = Fqdn::CreateFromQuery("SELECT * FROM fqdns WHERE `Fqdn` = :Fqdn", array(":Fqdn" => $fqdn), 60, true);
