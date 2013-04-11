@@ -53,6 +53,21 @@ class ApiKeypair extends CPHPDatabaseRecordClass
 			throw new NotAuthorizedException("You do not have administrative access to this FQDN.");
 		}
 	}
+
+	public function RequireAdministrativeReadAccess($fqdn)
+	{
+		$sFqdn = Fqdn::CreateFromQuery("SELECT * FROM fqdns WHERE `Fqdn` = :Fqdn", array(":Fqdn" => $fqdn), 60, true);
+		
+		try
+		{
+			ApiPermission::CreateFromQuery("SELECT * FROM api_permissions WHERE `FqdnId` = :FqdnId AND `ApiKeyId` = :ApiKeyId AND `Type` >= 75",
+			                               array(":FqdnId" => $sFqdn->sId, ":ApiKeyId" => $this->sId));
+		}
+		catch (NotFoundException $e)
+		{
+			throw new NotAuthorizedException("You do not have administrative read access to this FQDN.");
+		}
+	}
 	
 	public function RequireWriteAccess($fqdn)
 	{

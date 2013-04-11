@@ -39,6 +39,7 @@ class ApiPermission extends CPHPDatabaseRecordClass
 	);
 	
 	const ADMINISTRATIVE = 100;
+	const ADMINISTRATIVE_READ = 75;
 	const WRITE = 50;
 	const READ = 10;
 	const BANNED = 0;
