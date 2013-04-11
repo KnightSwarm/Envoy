@@ -25,11 +25,9 @@ if args.method == "get":
 else:
 	response = requests.post(url, data=post_data, headers={"Envoy-API-Id": conf["api_id"], "Envoy-API-Key": conf["api_key"]})
 
-if response.status_code != 404:
-	if args.raw == False:
-		data = json.dumps(response.json(), indent=4)
-	else:
-		data = response.text
-	print "Path: %s\tResponse code: %s\nData: %s" % (args.path, response.status_code, data)
+if args.raw == False:
+	data = json.dumps(response.json(), indent=4)
 else:
-	print "Path: %s\tResponse code: 404" % args.path
+	data = response.text
+	
+print "Path: %s\tResponse code: %s\nData: %s" % (args.path, response.status_code, data)
