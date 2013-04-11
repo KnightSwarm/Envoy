@@ -61,6 +61,10 @@ $router->routes = array(
 		"^/user/register$"	=> array(
 			"methods"	=> "post",
 			"target"	=> "modules/user/register.php"
+		),
+		"^/user/lookup$"	=> array(
+			"methods"	=> "get",
+			"target"	=> "modules/user/lookup.php"
 		)
 	)
 );
@@ -68,6 +72,12 @@ $router->routes = array(
 try
 {
 	$router->RouteRequest();
+}
+catch (RouterException $e)
+{
+	http_status_code(400);
+	echo(json_encode(array("error" => "The specified path is invalid.")));
+	die();
 }
 catch (MissingParameterException $e)
 {
@@ -81,9 +91,10 @@ catch (NotAuthorizedException $e)
 	echo(json_encode(array("error" => $e->getMessage())));
 	die();
 }
-catch (RouterException $e)
+catch (ResourceNotFoundException $e)
 {
 	http_status_code(404);
+	echo(json_encode(array("error" => $e->getMessage())));
 	die();
 }
 catch (AlreadyExistsException $e)

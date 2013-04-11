@@ -18,9 +18,24 @@
 
 if(!isset($_APP)) { die("Unauthorized."); }
 
-class ApiException extends Exception {}
+if(empty($_GET['fqdn']))
+{
+	throw new MissingParameterException("No FQDN was specified.");
+}
 
-class AlreadyExistsException extends ApiException {}
-class NotAuthorizedException extends ApiException {}
-class MissingParameterException extends ApiException {}
-class ResourceNotFoundException extends ApiException {}
+$sApiKeypair->RequireAdministrativeReadAccess($_GET['fqdn']);
+
+try
+{
+	$sUser = User::CreateFromQuery("SELECT * FROM users WHERE `Username` = :Username AND `Fqdn` = :Fqdn", array(
+	                               ":Username" => $_GET['username'], ":Fqdn" => $_GET['fqdn']), 10, true);
+}
+catch (NotFoundException $e)
+{
+	throw new ResourceNotFoundException("The specified user does not exist.");
+}
+
+$sResponse = array(
+	"username"	=> $sUser->uUsername,
+	"active"	=> $sUser->sActive
+);
