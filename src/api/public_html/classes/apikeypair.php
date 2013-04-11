@@ -53,7 +53,22 @@ class ApiKeypair extends CPHPDatabaseRecordClass
 		}
 		catch (NotFoundException $e)
 		{
+			/* Disallowed by API key access restriction */
 			throw new NotAuthorizedException($error);
+		}
+		
+		if($this->sType == ApiKeypair::USER)
+		{
+			try
+			{
+				ApiPermission::CreateFromQuery("SELECT * FROM user_permissions WHERE `FqdnId` = :FqdnId AND `UserId` = :UserId AND `Type` >= :AccessLevel",
+							       array(":FqdnId" => $sFqdn->sId, ":UserId" => $this->sUser->sId, ":AccessLevel" => $level));
+			}
+			catch (NotFoundException $e)
+			{
+				/* Disallowed by user access restriction */
+				throw new NotAuthorizedException($error);
+			}
 		}
 	}
 	
