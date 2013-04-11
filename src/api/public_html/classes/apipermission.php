@@ -37,4 +37,9 @@ class ApiPermission extends CPHPDatabaseRecordClass
 			'Fqdn'			=> "FqdnId"
 		)
 	);
+	
+	const ADMINISTRATIVE = 100;
+	const WRITE = 50;
+	const READ = 10;
+	const BANNED = 0;
 }

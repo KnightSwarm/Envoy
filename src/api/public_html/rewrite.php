@@ -75,7 +75,7 @@ catch (MissingParameterException $e)
 	echo(json_encode(array("error" => $e->getMessage())));
 	die();
 }
-catch (UnauthorizedException $e)
+catch (NotAuthorizedException $e)
 {
 	http_status_code(401);
 	echo(json_encode(array("error" => $e->getMessage())));
