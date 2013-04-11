@@ -54,7 +54,7 @@ def ejabberd_write(response):
 
 def get_user(username, hostname):
 	cursor = db.cursor()
-	cursor.execute("SELECT * FROM users WHERE `Username` = ? AND `Fqdn` = ?", (username, hostname))
+	cursor.execute("SELECT `Id`, `Username`, `Fqdn`, `Hash`, `Salt`, `Active` FROM users WHERE `Username` = ? AND `Fqdn` = ?", (username, hostname))
 	result = cursor.fetchone()
 	
 	if result is None:
