@@ -56,7 +56,7 @@ $sUser = new User(0);
 $sUser->uUsername = $_POST['username'];
 $sUser->uFqdn = $_POST['fqdn'];
 $sUser->uPassword = $_POST['password'];
-$sUser->uActivated = true;
+$sUser->uActive = true;
 $sUser->GenerateSalt();
 $sUser->GenerateHash();
 $sUser->InsertIntoDatabase();
