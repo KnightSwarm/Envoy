@@ -23,11 +23,6 @@ if(!isset($_APP)) { die("Unauthorized."); }
  * - The user must not already exist on the given FQDN.
  * - The API user must have administrative access to the supplied FQDN. */
 
-if(empty($_POST['fqdn']))
-{
-	throw new MissingParameterException("No FQDN was specified.");
-}
-
 $sApiKeypair->RequireAdministrativeAccess($_POST['fqdn']);
 
 if(empty($_POST['username']) || empty($_POST['password']))

@@ -18,11 +18,6 @@
 
 if(!isset($_APP)) { die("Unauthorized."); }
 
-if(empty($_GET['fqdn']))
-{
-	throw new MissingParameterException("No FQDN was specified.");
-}
-
 if(empty($_GET['username']) || empty($_GET['password']))
 {
 	throw new MissingParameterException("Missing one or more required fields.");
