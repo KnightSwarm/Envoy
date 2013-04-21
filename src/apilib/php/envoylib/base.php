@@ -13,7 +13,23 @@
 
 namespace EnvoyLib;
 
-class ApiException extends \Exception {} 
+class ApiException extends \Exception
+{
+	protected $api_message = "";
+	
+	public function __construct($message, $api_message)
+	{
+		$this->message = $message;
+		$this->api_message = $api_message;
+		
+		parent::construct($message);
+	}
+	
+	public function GetApiMessage()
+	{
+		return $this->api_message;
+	}
+} 
 
 class NotFoundException extends ApiException {}
 class BadDataException extends ApiException {}

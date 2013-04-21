@@ -3,5 +3,6 @@
 require("base.php");
 
 $api = new EnvoyLib\Api("http://api.envoy.local/", "test", "test");
-$user = $api->CreateUser("secondtest", "envoy.local", "test");
-var_dump($user);
+$user = $api->User("secondtest", "envoy2.local");
+var_dump($user->VerifyPassword("blah"));
+var_dump($user->VerifyPassword("test"));

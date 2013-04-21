@@ -79,31 +79,31 @@ class Api
 					return $json["response"];
 				case 400:
 					/* Bad or incomplete request data was provided. */
-					throw new BadDataException("The provided arguments were invalid or incomplete.");
+					throw new BadDataException("The provided arguments were invalid or incomplete.", $json["error"]);
 				case 401:
 					/* The client is not authenticated. */
-					throw new NotAuthenticatedException("No valid API credentials were provided.");
+					throw new NotAuthenticatedException("No valid API credentials were provided.", $json["error"]);
 				case 403:
 					/* The client is trying to access or modify a resource they are not permitted to access. */
-					throw new NotAuthorizedException("The provided API credentials do not grant access to this resource or operation.");
+					throw new NotAuthorizedException("The provided API credentials do not grant access to this resource or operation.", $json["error"]);
 				case 404:
 					switch($json["type"])
 					{
 						case "path":
 							/* The specified API path does not exist (or the wrong method was used). */
-							throw new ApiException("An invalid API path was specified.");
+							throw new ApiException("An invalid API path was specified.", $json["error"]);
 						case "resource":
 							/* The specified resource does not exist. */
-							throw new NotFoundException("The specified resource does not exist.");
+							throw new NotFoundException("The specified resource does not exist.", $json["error"]);
 					}
 				case 409:
 					/* The client tried to create a resource that already exists. */
-					throw new AlreadyExistsException("A resource with the specified identifier already exists.");
+					throw new AlreadyExistsException("A resource with the specified identifier already exists.", $json["error"]);
 				case 422:
 					/* The client tried to make a request, but (part of) the request data was invalid. */
-					throw new InvalidArgumentException("One or more of the specified arguments contained invalid data.");
+					throw new InvalidArgumentException("One or more of the specified arguments contained invalid data.", $json["error"]);
 				default:
-					throw new ApiException("An unrecognized status code ({$status}) was returned.");
+					throw new ApiException("An unrecognized status code ({$status}) was returned.", $json["error"]);
 			}
 		}
 		else
