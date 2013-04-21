@@ -123,6 +123,13 @@ catch (AlreadyExistsException $e)
 	echo(json_encode(array("error" => $e->getMessage())));
 	die();
 }
+catch (Exception $e)
+{
+	/* TODO: Log error, this should really never happen. */
+	http_status_code(500);
+	echo(json_encode(array("error" => "An unknown error occurred.")));
+	die();
+}
 
 http_status_code($sCode);
 
