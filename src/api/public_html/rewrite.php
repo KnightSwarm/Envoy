@@ -75,6 +75,10 @@ $router->routes = array(
 			"target"	=> "modules/user/authenticate.php",
 			"authenticator"	=> "authenticators/fqdn_exists.php",
 			"auth_error"	=> ""
+		),
+		"^/fqdn/create$"	=> array(
+			"methods"	=> "post",
+			"target"	=> "modules/fqdn/create.php"
 		)
 	)
 );

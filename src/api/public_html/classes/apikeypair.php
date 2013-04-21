@@ -42,8 +42,26 @@ class ApiKeypair extends CPHPDatabaseRecordClass
 	const SERVER = 0;
 	const USER = 1;
 	
+	public function HasMasterAccess()
+	{
+		try
+		{
+			$this->RequireMasterAccess();
+			return true;
+		}
+		catch (NotAuthorizedException $e)
+		{
+			return false;
+		}
+	}
+	
 	public function RequireAccessLevel($fqdn, $level, $error)
 	{
+		if($level <= 200 && $this->HasMasterAccess())
+		{
+			return true;
+		}
+		
 		$sFqdn = Fqdn::CreateFromQuery("SELECT * FROM fqdns WHERE `Fqdn` = :Fqdn", array(":Fqdn" => $fqdn), 60, true);
 		
 		try
@@ -68,6 +86,28 @@ class ApiKeypair extends CPHPDatabaseRecordClass
 			{
 				/* Disallowed by user access restriction */
 				throw new NotAuthorizedException($error);
+			}
+		}
+	}
+	
+	public function RequireMasterAccess()
+	{
+		if($this->sType == ApiKeypair::USER)
+		{
+			/* User API keys cannot have master access */
+			throw new NotAuthorizedException("User API keys cannot have master access.");
+		}
+		else
+		{
+			try
+			{
+				ApiPermission::CreateFromQuery("SELECT * FROM api_permissions WHERE `FqdnId` = 0 AND `ApiKeyId` = :ApiKeyId AND `Type` >= 200",
+							       array(":ApiKeyId" => $this->sId));
+			}
+			catch (NotFoundException $e)
+			{
+				/* Disallowed by API key access restriction */
+				throw new NotAuthorizedException("You do not have master access.");
 			}
 		}
 	}
