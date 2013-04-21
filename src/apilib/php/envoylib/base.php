@@ -22,7 +22,7 @@ class ApiException extends \Exception
 		$this->message = $message;
 		$this->api_message = $api_message;
 		
-		parent::construct($message);
+		parent::__construct($message);
 	}
 	
 	public function GetApiMessage()
