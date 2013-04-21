@@ -30,3 +30,17 @@ elif sys.argv[1] == "lookup":
 		sys.stdout.write("Successfully looked up user %s@envoy.local.\n%s\n" % (user, response.text))
 	else:
 		sys.stderr.write("Failed to lookup user %s@envoy.local.\n%s\n" % (user, response.text))
+elif sys.argv[1] == "login":
+	username = sys.argv[2]
+	password = sys.argv[3]
+	
+	response = requests.get(conf["endpoint"] + "/user/authenticate", params={
+		"username": username,
+		"fqdn": "envoy.local",
+		"password": password
+	}, headers={"Envoy-API-Id": conf["api_id"], "Envoy-API-Key": conf["api_key"]})
+	
+	if response.status_code == 200:
+		sys.stdout.write("Successfully attempted authentication for user %s@envoy.local.\n%s\n" % (username, response.text))
+	else:
+		sys.stderr.write("Failed to attempt authentication for user %s@envoy.local.\n%s\n" % (username, response.text))

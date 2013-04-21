@@ -65,6 +65,10 @@ $router->routes = array(
 		"^/user/lookup$"	=> array(
 			"methods"	=> "get",
 			"target"	=> "modules/user/lookup.php"
+		),
+		"^/user/authenticate$"	=> array(
+			"methods"	=> "get",
+			"target"	=> "modules/user/authenticate.php"
 		)
 	)
 );
