@@ -1,0 +1,54 @@
+# FQDN management
+
+^ POST /fqdn/create
+
+	__Requires master access.__
+	
+	Creates a new FQDN, and the corresponding administrator account. The administrator account will automatically be configured
+	as the 'owner' of the FQDN.
+	
+	! The API does __not__ do any password sanity checking - you will have to implement this in your application yourself! Make 
+	  sure to remind the user {>../security/users}(to use a unique password).
+	
+	fqdn::
+		**Required.** The FQDN that should be created.
+	
+	admin_username::
+		**Required.** The username for the administrator account. This is the part before the @ in their JID.
+		
+	admin_password::
+		**Required.** The password to be used for the administrator account.
+		
+	name::
+		**Required.** A human-readable name for the FQDN.
+		
+	description::
+		A description for the FQDN.
+	
+	### Return values
+	
+	fqdn_id::
+		Integer. The internal ID of the newly created FQDN.
+	
+	admin_user_id::
+		Integer. The internal ID of the newly created administrator account.
+	
+	### Error conditions
+	
+	HTTP 400::
+		One or more of the required arguments is missing.
+	
+	HTTP 409::
+		The FQDN already exists.
+	
+	@ FQDN creation
+	
+		$ POST /fqdn/create
+		data: fqdn=test.local&admin_username=admin&admin_password=23r09vas&name=Testing%20FQDN
+		
+		> {
+			"response": {
+				"fqdn_id": 3,
+				"admin_user_id": 26
+			}
+		}
