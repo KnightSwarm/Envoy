@@ -60,15 +60,21 @@ $router->routes = array(
 		),
 		"^/user/register$"	=> array(
 			"methods"	=> "post",
-			"target"	=> "modules/user/register.php"
+			"target"	=> "modules/user/register.php",
+			"authenticator"	=> "authenticators/fqdn_exists.php",
+			"auth_error"	=> ""
 		),
 		"^/user/lookup$"	=> array(
 			"methods"	=> "get",
-			"target"	=> "modules/user/lookup.php"
+			"target"	=> "modules/user/lookup.php",
+			"authenticator"	=> "authenticators/fqdn_exists.php",
+			"auth_error"	=> ""
 		),
 		"^/user/authenticate$"	=> array(
 			"methods"	=> "get",
-			"target"	=> "modules/user/authenticate.php"
+			"target"	=> "modules/user/authenticate.php",
+			"authenticator"	=> "authenticators/fqdn_exists.php",
+			"auth_error"	=> ""
 		)
 	)
 );
