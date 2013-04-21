@@ -61,9 +61,9 @@ class Api
 		
 		if(strtolower($method) == "post")
 		{
-			curl_setopt_array(array(
+			curl_setopt_array($curl, array(
 				CURLOPT_POST		=> true,
-				CURLOPT_POST_FIELDS	=> $arguments
+				CURLOPT_POSTFIELDS	=> $arguments
 			));
 		}
 		
@@ -114,5 +114,16 @@ class Api
 	public function User($username, $fqdn)
 	{
 		return new User($username, $fqdn, $this);
+	}
+	
+	public function CreateUser($username, $fqdn, $password)
+	{
+		$this->DoRequest("post", "/user/register", array(
+			"username"	=> $username,
+			"fqdn"		=> $fqdn,
+			"password"	=> $password
+		));
+		
+		return $this->User($username, $fqdn);
 	}
 }

@@ -38,11 +38,6 @@ class User extends ApiObject
 		}
 	}
 	
-	public static function Register($username, $fqdn, $password, $emailaddress)
-	{
-		
-	}
-	
 	public function VerifyPassword($password)
 	{
 		
