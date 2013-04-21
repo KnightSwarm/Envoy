@@ -89,6 +89,12 @@ catch (MissingParameterException $e)
 	echo(json_encode(array("error" => $e->getMessage())));
 	die();
 }
+catch (InvalidFqdnException $e)
+{
+	http_status_code(422);
+	echo(json_encode(array("error" => $e->getMessage())));
+	die();
+}
 catch (NotAuthorizedException $e)
 {
 	http_status_code(403);

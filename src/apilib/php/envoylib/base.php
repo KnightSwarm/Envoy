@@ -21,6 +21,7 @@ class NotAuthorizedException extends ApiException {}
 class NotAuthenticatedException extends ApiException {}
 class UnknownException extends ApiException {}
 class AlreadyExistsException extends ApiException {}
+class InvalidArgumentException extends ApiException {}
 
 require("util.php");
 

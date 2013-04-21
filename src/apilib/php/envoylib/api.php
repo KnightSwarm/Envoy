@@ -99,6 +99,9 @@ class Api
 				case 409:
 					/* The client tried to create a resource that already exists. */
 					throw new AlreadyExistsException("A resource with the specified identifier already exists.");
+				case 422:
+					/* The client tried to make a request, but (part of) the request data was invalid. */
+					throw new InvalidArgumentException("One or more of the specified arguments contained invalid data.");
 				default:
 					throw new ApiException("An unrecognized status code ({$status}) was returned.");
 			}
