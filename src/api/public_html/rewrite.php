@@ -75,8 +75,8 @@ try
 }
 catch (RouterException $e)
 {
-	http_status_code(400);
-	echo(json_encode(array("error" => "The specified path is invalid.")));
+	http_status_code(404);
+	echo(json_encode(array("error" => "The specified path is invalid.", "type" => "path")));
 	die();
 }
 catch (MissingParameterException $e)
@@ -87,14 +87,14 @@ catch (MissingParameterException $e)
 }
 catch (NotAuthorizedException $e)
 {
-	http_status_code(401);
+	http_status_code(403);
 	echo(json_encode(array("error" => $e->getMessage())));
 	die();
 }
 catch (ResourceNotFoundException $e)
 {
 	http_status_code(404);
-	echo(json_encode(array("error" => $e->getMessage())));
+	echo(json_encode(array("error" => $e->getMessage(), "type" => "resource")));
 	die();
 }
 catch (AlreadyExistsException $e)
