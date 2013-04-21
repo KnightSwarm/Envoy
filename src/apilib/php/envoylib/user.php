@@ -40,6 +40,12 @@ class User extends ApiObject
 	
 	public function VerifyPassword($password)
 	{
+		$result = $this->DoGetRequest("/user/authenticate", array(
+			"username"	=> $this->username,
+			"fqdn"		=> $this->fqdn,
+			"password"	=> $password
+		));
 		
+		return $result["valid"];
 	}
 }
