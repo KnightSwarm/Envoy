@@ -26,6 +26,9 @@
 	
 	### Error conditions
 	
+	HTTP 400::
+		One or more of the required arguments is missing.
+	
 	HTTP 409::
 		The user already exists.
 		
@@ -65,6 +68,9 @@
 		Boolean. Whether the specified user is activated or not.
 	
 	### Error conditions
+	
+	HTTP 400::
+		One or more of the required arguments is missing.
 	
 	HTTP 404::
 		The specified user does not exist.
@@ -108,6 +114,9 @@
 		Boolean. Whether the specified password is valid or not.
 	
 	### Error conditions
+	
+	HTTP 400::
+		One or more of the required arguments is missing.
 	
 	HTTP 404::
 		The specified user does not exist.
