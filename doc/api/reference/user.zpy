@@ -1,0 +1,126 @@
+# User management
+
+^ POST /user/register
+
+	__Requires administrative FQDN access.__
+	
+	Creates a new user account under the specified FQDN. Currently, it will automatically set the account to 'activated' status.
+	
+	! The API does __not__ do any password sanity checking - you will have to implement this in your application yourself! Make 
+	  sure to remind the user {>../security/users}(to use a unique password).
+	
+	fqdn::
+		**Required.** What FQDN this user account should be created for. It must be an existing FQDN.
+		To create a new FQDN (and its corresponding administrator account), refer to the {>fqdn}(FQDN API call reference).
+	
+	username::
+		**Required.** The username for the new user account. This is the part before the @ in their JID.
+		
+	password::
+		**Required.** The password to be used for the new user account.
+	
+	### Return values
+	
+	user_id::
+		Integer. The internal ID of the newly created user.
+	
+	### Error conditions
+	
+	HTTP 409::
+		The user already exists.
+		
+	HTTP 422::
+		The specified FQDN does not exist.
+	
+	@ User registration
+	
+		$ POST /user/register
+		data: username=user&fqdn=test.local&password=testpassword
+		
+		> {
+			"response": {
+				"user_id": 26
+			}
+		}
+
+^ GET /user/lookup
+
+	__Requires administrative FQDN read access.__ 
+	
+	Looks up user information for the specified user. Currently only indicates whether the user account is activated or not.
+	
+	username::
+		**Required.** The username. This is the part before the @ in their JID.
+		
+	fqdn::
+		**Required.** The FQDN that this user account exists on.
+	
+	### Return values
+	
+	username::
+		String. The username of the specified user (will usually be identical to the username specified
+		in the request).
+		
+	active::
+		Boolean. Whether the specified user is activated or not.
+	
+	### Error conditions
+	
+	HTTP 404::
+		The specified user does not exist.
+		
+	HTTP 422::
+		The specified FQDN does not exist.
+	
+	@ User lookup
+	
+		$ GET /user/lookup?username=user&fqdn=test.local
+		
+		> {
+			"response": {
+				"username": "user",
+				"active": true
+			}
+		}
+
+
+^ GET /user/authenticate
+
+	__Requires administrative FQDN read access.__ 
+	
+	Verifies whether a password matches the stored password for a user.
+	
+	! This only does a simple comparison. It does not create a session of any kind - you will have to implement session management
+	  in your client yourself.
+	  
+	username::
+		**Required.** The username. This is the part before the @ in their JID.
+		
+	fqdn::
+		**Required.** The FQDN that this user account exists on.
+		
+	password::
+		**Required.** The password to verify.
+	
+	### Return values
+	
+	active::
+		Boolean. Whether the specified password is valid or not.
+	
+	### Error conditions
+	
+	HTTP 404::
+		The specified user does not exist.
+		
+	HTTP 422::
+		The specified FQDN does not exist.
+	
+	@ A valid password
+	
+		$ GET /user/authenticate?username=user&fqdn=test.local&password=validpassword
+		
+		> {
+			"response": {
+				"valid": true
+			}
+		}

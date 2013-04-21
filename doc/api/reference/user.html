@@ -1,0 +1,175 @@
+<!doctype html>
+<html>
+	<head>
+		<style>
+			body {
+				background-color: #F5F5F5;
+				font-family: sans-serif;
+				margin-right: 40px;
+			}
+
+			h2, h3, h4, h5, h6, h7
+			{
+				margin-top: 16px;
+				margin-bottom: 4px;
+			}
+
+			.children { padding-left: 40px; }
+
+			.definition
+			{
+				font-weight: bold;
+				margin-bottom: 32px;
+			}
+
+			.example 
+			{ 
+				padding: 5px 6px;
+				font-weight: bold;
+				font-size: 15px;
+				background-color: #E6E6E6; 
+				margin-top: 11px;
+			}
+
+			.example > .children
+			{
+				padding-top: 11px;
+				padding-left: 10px;
+			}
+
+			.example > .children > h7
+			{
+				font-size: 13px;
+			}
+
+			h7
+			{
+				font-size: 14px;
+				font-weight: bold;
+				margin-bottom: 2px;
+			}
+
+			pre
+			{
+				margin-top: 0px;
+				padding: 6px 7px;
+				background-color: #D9D9D9;
+				font-weight: normal;
+				font-size: 13px;
+			}
+
+			dl
+			{
+				margin: 5px 0px;
+			}
+
+			dt
+			{
+				font-weight: bold;
+			}
+
+			dd
+			{
+				font-size: 14px;
+				font-weight: normal;
+				margin-left: 8px;
+			}
+			
+			dd > .children
+			{
+				font-size: 95%;
+			}
+			
+			dd > .children > dl > dd
+			{
+				margin-left: 13px;
+			}
+
+			.exclamation
+			{
+				padding: 7px 8px;
+				margin: 11px 0px;
+				background-color: #FFE9AA;
+				border: 1px solid yellow;
+				font-size: 15px;
+				font-weight: normal;
+			}
+
+			.text
+			{
+				font-size: 15px;
+				font-weight: normal;
+				margin-bottom: 14px;
+				margin-top: 10px;
+			}
+
+			.toc
+			{
+				border: 1px solid gray;
+				background-color: #E6E6E6;
+				padding: 8px 9px;
+				font-size: 15px;
+				margin-bottom: 12px;
+			}
+
+			.toc h2
+			{
+				margin: 0px 0px 3px 0px;
+				font-size: 19px;
+			}
+
+			.toc ul
+			{
+				margin-top: 0px;
+				margin-bottom: 0px;
+				padding-left: 25px;
+			}
+
+			.toc li
+			{
+				margin-bottom: 2px;
+			}
+
+			.toc .alternatives
+			{
+				font-size: 12px;
+			}
+
+			.toc a
+			{
+				color: #292722;
+			}
+
+			.toc a:hover
+			{
+				color: black;
+			}
+			
+			.fixed
+			{
+				font-family: monospace;
+				background-color: white;
+				padding: 1px 4px;
+				border: 1px solid silver;
+				border-radius: 4px;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="children"><h1>User management</h1><div class="definition"><a name="POSTuserregister">POST /user/register <div class="children"><div class="text"><strong>Requires administrative FQDN access.</strong></div><div class="text">Creates a new user account under the specified FQDN. Currently, it will automatically set the account to 'activated' status.</div><div class="exclamation"><strong>Important:</strong> The API does <strong>not</strong> do any password sanity checking - you will have to implement this in your application yourself! Make    sure to remind the user <a href="../security/users.html">to use a unique password</a>. <div class="children"></div></div><dl><dt>fqdn</dt><dd><em>Required.</em> What FQDN this user account should be created for. It must be an existing FQDN. To create a new FQDN (and its corresponding administrator account), refer to the <a href="fqdn.html">FQDN API call reference</a>.<div class="children"></div></dd></dl><dl><dt>username</dt><dd><em>Required.</em> The username for the new user account. This is the part before the @ in their JID.<div class="children"></div></dd></dl><dl><dt>password</dt><dd><em>Required.</em> The password to be used for the new user account.<div class="children"></div></dd></dl><h3>Return values</h3><dl><dt>user_id</dt><dd>Integer. The internal ID of the newly created user.<div class="children"></div></dd></dl><h3>Error conditions</h3><dl><dt>HTTP 409</dt><dd>The user already exists.<div class="children"></div></dd></dl><dl><dt>HTTP 422</dt><dd>The specified FQDN does not exist.<div class="children"></div></dd></dl><div class="example">Example: User registration <div class="children"><h7>Code:</h7><pre class="code">POST /user/register
+data: username=user&fqdn=test.local&password=testpassword</pre><h7>Output:</h7><pre class="output">{
+	"response": {
+		"user_id": 26
+	}
+}</pre></div></div></div></a></div><div class="definition"><a name="GETuserlookup">GET /user/lookup <div class="children"><div class="text"><strong>Requires administrative FQDN read access.</strong></div><div class="text">Looks up user information for the specified user. Currently only indicates whether the user account is activated or not.</div><dl><dt>username</dt><dd><em>Required.</em> The username. This is the part before the @ in their JID.<div class="children"></div></dd></dl><dl><dt>fqdn</dt><dd><em>Required.</em> The FQDN that this user account exists on.<div class="children"></div></dd></dl><h3>Return values</h3><dl><dt>username</dt><dd>String. The username of the specified user (will usually be identical to the username specified in the request).<div class="children"></div></dd></dl><dl><dt>active</dt><dd>Boolean. Whether the specified user is activated or not.<div class="children"></div></dd></dl><h3>Error conditions</h3><dl><dt>HTTP 404</dt><dd>The specified user does not exist.<div class="children"></div></dd></dl><dl><dt>HTTP 422</dt><dd>The specified FQDN does not exist.<div class="children"></div></dd></dl><div class="example">Example: User lookup <div class="children"><h7>Code:</h7><pre class="code">GET /user/lookup?username=user&fqdn=test.local</pre><h7>Output:</h7><pre class="output">{
+	"response": {
+		"username": "user",
+		"active": true
+	}
+}</pre></div></div></div></a></div><div class="definition"><a name="GETuserauthenticate">GET /user/authenticate <div class="children"><div class="text"><strong>Requires administrative FQDN read access.</strong></div><div class="text">Verifies whether a password matches the stored password for a user.</div><div class="exclamation"><strong>Important:</strong> This only does a simple comparison. It does not create a session of any kind - you will have to implement session management   in your client yourself. <div class="children"></div></div><dl><dt>username</dt><dd><em>Required.</em> The username. This is the part before the @ in their JID.<div class="children"></div></dd></dl><dl><dt>fqdn</dt><dd><em>Required.</em> The FQDN that this user account exists on.<div class="children"></div></dd></dl><dl><dt>password</dt><dd><em>Required.</em> The password to verify.<div class="children"></div></dd></dl><h3>Return values</h3><dl><dt>active</dt><dd>Boolean. Whether the specified password is valid or not.<div class="children"></div></dd></dl><h3>Error conditions</h3><dl><dt>HTTP 404</dt><dd>The specified user does not exist.<div class="children"></div></dd></dl><dl><dt>HTTP 422</dt><dd>The specified FQDN does not exist.<div class="children"></div></dd></dl><div class="example">Example: A valid password <div class="children"><h7>Code:</h7><pre class="code">GET /user/authenticate?username=user&fqdn=test.local&password=validpassword</pre><h7>Output:</h7><pre class="output">{
+	"response": {
+		"valid": true
+	}
+}</pre></div></div></div></a></div></div>
+	</body>
+</html>
