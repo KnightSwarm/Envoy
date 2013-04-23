@@ -119,6 +119,11 @@ class Api
 		return new User($username, $fqdn, $this);
 	}
 	
+	public function Fqdn($fqdn)
+	{
+		return new Fqdn($fqdn, $this);
+	}
+	
 	public function CreateUser($username, $fqdn, $password)
 	{
 		$this->DoRequest("post", "/user/register", array(
@@ -128,5 +133,18 @@ class Api
 		));
 		
 		return $this->User($username, $fqdn);
+	}
+	
+	public function CreateFqdn($fqdn, $name, $admin_username, $admin_password, $description = "")
+	{
+		$this->DoRequest("post", "/fqdn/create", array(
+			"fqdn"			=> $fqdn,
+			"admin_username"	=> $admin_username,
+			"admin_password"	=> $admin_password,
+			"name"			=> $name,
+			"description"		=> $description
+		));
+		
+		return $this->Fqdn($fqdn);
 	}
 }
