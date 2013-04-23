@@ -36,6 +36,10 @@ class Fqdn extends ApiObject
 				return $this->lookup_data["name"];
 			case "description":
 				return $this->lookup_data["description"];
+			case "owner_id":
+				return $this->lookup_data["owner"]["id"];
+			case "owner_username":
+				return $this->lookup_data["owner"]["username"];
 		}
 	}
 }

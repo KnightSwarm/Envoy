@@ -79,6 +79,12 @@ $router->routes = array(
 		"^/fqdn/create$"	=> array(
 			"methods"	=> "post",
 			"target"	=> "modules/fqdn/create.php"
+		),
+		"^/fqdn/lookup$"	=> array(
+			"methods"	=> "get",
+			"target"	=> "modules/fqdn/lookup.php",
+			"authenticator"	=> "authenticators/fqdn_exists.php",
+			"auth_error"	=> ""
 		)
 	)
 );
