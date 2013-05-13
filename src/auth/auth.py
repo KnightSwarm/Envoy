@@ -2,8 +2,8 @@
 
 import sys, logging, struct, oursql, json, os, envoyxmpp, base64
 
-sys.stderr = open("/var/log/ejabberd/extauth_err.log", "a")
-logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s", filename="/var/log/ejabberd/extauth.log", filemode="a")
+sys.stderr = open("/etc/envoy/extauth/extauth_err.log", "a")
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s", filename="/etc/envoy/extauth/extauth.log", filemode="a")
 
 class EjabberdInputError(Exception):
 	def __init__(self, value):
@@ -91,7 +91,7 @@ def register(username, hostname, password):
 	digest, salt, rounds = envoyxmpp.util.hash.pbkdf2_sha512(password)
 	
 	cur = db.cursor()
-	cur.execute("INSERT INTO users (`Username`, `Fqdn`, `Hash`, `Salt`, `Active`) VALUES (?, ?, ?, ?, ?)",
+	cur.execute("INSERT INTO users (`Username`, `Fqdn`, `Hash`, `Salt`, `Active`, `FqdnId`) VALUES (?, ?, ?, ?, ?, 0)",
 	            (username, hostname, base64.b64encode(digest), base64.b64encode(salt), 1))
 	
 	return True
