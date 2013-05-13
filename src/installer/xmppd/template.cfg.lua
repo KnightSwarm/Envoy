@@ -52,7 +52,7 @@ external_auth_command = "/etc/envoy/extauth/auth.py"
 
 -- System logging
 log = {
-        info = "/etc/envoy/prosody/prosody.log";
+        info = "/etc/envoy/prosody/prosody.log";  -- TODO: Let installer pick between 'info' or 'debug' log level.
         error = "/etc/envoy/prosody/prosody.err";
 }
 
@@ -71,7 +71,7 @@ VirtualHost "envoy.local"
 
 -- The external Envoy component
 Component "component.envoy.local"
-        component_secret = "password"
+        component_secret = "password"  -- TODO: Make installer generate a password for this.
 
 -- We will also include everything in conf.d - these files will hold host-specific configuration.
 Include "conf.d/*.lua"
