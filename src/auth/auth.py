@@ -136,7 +136,8 @@ def remove_user_safe(username, hostname, password):
 configuration = json.load(open(get_relative_path("../config.json"), "r"))
 
 db = oursql.connect(host=configuration['database']['hostname'], user=configuration['database']['username'], 
-                    passwd=configuration['database']['password'], db=configuration['database']['database'])
+                    passwd=configuration['database']['password'], db=configuration['database']['database'],
+                    autoreconnect=True)
                     
 logging.debug("Connected to database on %s@%s" % (configuration['database']['username'], configuration['database']['hostname']))
 logging.info("External authentication script started, waiting for ejabberd requests...")
