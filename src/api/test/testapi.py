@@ -5,8 +5,15 @@ import requests, sys, json, random, string
 conf = json.load(open("testconfig.json", "r"))
 
 if sys.argv[1] == "register":
-	user = ''.join(random.choice(string.ascii_lowercase + string.digits) for x in range(12))
-	passwd = ''.join(random.choice(string.ascii_lowercase + string.digits) for x in range(20))
+	try:
+		user = sys.argv[2]
+	except IndexError, e:
+		user = ''.join(random.choice(string.ascii_lowercase + string.digits) for x in range(12))
+		
+	try:
+		passwd = sys.argv[3]
+	except IndexError, e:
+		passwd = ''.join(random.choice(string.ascii_lowercase + string.digits) for x in range(20))
 	
 	response = requests.post(conf["endpoint"] + "/user/register", data={
 		"username": user,
