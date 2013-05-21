@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import sys
+from datetime import datetime
 
 import sleekxmpp
 from sleekxmpp.componentxmpp import ComponentXMPP
@@ -14,9 +15,11 @@ class Component(ComponentXMPP):
 	def __init__(self, jid, host, port, password):
 		ComponentXMPP.__init__(self, jid, password, host, port)
 		self.add_event_handler("forwarded_stanza", self._envoy_handle_stanza)
+		self.add_event_handler("groupchat_joined", self._envoy_handle_group_join)
 		
 		self.registerPlugin('xep_0030') # Service Discovery
 		self.registerPlugin('xep_0004') # Data Forms
+		self.registerPlugin('xep_0045') # MUC
 		self.registerPlugin('xep_0060') # PubSub
 		self.registerPlugin('xep_0199') # XMPP Ping
 		self.registerPlugin('xep_0297') # Stanza forwarding
@@ -25,7 +28,10 @@ class Component(ComponentXMPP):
 		
 	def _envoy_handle_stanza(self, wrapper):
 		stanza = wrapper['forwarded']['stanza']
-		#print stanza
+		
+		outfile = open("raw.log", "a+")
+		outfile.write("%s - %s\n" % (datetime.now().isoformat(), stanza))
+		outfile.close()
 		
 		if isinstance(stanza, Iq):
 			self._envoy_handle_iq(wrapper, stanza)
@@ -44,17 +50,27 @@ class Component(ComponentXMPP):
 		return
 		
 	def _envoy_handle_message(self, wrapper, stanza):
-		print "Msg:", stanza
+		if stanza.match('message@type=groupchat/body'):
+			print "GROUP MSG: %s" % stanza
+		elif stanza.match('message@type=groupchat/subject'):
+			print "GROUP SUBJECT: %s" % stanza
+		else:
+			print "REGULAR MSG: %s" % stanza
 		
 	def _envoy_handle_presence(self, wrapper, stanza):
-		if StanzaPath("presence@type=unavailable").match(stanza):
-			self._envoy_call_event("logout", stanza["from"], stanza["status"])
-		elif MatchXPath("{jabber:client}presence/{jabber:client}show").match(stanza):
-			self._envoy_call_event("status", stanza["from"], stanza["show"], stanza["status"])
+		if stanza.match('presence/muc'):
+			self['xep_0045']._handle_presence(stanza)
 		else:
-			# Most likely the user switched to 'available'
-			self._envoy_call_event("status", stanza["from"], "available", stanza["status"])
-		return
+			# User presence
+			stanza_type = stanza["type"]
+			
+			if stanza_type == "available" or stanza_type in Presence.showtypes:
+				self._envoy_call_event("status", stanza["from"], stanza["type"], stanza["status"])
+			elif stanza_type == "unavailable":
+				self._envoy_call_event("logout", stanza["from"], stanza["status"])
+				
+	def _envoy_handle_group_join(self, stanza):
+		self._envoy_call_event("join", stanza["to"], stanza["from"].bare)
 		
 	def _envoy_call_event(self, event_name, *args, **kwargs):
 		try:
