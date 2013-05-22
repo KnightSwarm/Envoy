@@ -51,23 +51,29 @@ class Component(ComponentXMPP):
 		
 	def _envoy_handle_message(self, wrapper, stanza):
 		if stanza.match('message@type=groupchat/body'):
-			print "GROUP MSG: %s" % stanza
+			self._envoy_call_event("group_message", stanza["from"], stanza["to"], stanza["body"])
 		elif stanza.match('message@type=groupchat/subject'):
-			print "GROUP SUBJECT: %s" % stanza
-		else:
-			print "REGULAR MSG: %s" % stanza
+			self._envoy_call_event("topic_change", stanza["from"], stanza["to"], stanza["subject"])
+		elif stanza.match('message@type=chat/body'):
+			self._envoy_call_event("private_message", stanza["from"], stanza["to"], stanza["body"])
 		
 	def _envoy_handle_presence(self, wrapper, stanza):
+		# TODO: XMPP mandates that the status code 110 is always returned when the presence is 'available'.
+		#       It's not possible to dettermine whether the presence is a MUC join or a status change. We'll
+		#       need to keep track of this internally, to avoid erroneous logs.
 		if stanza.match('presence/muc'):
 			self['xep_0045']._handle_presence(stanza)
 		else:
 			# User presence
 			stanza_type = stanza["type"]
 			
-			if stanza_type == "available" or stanza_type in Presence.showtypes:
-				self._envoy_call_event("status", stanza["from"], stanza["type"], stanza["status"])
-			elif stanza_type == "unavailable":
-				self._envoy_call_event("logout", stanza["from"], stanza["status"])
+			# We really only want to process status changes if they're the original message.
+			# We don't really care about the rebroadcasts to various places.
+			if stanza["to"] == "":
+				if stanza_type == "available" or stanza_type in Presence.showtypes:
+					self._envoy_call_event("status", stanza["from"], stanza["type"], stanza["status"])
+				elif stanza_type == "unavailable":
+					self._envoy_call_event("logout", stanza["from"], stanza["status"])
 				
 	def _envoy_handle_group_join(self, stanza):
 		self._envoy_call_event("join", stanza["to"], stanza["from"].bare)
