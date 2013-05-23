@@ -14,8 +14,10 @@ sys.setdefaultencoding('utf8')
 class Component(ComponentXMPP):
 	def __init__(self, jid, host, port, password):
 		ComponentXMPP.__init__(self, jid, password, host, port)
+		
 		self.add_event_handler("forwarded_stanza", self._envoy_handle_stanza)
 		self.add_event_handler("groupchat_joined", self._envoy_handle_group_join)
+		self.add_event_handler("groupchat_left", self._envoy_handle_group_leave)
 		
 		self.registerPlugin('xep_0030') # Service Discovery
 		self.registerPlugin('xep_0004') # Data Forms
@@ -58,15 +60,12 @@ class Component(ComponentXMPP):
 			self._envoy_call_event("private_message", stanza["from"], stanza["to"], stanza["body"])
 		
 	def _envoy_handle_presence(self, wrapper, stanza):
-		# TODO: XMPP mandates that the status code 110 is always returned when the presence is 'available'.
-		#       It's not possible to dettermine whether the presence is a MUC join or a status change. We'll
-		#       need to keep track of this internally, to avoid erroneous logs.
+		stanza_type = stanza["type"]
+		
 		if stanza.match('presence/muc'):
 			self['xep_0045']._handle_presence(stanza)
 		else:
 			# User presence
-			stanza_type = stanza["type"]
-			
 			# We really only want to process status changes if they're the original message.
 			# We don't really care about the rebroadcasts to various places.
 			if stanza["to"] == "":
@@ -76,7 +75,14 @@ class Component(ComponentXMPP):
 					self._envoy_call_event("logout", stanza["from"], stanza["status"])
 				
 	def _envoy_handle_group_join(self, stanza):
-		self._envoy_call_event("join", stanza["to"], stanza["from"].bare)
+		user = stanza["to"]
+		room = stanza["from"].bare
+		self._envoy_call_event("join", user, room)
+			
+	def _envoy_handle_group_leave(self, stanza):
+		user = stanza["to"]
+		room = stanza["from"].bare
+		self._envoy_call_event("leave", user, room)
 		
 	def _envoy_call_event(self, event_name, *args, **kwargs):
 		try:
