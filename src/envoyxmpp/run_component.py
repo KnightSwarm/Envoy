@@ -1,4 +1,5 @@
 import logging, json, oursql, os
+from datetime import datetime
 
 from component import Component
 
@@ -7,6 +8,29 @@ def get_relative_path(path):
 	return os.path.normpath(os.path.join(my_path, path))
 
 class EnvoyComponent(Component):
+	event_types = {
+		"message": 1,
+		"pm": 2,
+		"status": 3,
+		"presence": 4,
+		"topic": 5
+	}
+	
+	event_presences = {
+		"login": 1,
+		"disconnect": 2,
+		"join": 3,
+		"leave": 4
+	}
+	
+	event_statuses = {
+		"available": 1,
+		"away": 2,
+		"xa": 3,
+		"dnd": 4,
+		"chat": 5
+	}
+	
 	def __init__(self, jid, host, port, password):
 		Component.__init__(self, jid, host, port, password)
 		
@@ -28,30 +52,38 @@ class EnvoyComponent(Component):
 		self['xep_0045'].api.register(self._envoy_del_joined_room, 'del_joined_room')
 		
 	def on_login(self, user):
+		self._envoy_log_event(datetime.now(), user, "", self.event_types["presence"], self.event_presences["login"])
 		print "%s just logged in." % user
 
 	def on_logout(self, user, reason):
+		self._envoy_log_event(datetime.now(), user, "", self.event_types["presence"], self.event_presences["disconnect"], reason)
 		print "%s just disconnected with reason '%s'." % (user, reason)
 
 	def on_ping(self, user):
 		print "%s just pinged." % user
 
 	def on_status(self, user, status, message):
+		self._envoy_log_event(datetime.now(), user, "", self.event_types["status"], self.event_statuses[status], message)
 		print "%s just changed their status to %s (%s)." % (user, status, message)
 
 	def on_join(self, user, room):
+		self._envoy_log_event(datetime.now(), user, room, self.event_types["presence"], self.event_presences["join"])
 		print "%s joined %s." % (user, room)
 
 	def on_leave(self, user, room):
+		self._envoy_log_event(datetime.now(), user, room, self.event_types["presence"], self.event_presences["leave"])
 		print "%s left %s." % (user, room)
 		
 	def on_group_message(self, user, room, body):
+		self._envoy_log_event(datetime.now(), user, room, self.event_types["message"], body)
 		print "%s sent channel message to %s: '%s'" % (user, room, body)
 		
 	def on_private_message(self, sender, recipient, body):
+		self._envoy_log_event(datetime.now(), sender, recipient, self.event_types["pm"], body)
 		print "%s sent private message to %s: '%s'" % (sender, recipient, body)
 		
 	def on_topic_change(self, user, room, topic):
+		self._envoy_log_event(datetime.now(), user, room, self.event_types["topic"], topic)
 		print "%s changed topic for %s to '%s'" % (user, room, topic)
 	
 	# Envoy uses override methods for the user presence tracking feature in
@@ -89,7 +121,19 @@ class EnvoyComponent(Component):
 		query = "DELETE FROM presences WHERE `UserJid` = ? AND `RoomJid` = ?"
 		cursor = db.cursor()
 		cursor.execute(query, (str(jid), str(node)))
-
+		
+	def _envoy_log_event(self, timestamp, sender, recipient, event_type, payload, extra=None):
+		cursor = db.cursor()
+		
+		if event_type == 1 or event_type == 2 or event_type == 5:  # Message
+			query = "INSERT INTO log_messages (`Date`, `Sender`, `Recipient`, `Type`, `Message`) VALUES (?, ?, ?, ?, ?)"
+			cursor.execute(query, (timestamp, str(sender), str(recipient), event_type, payload))
+		elif event_type == 3 or event_type == 4:  # Event
+			if extra is None:
+				extra = ""
+			query = "INSERT INTO log_events (`Date`, `Sender`, `Recipient`, `Type`, `Event`, `Extra`) VALUES (?, ?, ?, ?, ?, ?)"
+			cursor.execute(query, (timestamp, str(sender), str(recipient), event_type, payload, extra))
+			
 
 logging.basicConfig(level=logging.INFO, format='%(levelname)-8s %(message)s')
 
