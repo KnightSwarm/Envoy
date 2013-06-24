@@ -44,12 +44,40 @@ class EnvoyComponent(Component):
 		self.register_event("group_message", self.on_group_message)
 		self.register_event("private_message", self.on_private_message)
 		self.register_event("topic_change", self.on_topic_change)
+		self.register_event("group_highlight", self.on_group_highlight)
 		
 		# Hook XEP-0045 presence tracking to use the Envoy database
 		self['xep_0045'].api.register(self._envoy_is_joined_room, 'is_joined_room')
 		self['xep_0045'].api.register(self._envoy_get_joined_rooms, 'get_joined_rooms')
 		self['xep_0045'].api.register(self._envoy_add_joined_room, 'add_joined_room')
 		self['xep_0045'].api.register(self._envoy_del_joined_room, 'del_joined_room')
+		
+		# TODO: Update internal user cache when vCard changes occur
+		cursor = db.cursor()
+		cursor.execute("SELECT Username, Fqdn, EmailAddress, FirstName, LastName, Nickname, JobTitle FROM users WHERE `Active` = 1")
+		
+		for row in cursor:
+			jid = "%s@%s" % (row[0], row[1])
+			email_address, first_name, last_name, nickname, job_title = row[2:]
+			user = self._envoy_user_cache.get(jid)
+			user.update_vcard({
+				"email_address": email_address,
+				"first_name": first_name,
+				"last_name": last_name,
+				"nickname": nickname,
+				"job_title": job_title
+			})
+			
+			logging.info("Found user %s in database with nickname @%s" % (jid, nickname))
+			
+		cursor.execute("SELECT UserJid, RoomJid FROM presences")
+		
+		for row in cursor:
+			user, room = row
+			self._envoy_user_cache.get(user.split("/", 1)[0]).add_room(room)
+			
+		for jid, user in self._envoy_user_cache.cache.iteritems():
+			print user.jid, user.nickname, user.rooms
 		
 	def on_login(self, user):
 		self._envoy_log_event(datetime.now(), user, "", self.event_types["presence"], self.event_presences["login"])
@@ -81,6 +109,15 @@ class EnvoyComponent(Component):
 	def on_private_message(self, sender, recipient, body):
 		self._envoy_log_event(datetime.now(), sender, recipient, self.event_types["pm"], body)
 		print "%s sent private message to %s: '%s'" % (sender, recipient, body)
+	
+	def on_group_highlight(self, sender, recipient, room, body):
+		print "%s highlighted %s in %s in a channel message: %s" % (sender, recipient, room, body)
+	
+	def on_idle_private_message(self, sender, recipient, body):
+		pass
+		
+	def on_idle_group_highlight(self, sender, recipient, body):
+		pass
 		
 	def on_topic_change(self, user, room, topic):
 		self._envoy_log_event(datetime.now(), user, room, self.event_types["topic"], topic)
@@ -135,7 +172,7 @@ class EnvoyComponent(Component):
 			cursor.execute(query, (timestamp, str(sender), str(recipient), event_type, payload, extra))
 			
 
-logging.basicConfig(level=logging.INFO, format='%(levelname)-8s %(message)s')
+logging.basicConfig(level=logging.DEBUG, format='%(levelname)-8s %(message)s')
 
 configuration = json.load(open(get_relative_path("../config.json"), "r"))
 
