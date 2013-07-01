@@ -1,0 +1,48 @@
+# UserCache
+
+The UserCache is a simple object that keeps track of status changes,
+room presence changes, affiliation changes, vCard information, etc. for
+use in the internals of the component. It can also be addressed by your
+custom implementation directly.
+
+The component will ensure that the cache remains up to date based on 
+the stanzas it sees, and uses {>usercacheitem}(UserCacheItem) objects to
+represent individual tracked users.
+
+! The UserCache operates entirely on bare JIDs. Using full JIDs to
+  retrieve or update information will lead to inconsistent states!
+
+## Methods
+
+^ touch(`jid`)
+
+	If no UserCacheItem representing the user is present in the
+	UserCache yet, this method will be created. If one already
+	exists, no changes will occur. Used to ensure that a user is
+	represented before calling their UserCacheItem object.
+	
+	This is roughly the equivalent of the `touch` command on
+	UNIX-style systems.
+	
+	jid::
+		The bare JID of the user you wish to 'touch'.
+	
+^ get(`jid`)
+
+	Returns the UserCacheItem for the given bare JID, creating one
+	if it doesn't exist yet.
+	
+	This function will *always* return a UserCacheItem object, even
+	if it's a newly created one without any useful information in 
+	it.
+	
+	jid::
+		The bare JID to retrieve the UserCacheItem for.
+		
+^ find_nickname(`nickname`)
+
+	Returns a (possibly empty) list of UserCacheItem objects whose
+	vCard information lists the given NICKNAME.
+	
+	nickname::
+		The NICKNAME to search for.

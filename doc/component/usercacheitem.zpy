@@ -1,0 +1,143 @@
+# UserCacheItem
+
+A UserCacheItem is an object representing a particular user in the
+UserCache. It contains status and vCard information about that user.
+
+## Methods
+
+^ update_presence(`presence`)
+
+	Updates the presence for this user.
+	
+	presence::
+		The presence to set. Must be a {>states}(state).
+		
+^ add_room(`room`)
+
+	Updates the cache to indicate that a user is present in a room.
+	
+	room::
+		The bare JID of the room that the user is present in.
+		
+^ remove_room(`room`)
+
+	Updates the cache to indicate that a user is no longer present
+	in a room. When a room is indicated that the cache didn't know
+	about, it will be silently ignored.
+	
+	room::
+		The bare JID of the room that the user is no longer
+		present in.
+	
+^ in_room(`room`)
+
+	Returns a boolean, indicating whether the user is present in the
+	given room.
+	
+	room::
+		The bare JID of the room to check for.
+
+^ set_affiliation(`room`, `affiliation`)
+
+	Updates the cache to indicate that the users affiliation to a
+	room has changed. If the new affiliation was already known to
+	the cache, nothing will change.
+	
+	room::
+		The room that the affiliation change applies to.
+		
+	affiliation::
+		The new affiliation. Must be a string, containing one of
+		the standard XMPP room affiliations (owner, member,
+		admin, outcast, none).
+
+^ get_affiliation(`room`)
+
+	Returns the room affiliation for a user. If no affiliation is
+	known, 'none' will be returned.
+	
+	room::
+		The room to retrieve the affiliation for.
+		
+	### Return values
+	
+	none::
+		The user is not affiliated to the room (or the
+		affiliation is unknown, and no affiliation should be
+		assumed).
+		
+	outcast::
+		The user is banned from the room.
+		
+	member::
+		The user is a member of the room.
+		
+	admin::
+		The user is an administrator in the room and has access
+		to administrative features.
+		
+	owner::
+		The user is the owner of the room.
+		
+^ is_affiliated_to(`room`)
+
+	Returns a boolean indicating whether an affiliation between the
+	room and the user exists, that is not 'none' or 'outcast'
+	(banned). To check whether a user has the 'outcast' affiliation,
+	use the `is_banned_from` method.
+	
+	room::
+		The room to check the affiliation for.
+
+^ is_guest_in(`room`)
+
+	Returns a boolean indicating whether a user is a guest in a 
+	room; that is, whether they have the 'none' affiliation.
+	
+	! This will always return True if either the affiliation is
+	  'none' or no affiliation is known. Whether the user is
+	  actually present in the room, is disregarded entirely! If you
+	  want to check whether a user is *present* in a room as a
+	  guest, you will have to use the `in_room` method separately.
+	  
+	room::
+		The room to verify the 'none' affiliation for.
+		
+^ is_banned_from(`room`)
+	
+	Returns a boolean indicating whether a user is banned from a
+	room; that is, whether their affiliation is 'outcast'.
+	
+	room::
+		The room to check the 'outcast' affiliation for.
+	
+^ update_vcard(`data`)
+
+	Updates the vCard information using the specified data.
+	
+	! The UserCache currently does *not* automatically keep track of
+	  vCard updates broadcast by users. It assumes that a pre-set
+	  vCard is specified by your implementation, and that your
+	  implementation makes the UserCache aware of this by using this
+	  method.
+	  
+	data::
+		A dictionary containing several keys. All keys are
+		optional; only the specified keys will be updated.
+		
+		first_name::
+			The first name of the user.
+			
+		last_name::
+			The last name of the user.
+			
+		job_title::
+			The job title of the user.
+			
+		nickname::
+			The nickname of the user. This is the name that
+			is typically displayed in contact lists, and is
+			often used for highlights.
+			
+		email_address::
+			The e-mail address of the user.
