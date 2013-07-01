@@ -94,9 +94,9 @@ class EnvoyComponent(Component):
 		self._envoy_log_event(datetime.now(), user, "", self.event_types["status"], self.event_statuses[status], message)
 		print "%s just changed their status to %s (%s)." % (user, status, message)
 
-	def on_join(self, user, room):
+	def on_join(self, user, room, nickname):
 		self._envoy_log_event(datetime.now(), user, room, self.event_types["presence"], self.event_presences["join"])
-		print "%s joined %s." % (user, room)
+		print "%s joined %s with nickname %s." % (user, room, nickname)
 
 	def on_leave(self, user, room):
 		self._envoy_log_event(datetime.now(), user, room, self.event_types["presence"], self.event_presences["leave"])
@@ -110,15 +110,9 @@ class EnvoyComponent(Component):
 		self._envoy_log_event(datetime.now(), sender, recipient, self.event_types["pm"], body)
 		print "%s sent private message to %s: '%s'" % (sender, recipient, body)
 	
-	def on_group_highlight(self, sender, recipient, room, body):
-		print "%s highlighted %s in %s in a channel message: %s" % (sender, recipient, room, body)
+	def on_group_highlight(self, sender, recipient, room, body, highlight):
+		print "%s highlighted %s in %s in a channel message: %s (highlighted content is %s)" % (sender, recipient, room, body, highlight)
 	
-	def on_idle_private_message(self, sender, recipient, body):
-		pass
-		
-	def on_idle_group_highlight(self, sender, recipient, body):
-		pass
-		
 	def on_topic_change(self, user, room, topic):
 		self._envoy_log_event(datetime.now(), user, room, self.event_types["topic"], topic)
 		print "%s changed topic for %s to '%s'" % (user, room, topic)
@@ -180,6 +174,6 @@ db = oursql.connect(host=configuration['database']['hostname'], user=configurati
                     passwd=configuration['database']['password'], db=configuration['database']['database'],
                     autoreconnect=True)
 
-xmpp = EnvoyComponent("component.envoy.local", "envoy.local", 5347, "password")
+xmpp = EnvoyComponent("component.envoy.local", "127.0.0.1", 5347, "password")
 xmpp.connect()
 xmpp.process(block=True)

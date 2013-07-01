@@ -20,6 +20,7 @@ class Component(ComponentXMPP):
 		self.add_event_handler("forwarded_stanza", self._envoy_handle_stanza)
 		self.add_event_handler("groupchat_joined", self._envoy_handle_group_join)
 		self.add_event_handler("groupchat_left", self._envoy_handle_group_leave)
+		self.add_event_handler("groupchat_presence", self._envoy_handle_group_presence)
 		
 		self.registerPlugin('xep_0030') # Service Discovery
 		self.registerPlugin('xep_0004') # Data Forms
@@ -40,8 +41,6 @@ class Component(ComponentXMPP):
 			if item['jid'] not in self._envoy_members[room]:
 				self._envoy_members[room].append(item['jid'])
 				
-		print self._envoy_members
-	
 	def _envoy_handle_stanza(self, wrapper):
 		stanza = wrapper['forwarded']['stanza']
 		
@@ -69,17 +68,27 @@ class Component(ComponentXMPP):
 		if stanza.match('message@type=groupchat/body'):
 			room = stanza['to'].bare
 			self._envoy_user_cache.touch(stanza["from"].bare)
-			self._envoy_call_event("group_message", stanza["from"], stanza["to"], stanza["body"])
+			self._envoy_call_event("group_message", stanza["from"], room, stanza["body"])
 			
 			if stanza['to'].bare not in self._envoy_members:
+				# The message was addressed at someone that, according to our internal bookkeeping, isn't in the room.
+				# Update the bookkeeping to correct this, by asking the xmppd.
 				self._envoy_update_roster(room)
 			
 			highlights = re.findall("@([a-zA-Z0-9._-]+)", stanza["body"])
 			for highlight in highlights:
-				for user in self._envoy_user_cache.find_nickname(highlight):
-					if user.in_room(room):
-						self._envoy_call_event("group_highlight", stanza["from"], user.jid, room, stanza["body"])
-						#logging.error("Highlighted user %s in room %s!" % (user.jid, room))
+				if highlight == "all":
+					# Highlight everyone in the room
+					affected_users = (self._envoy_user_cache.find_by_room_presence(room) +
+					                  self._envoy_user_cache.find_by_room_membership(room))
+					for user in affected_users:
+						self._envoy_call_event("group_highlight", stanza["from"], user.jid, room, stanza["body"], highlight)
+				else:
+					# Highlight one particular nickname
+					for user in self._envoy_user_cache.find_nickname(highlight):
+						if user.in_room(room):
+							self._envoy_call_event("group_highlight", stanza["from"], user.jid, room, stanza["body"], highlight)
+							#logging.error("Highlighted user %s in room %s!" % (user.jid, room))
 				#self._envoy_call_event("groupchat_highlight")
 				#if highlight in [jid.username for jid in self._envoy_members[stanza['to'].bare]]:
 				#	print "### User %s was highlighted in %s!" % (highlight, stanza['to'].bare)
@@ -112,8 +121,18 @@ class Component(ComponentXMPP):
 	def _envoy_handle_group_join(self, stanza):
 		user = stanza["to"]
 		room = stanza["from"].bare
+		nickname = stanza["from"].resource
+		
+		# Update presence in the user cache
 		self._envoy_user_cache.get(user.bare).add_room(room)
-		self._envoy_call_event("join", user, room)
+		
+		# Update affiliation in the user cache
+		affiliation = stanza['muc']['affiliation']
+		self._envoy_user_cache.get(user.bare).set_affiliation(room, affiliation)
+		
+		# Handle event
+		self._envoy_call_event("join", user, room, nickname)
+		
 		# We can optimize this by updating the roster once and tracking state changes from then on
 		self._envoy_update_roster(room)
 			
@@ -124,6 +143,26 @@ class Component(ComponentXMPP):
 		self._envoy_call_event("leave", user, room)
 		# We can optimize this by updating the roster once and tracking state changes from then on
 		self._envoy_update_roster(room)
+	
+	def _envoy_handle_group_presence(self, stanza):
+		# FIXME: It's possible that an affiliation is not updated, if the target user is in a semi-anonymous
+		#        room, and no moderators are present. In that case, whether a stanza containing the full JID
+		#        of the affected user is sent out, depends on the implementation of the XMPP daemon. The
+		#        XEP-0045 specification does not explicitly indicate what the daemon should do in this case.
+		#        Prosody is known to send the JID along with the presence stanza that is targeted at the
+		#        affected user, _even_ if said user is not a moderator. According to developers, this is not
+		#        expected to change in later Prosody versions, therefore as long as Prosody is used, it
+		#        should be possible to rely on this behaviour.
+		room = stanza["from"].bare
+		user = stanza["muc"]["jid"]
+		affiliation = stanza["muc"]["affiliation"]
+		
+		if user != "":
+			# TODO: Implement event for changing affiliation?
+			self._envoy_user_cache.get(user.bare).set_affiliation(room, affiliation)
+			# FIXME: This is a debug call. This shouldn't go into production. Perhaps have some way to
+			#        permanently use this functionality in the future, through configuration?
+			self.send_message(mto="testuser@envoy.local", mbody=self._envoy_user_cache.get_debug_tree())
 		
 	def _envoy_call_event(self, event_name, *args, **kwargs):
 		try:
@@ -154,11 +193,44 @@ class UserCache(object):
 	def find_nickname(self, nickname):
 		return [user for jid, user in self.cache.iteritems() if user.nickname == nickname][:1]
 		
+	def get_debug_tree(self):
+		output = "Debug tree\n"
+		
+		for jid, user in self.cache.iteritems():
+			output += "\t" + "- %s\n" % user.jid
+			
+			output += "\t\t" + "- Room presences\n"
+			for room in user.rooms:
+				output += "\t\t\t" + "* %s\n" % room
+			
+			output += "\t\t" + "- Affiliations\n"
+			for room, affiliation in user.affiliations.iteritems():
+				output += "\t\t\t" + "* %s: %s\n" % (room, affiliation)
+				
+			properties = {
+				"First Name": user.first_name,
+				"Last Name": user.last_name,
+				"Full Name": user.full_name,
+				"Job Title": user.job_title,
+				"E-mail Address": user.email_address,
+				"Nickname": user.nickname,
+				"Status": state.from_state(user.presence)
+			}
+			
+			for key, val in properties.iteritems():
+				output += "\t\t" + "- %s\n" % key
+				output += "\t\t\t" + "%s\n" % val
+			
+			output += "\n"
+			
+		return output
+			
 class UserCacheItem(object):
 	def __init__(self, jid):
 		self.jid = jid
 		self.presence = state.UNKNOWN
 		self.rooms = []
+		self.affiliations = {}
 		self.first_name = ""
 		self.last_name = ""
 		self.full_name = ""
@@ -177,6 +249,24 @@ class UserCacheItem(object):
 		
 	def in_room(self, room):
 		return (room in self.rooms)
+		
+	def set_affiliation(self, room, affiliation):
+		self.affiliations[room] = affiliation
+		
+	def get_affiliation(self, room):
+		try:
+			return self.affiliations[room]
+		except KeyError, e:
+			return "none"
+			
+	def is_affiliated_to(self, room):
+		return (self.get_affiliation(room) not in ("none", "outcast"))
+		
+	def is_guest_in(self, room):
+		return (self.get_affiliation(room) == "none")
+		
+	def is_banned_from(self, room):
+		return (self.get_affiliation(room) == "outcast")
 		
 	def update_vcard(self, data):
 		# first_name, last_name, job_title, email_address, nickname
