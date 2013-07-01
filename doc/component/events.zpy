@@ -1,0 +1,162 @@
+# Component events
+
+^ login (`user`)
+
+	Signifies that a user just logged in to the Envoy server.
+	
+	user::
+		The full JID of the user that logged in.
+		
+^ logout (`user`, `reason`)
+
+	Signifies that a user just disconnected from the Envoy server.
+	
+	user::
+		The full JID of the user that logged out.
+		
+	reason::
+		The reason for disconnection. This may be an empty string.
+		
+^ ping (`user`)
+
+	Signifies that an XMPP ping was received from a user. You're 
+	unlikely to need this for anything other than debugging purposes.
+	
+	! Note that this is a very common event. Doing intensive processing
+	  in this event is discouraged, as it may cause significant delays
+	  in processing other stanzas.
+	  
+	user::
+		The full JID of the user that sent a ping.
+
+^ status (`user`, `status`, `message`)
+
+	Signifies a status (presence) change for a user. 
+	
+	! Unlike in normal XMPP presence change events, this only fires
+	  when an online presence is broadcast - the 'unavailable' presence
+	  should be handled separately in the `logout` event.
+	  
+	user::
+		The full JID of the user that changed their presence.
+		
+	status::
+		The new status of the user.
+		
+		available::
+			The 'online' status. No special circumstances.
+			
+		away::
+			Indicates the user is Away. May be set either
+			manually or automatically due to the client not
+			receiving any user input.
+			
+		xa::
+			Extended Away. May also be set either manually or
+			automatically.
+			
+		dnd::
+			Do Not Disturb. The user does not wish to be
+			disturbed for anything unless it is urgent. You
+			should not send any notifications.
+			
+		chat::
+			Chatty. This means that the user is particularly
+			interested in having a conversation. Not very
+			commonly used, and can be treated as `available` if
+			the Envoy server is used for work purposes.
+			
+	message::
+		The custom status message set by the user or their client.
+		This may be an empty string.
+
+^ join (`user`, `room`, `nickname`)
+
+	Signifies that a user joined a MUC room.
+	
+	user::
+		The full JID of the user that joined.
+		
+	room::
+		The bare JID of the room that was joined. The resource part
+		of the JID, which for MUC rooms is used to indicate the
+		nickname of the new participant, is not present.
+		
+	nickname::
+		The nickname that the user has joined under. This is
+		normally the resource part of the room JID.
+		
+^ leave (`user`, `room`)
+
+	Signifies that a user left a MUC room.
+	
+	user::
+		The full JID of the user that left.
+		
+	room::
+		The bare JID of the room that was left.
+		
+^ group_message (`user`, `room`, `body`)
+
+	Signifies that a message was sent to a MUC room by one of its
+	participants.
+	
+	user::
+		The full JID of the user that sent the message.
+		
+	room::
+		The bare JID of the room that the message was sent to.
+		
+	body::
+		The body of the message that was sent.
+		
+^ private_message (`sender`, `recipient`, `body`)
+
+	Signifies that a private message was sent from one user to another
+	user.
+	
+	sender::
+		The full JID of the user that sent the message.
+		
+	recipient::
+		The full JID of the user that the message is addressed to.
+		
+	body::
+		The body of the message that was sent.
+		
+^ group_highlight (`sender`, `recipient`, `room`, `body`, `highlight`)
+
+	Signifies that a highlight of a user in a MUC room has taken place.
+	A 'highlight' is a part of a message in the format `@nickname`, 
+	intended to alert a participant that a message is intended for them.
+	Useful for sending out e-mail or SMS notifications.
+	
+	sender::
+		The full JID of the user that caused the highlight.
+	
+	recipient::
+		The full JID of the user that the highlight was targeted at.
+	
+	room::
+		The bare JID of the room that the highlight occurred in.
+		
+	body::
+		The full body of the message that the highlight occurred in.
+		
+	highlight::
+		The snippet of text (minus the `@` symbol) that triggered
+		this particular highlight. Useful to distinguish between
+		user-specific highlights and global (`@all`) highlights.
+		
+^ topic_change (`user`, `room`, `topic`)
+
+	Signifies that the topic of a MUC room was changed.
+	
+	user::
+		The full JID of the user that changed the topic.
+		
+	room::
+		The room of which the topic was changed.
+		
+	topic::
+		The new topic that was set.
