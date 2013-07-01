@@ -13,12 +13,26 @@ user. State-related methods and variables can be accessed through the
 	
 	string::
 		A string, according to the XMPP standard, representing
-		the desired presence.
+		the desired presence. 'unknown' is also a valid input.
 		
 	### Error conditions
 	
 	Throws a `ValueException` if an invalid string is supplied (ie.
-	not part of the XMPP specification).
+	not part of the XMPP specification, and not 'unknown').
+
+^ envoyxmpp.util.state.from_state(`state`)
+
+	Turns a valid state value back into a string, containing either
+	the string as specified in the XMPP specification, or 'unknown'
+	(if the input was `envoyxmpp.util.state.unknown`).
+	
+	state::
+		One of the `envoyxmpp.util.state` values.
+		
+	### Error conditions
+	
+	Throws a `ValueException` if an invalid state is supplied (ie.
+	not listed below).
 	
 ## Variables
 
@@ -56,4 +70,4 @@ user. State-related methods and variables can be accessed through the
 
 	An extra value that indicates the presence of a user is unknown.
 	This does not represent an XMPP presence, rather it indicates
-	the **absence** of one.
+	the **absence** of one. Represented in string form as 'unknown'.
