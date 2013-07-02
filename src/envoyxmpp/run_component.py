@@ -1,7 +1,12 @@
-import logging, json, oursql, os
+import logging, json, oursql, os, smtplib
 from datetime import datetime
+from email.mime.text import MIMEText
+
+from twilio import TwilioRestException
+from twilio.rest import TwilioRestClient
 
 from component import Component
+from util import state
 
 def get_relative_path(path):
 	my_path = os.path.dirname(os.path.abspath(__file__))
@@ -54,18 +59,19 @@ class EnvoyComponent(Component):
 		
 		# TODO: Update internal user cache when vCard changes occur
 		cursor = db.cursor()
-		cursor.execute("SELECT Username, Fqdn, EmailAddress, FirstName, LastName, Nickname, JobTitle FROM users WHERE `Active` = 1")
+		cursor.execute("SELECT Username, Fqdn, EmailAddress, FirstName, LastName, Nickname, JobTitle, MobileNumber FROM users WHERE `Active` = 1")
 		
 		for row in cursor:
 			jid = "%s@%s" % (row[0], row[1])
-			email_address, first_name, last_name, nickname, job_title = row[2:]
+			email_address, first_name, last_name, nickname, job_title, mobile_number = row[2:]
 			user = self._envoy_user_cache.get(jid)
 			user.update_vcard({
 				"email_address": email_address,
 				"first_name": first_name,
 				"last_name": last_name,
 				"nickname": nickname,
-				"job_title": job_title
+				"job_title": job_title,
+				"mobile_number": mobile_number
 			})
 			
 			logging.info("Found user %s in database with nickname @%s" % (jid, nickname))
@@ -112,10 +118,105 @@ class EnvoyComponent(Component):
 	
 	def on_group_highlight(self, sender, recipient, room, body, highlight):
 		print "%s highlighted %s in %s in a channel message: %s (highlighted content is %s)" % (sender, recipient, room, body, highlight)
+		self.notify_if_idle(sender, recipient, room, body, highlight)
 	
 	def on_topic_change(self, user, room, topic):
 		self._envoy_log_event(datetime.now(), user, room, self.event_types["topic"], topic)
 		print "%s changed topic for %s to '%s'" % (user, room, topic)
+	
+	def notify_if_idle(self, sender, recipient, room, body, highlight):
+		# We should only send a notification if we can reasonable assume that the user is not paying
+		# attention to their client. If they are away, extended away, or offline (unavailable), they
+		# will be sent an external notification. When a user is automatically marked idle by their
+		# client for lack of interaction, they will turn to an 'away' or 'extended away' state - we
+		# don't need to handle this separately.
+		if self._envoy_user_cache.get(recipient).presence in [state.AWAY, state.XA, state.UNAVAILABLE]:
+			self.notify(sender, recipient, room, body, highlight)
+		elif self._envoy_user_cache.get(recipient).presence == state.UNKNOWN:
+			# FIXME: Fetch the correct state?
+			logging.error("Unknown state detected for user %s" % recipient)
+		
+	def notify(self, sender, recipient, room, body, highlight):
+		# We never want to send external notifications if the user state is set to Do Not Disturb.
+		if self._envoy_user_cache.get(recipient).presence != state.DND:
+			# Actually send a notification. We can use the phone number and e-mail address from
+			# their vCard information (in the user cache) to do so.
+			is_private = (room == "")
+			sender_name = self._envoy_user_cache.get(sender.bare).full_name
+			
+			# We'll start out with an SMS
+			sms_recipient = self._envoy_user_cache.get(recipient).mobile_number
+			
+			if sms_recipient != "":
+				if is_private:
+					sms_prefix = "PM from %s: " % sender_name
+				else:
+					# FIXME: Use human-readable room name rather than JID
+					if highlight == "all":
+						sms_prefix = "@all in %s: [%s] " % (room.node, sender_name)
+					else:
+						sms_prefix = "Highlight in %s: [%s] " % (room.node, sender_name)
+				
+				# An SMS message can be at most 60 characters
+				sms_maxlen = 160 - len(sms_prefix)
+				
+				if len(body) > sms_maxlen:
+					# We need 3 characters for the ellipsis
+					sms_bodylen = sms_maxlen - 3
+					sms_body = "%s..." % body[:sms_bodylen]
+				else:
+					sms_body = body
+					
+				sms_body = sms_prefix + sms_body
+				
+				try:
+					message = twilio_client.sms.messages.create(body=sms_body, to=sms_recipient, from_=configuration['twilio']['sender'])
+					logging.info("SMS sent to %s." % sms_recipient)
+				except TwilioRestException, e:
+					logging.error("An error occurred during sending of an SMS to %s: %s" % (sms_recipient, repr(e)))
+			else:
+				logging.debug("Not sending an SMS to %s, because no mobile number is configured." % recipient)
+			
+			email_recipient = self._envoy_user_cache.get(recipient).email_address
+			
+			# Now let's send emails.
+			self.send_email([(email_recipient, "Notification in Envoy", "%s highlighted you: %s" % (sender_name, body))])
+	
+	def send_email(self, emails):
+		# FIXME: Deal properly with older SMTP implementations that only support SSL and not STARTTLS.
+		session = smtplib.SMTP(configuration['smtp']['host'], configuration['smtp']['port'])
+		session.ehlo()
+		
+		# If the configuration indicates the use of TLS, we will issue a STARTTLS
+		# command, and send another EHLO.
+		try:
+			if configuration['smtp']['tls'] == True:
+				session.starttls()
+				session.ehlo()
+		except KeyError, e:
+			pass
+			
+		session.login(configuration['smtp']['username'], configuration['smtp']['password'])
+		
+		# FIXME: Exceptions when the below key doesn't exist, are silently eaten?
+		sender = configuration['smtp']['sender']
+		
+		for email in emails:
+			try:
+				recipient, subject, body = email
+				
+				message = MIMEText(body)
+				message['Subject'] = subject
+				message['From'] = sender
+				message['To'] = recipient
+				
+				# FIXME: This doesn't work, for unclear reasons.
+				print session.sendmail(sender, recipient, message.as_string())
+				logging.info("E-mail sent to %s." % recipient)
+			except Exception, e:
+				logging.error("An error occurred during sending of an e-mail to %s: %s" % (recipient, repr(e)))
+			
+		session.quit()
 	
 	# Envoy uses override methods for the user presence tracking feature in
 	# the XEP-0045 plugin. Instead of storing the presences in memory, they
@@ -166,13 +267,15 @@ class EnvoyComponent(Component):
 			cursor.execute(query, (timestamp, str(sender), str(recipient), event_type, payload, extra))
 			
 
-logging.basicConfig(level=logging.DEBUG, format='%(levelname)-8s %(message)s')
+logging.basicConfig(level=logging.INFO, format='%(levelname)-8s %(message)s')
 
 configuration = json.load(open(get_relative_path("../config.json"), "r"))
 
 db = oursql.connect(host=configuration['database']['hostname'], user=configuration['database']['username'], 
                     passwd=configuration['database']['password'], db=configuration['database']['database'],
                     autoreconnect=True)
+
+twilio_client = TwilioRestClient(configuration['twilio']['sid'], configuration['twilio']['token'])
 
 xmpp = EnvoyComponent("component.envoy.local", "127.0.0.1", 5347, "password")
 xmpp.connect()

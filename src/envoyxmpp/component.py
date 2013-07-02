@@ -7,6 +7,7 @@ import sleekxmpp
 from sleekxmpp.componentxmpp import ComponentXMPP
 from sleekxmpp.stanza import Message, Presence, Iq
 from sleekxmpp.xmlstream.matcher import MatchXPath, StanzaPath
+from sleekxmpp.jid import JID
 
 from util import state
 
@@ -82,12 +83,12 @@ class Component(ComponentXMPP):
 					affected_users = (self._envoy_user_cache.find_by_room_presence(room) +
 					                  self._envoy_user_cache.find_by_room_membership(room))
 					for user in affected_users:
-						self._envoy_call_event("group_highlight", stanza["from"], user.jid, room, stanza["body"], highlight)
+						self._envoy_call_event("group_highlight", stanza["from"], JID(user.jid), JID(room), stanza["body"], highlight)
 				else:
 					# Highlight one particular nickname
 					for user in self._envoy_user_cache.find_nickname(highlight):
 						if user.in_room(room):
-							self._envoy_call_event("group_highlight", stanza["from"], user.jid, room, stanza["body"], highlight)
+							self._envoy_call_event("group_highlight", stanza["from"], JID(user.jid), JID(room), stanza["body"], highlight)
 							#logging.error("Highlighted user %s in room %s!" % (user.jid, room))
 				#self._envoy_call_event("groupchat_highlight")
 				#if highlight in [jid.username for jid in self._envoy_members[stanza['to'].bare]]:
@@ -131,7 +132,7 @@ class Component(ComponentXMPP):
 		self._envoy_user_cache.get(user.bare).set_affiliation(room, affiliation)
 		
 		# Handle event
-		self._envoy_call_event("join", user, room, nickname)
+		self._envoy_call_event("join", user, JID(room), nickname)
 		
 		# We can optimize this by updating the roster once and tracking state changes from then on
 		self._envoy_update_roster(room)
@@ -140,7 +141,7 @@ class Component(ComponentXMPP):
 		user = stanza["to"]
 		room = stanza["from"].bare
 		self._envoy_user_cache.get(user.bare).remove_room(room)
-		self._envoy_call_event("leave", user, room)
+		self._envoy_call_event("leave", user, JID(room))
 		# We can optimize this by updating the roster once and tracking state changes from then on
 		self._envoy_update_roster(room)
 	
@@ -214,6 +215,7 @@ class UserCache(object):
 				"Job Title": user.job_title,
 				"E-mail Address": user.email_address,
 				"Nickname": user.nickname,
+				"Mobile Number": user.mobile_number,
 				"Status": state.from_state(user.presence)
 			}
 			
@@ -237,6 +239,7 @@ class UserCacheItem(object):
 		self.job_title = ""
 		self.email_address = ""
 		self.nickname = ""
+		self.mobile_number = ""
 		
 	def update_presence(self, presence):
 		self.presence = presence
@@ -291,3 +294,6 @@ class UserCacheItem(object):
 			
 		if "nickname" in data:
 			self.nickname = data["nickname"]
+			
+		if "mobile_number" in data:
+			self.mobile_number = data["mobile_number"]
