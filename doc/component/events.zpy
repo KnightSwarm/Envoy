@@ -135,7 +135,7 @@
 		The full JID of the user that caused the highlight.
 	
 	recipient::
-		The full JID of the user that the highlight was targeted at.
+		The bare JID of the user that the highlight was targeted at.
 	
 	room::
 		The bare JID of the room that the highlight occurred in.
