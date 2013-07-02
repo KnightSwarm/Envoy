@@ -27,5 +27,18 @@
 	"components": [
 		"router",
 		"errorhandler"
-	]
+	],
+	"twilio": {
+		"sid": "",
+		"token": "",
+		"sender": "+15005550006"
+	},
+	"smtp": {
+		"host": "smtp.gmail.com",
+		"port": 587,
+		"tls": true,
+		"username": "your@email.com",
+		"password": "sekrit",
+		"sender": "notifications@your.service"
+	}
 }
