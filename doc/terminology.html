@@ -1,0 +1,161 @@
+<!doctype html>
+<html>
+	<head>
+		<style>
+			body {
+				background-color: #F5F5F5;
+				font-family: sans-serif;
+				margin-right: 40px;
+			}
+
+			h2, h3, h4, h5, h6, h7
+			{
+				margin-top: 16px;
+				margin-bottom: 4px;
+			}
+
+			.children { padding-left: 40px; }
+
+			.definition
+			{
+				font-weight: bold;
+				margin-bottom: 32px;
+			}
+
+			.example 
+			{ 
+				padding: 5px 6px;
+				font-weight: bold;
+				font-size: 15px;
+				background-color: #E6E6E6; 
+				margin-top: 11px;
+			}
+
+			.example > .children
+			{
+				padding-top: 11px;
+				padding-left: 10px;
+			}
+
+			.example > .children > h7
+			{
+				font-size: 13px;
+			}
+
+			h7
+			{
+				font-size: 14px;
+				font-weight: bold;
+				margin-bottom: 2px;
+			}
+
+			pre
+			{
+				margin-top: 0px;
+				padding: 6px 7px;
+				background-color: #D9D9D9;
+				font-weight: normal;
+				font-size: 13px;
+			}
+
+			dl
+			{
+				margin: 5px 0px;
+			}
+
+			dt
+			{
+				font-weight: bold;
+			}
+
+			dd
+			{
+				font-size: 14px;
+				font-weight: normal;
+				margin-left: 8px;
+			}
+			
+			dd > .children
+			{
+				font-size: 95%;
+			}
+			
+			dd > .children > dl > dd
+			{
+				margin-left: 13px;
+			}
+
+			.exclamation
+			{
+				padding: 7px 8px;
+				margin: 11px 0px;
+				background-color: #FFE9AA;
+				border: 1px solid yellow;
+				font-size: 15px;
+				font-weight: normal;
+			}
+
+			.text
+			{
+				font-size: 15px;
+				font-weight: normal;
+				margin-bottom: 14px;
+				margin-top: 10px;
+			}
+
+			.toc
+			{
+				border: 1px solid gray;
+				background-color: #E6E6E6;
+				padding: 8px 9px;
+				font-size: 15px;
+				margin-bottom: 12px;
+			}
+
+			.toc h2
+			{
+				margin: 0px 0px 3px 0px;
+				font-size: 19px;
+			}
+
+			.toc ul
+			{
+				margin-top: 0px;
+				margin-bottom: 0px;
+				padding-left: 25px;
+			}
+
+			.toc li
+			{
+				margin-bottom: 2px;
+			}
+
+			.toc .alternatives
+			{
+				font-size: 12px;
+			}
+
+			.toc a
+			{
+				color: #292722;
+			}
+
+			.toc a:hover
+			{
+				color: black;
+			}
+			
+			.fixed
+			{
+				font-family: monospace;
+				background-color: white;
+				padding: 1px 4px;
+				border: 1px solid silver;
+				border-radius: 4px;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="children"><h1>Terminology</h1><div class="text">Following is a list of terminology used in this documentation, and the explanation of what is meant with it.</div><div class="definition"><a name="Highlight">Highlight<br>Personal highlight <div class="children"><div class="text">A message containing text in the format of <span class="fixed">@nickname</span>, intended to alert the person with the specified nickname that a message is intended for them, or to draw their attention to it. This will trigger a visual hint in their client and, depending on circumstances, send out e-mail or SMS notifications.</div><div class="text">This term can also refer to the particular part of a message that is causing the alert, ie. the <span class="fixed">@nickname</span> part.</div></div></a></div><div class="definition"><a name="Globalhighlight">Global highlight <div class="children"><div class="text">A message containing the text <span class="fixed">@all</span>, intended to alert all members and participants of a chatroom that their attention is required. Often used for announcements or questions that are relevant to everyone present.</div><div class="text">This will trigger a visual hint in the client of every affected user and, depending on configuration, will notify them through e-mail or SMS.</div></div></a></div><div class="definition"><a name="Clientnotification">Client notification <div class="children"><div class="text">One or more visual hints in the client application of a user, to draw their attention to a certain message, room, or  conversation.</div><div class="text">This can entail things like a pop-up window in the corner of the screen, a text color or icon change for a tab, or a visually highlighted snippet of text in a conversation window.</div></div></a></div><div class="definition"><a name="Externalnotification">External notification <div class="children"><div class="text">A notification through an external service such as e-mail or SMS, intended to ensure that a conversation participant is aware of a (personal or global) highlight that occurred, even if they are not actively looking at their client or away from their desk.</div></div></a></div></div>
+	</body>
+</html>

@@ -1,0 +1,45 @@
+# Terminology
+
+Following is a list of terminology used in this documentation, and the
+explanation of what is meant with it.
+
+^ Highlight
+  Personal highlight
+
+	A message containing text in the format of `@nickname`, intended
+	to alert the person with the specified nickname that a message
+	is intended for them, or to draw their attention to it. This
+	will trigger a visual hint in their client and, depending on
+	circumstances, send out e-mail or SMS notifications.
+	
+	This term can also refer to the particular part of a message
+	that is causing the alert, ie. the `@nickname` part.
+	
+^ Global highlight
+
+	A message containing the text `@all`, intended to alert all
+	members and participants of a chatroom that their attention is
+	required. Often used for announcements or questions that are
+	relevant to everyone present.
+	
+	This will trigger a visual hint in the client of every affected
+	user and, depending on configuration, will notify them through
+	e-mail or SMS.
+	
+^ Client notification
+
+	One or more visual hints in the client application of a user, to
+	draw their attention to a certain message, room, or 
+	conversation.
+	
+	This can entail things like a pop-up window in the corner of the
+	screen, a text color or icon change for a tab, or a visually
+	highlighted snippet of text in a conversation window.
+	
+^ External notification
+
+	A notification through an external service such as e-mail or
+	SMS, intended to ensure that a conversation participant is aware
+	of a (personal or global) highlight that occurred, even if they
+	are not actively looking at their client or away from their
+	desk.
