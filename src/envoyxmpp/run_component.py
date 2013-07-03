@@ -180,7 +180,25 @@ class EnvoyComponent(Component):
 			email_recipient = self._envoy_user_cache.get(recipient).email_address
 			
 			# Now let's send emails.
-			self.send_email([(email_recipient, "Notification in Envoy", "%s highlighted you: %s" % (sender_name, body))])
+			# TODO: Add fancy HTML e-mails.
+			recipient_name = self._envoy_user_cache.get(recipient).first_name
+			
+			if is_private:
+				template_file = open("templates/pm.txt")
+				template = template_file.read()
+				template_file.close()
+				
+				subject = "%s sent you a private message" % (sender_name)
+				email_body = template.format(first_name=recipient_name, sender=sender_name, message=body)
+			else:
+				template_file = open("templates/highlight.txt")
+				template = template_file.read()
+				template_file.close()
+				
+				subject = "%s mentioned you in the room %s" % (sender_name, room.node)
+				email_body = template.format(first_name=recipient_name, sender=sender_name, room=room.node, message=body)
+			
+			self.send_email([(email_recipient, subject, email_body)])
 	
 	def send_email(self, emails):
 		# FIXME: Deal properly with older SMTP implementations that only support SSL and not STARTTLS.
