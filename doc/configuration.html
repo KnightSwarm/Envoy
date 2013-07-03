@@ -1,0 +1,161 @@
+<!doctype html>
+<html>
+	<head>
+		<style>
+			body {
+				background-color: #F5F5F5;
+				font-family: sans-serif;
+				margin-right: 40px;
+			}
+
+			h2, h3, h4, h5, h6, h7
+			{
+				margin-top: 16px;
+				margin-bottom: 4px;
+			}
+
+			.children { padding-left: 40px; }
+
+			.definition
+			{
+				font-weight: bold;
+				margin-bottom: 32px;
+			}
+
+			.example 
+			{ 
+				padding: 5px 6px;
+				font-weight: bold;
+				font-size: 15px;
+				background-color: #E6E6E6; 
+				margin-top: 11px;
+			}
+
+			.example > .children
+			{
+				padding-top: 11px;
+				padding-left: 10px;
+			}
+
+			.example > .children > h7
+			{
+				font-size: 13px;
+			}
+
+			h7
+			{
+				font-size: 14px;
+				font-weight: bold;
+				margin-bottom: 2px;
+			}
+
+			pre
+			{
+				margin-top: 0px;
+				padding: 6px 7px;
+				background-color: #D9D9D9;
+				font-weight: normal;
+				font-size: 13px;
+			}
+
+			dl
+			{
+				margin: 5px 0px;
+			}
+
+			dt
+			{
+				font-weight: bold;
+			}
+
+			dd
+			{
+				font-size: 14px;
+				font-weight: normal;
+				margin-left: 8px;
+			}
+			
+			dd > .children
+			{
+				font-size: 95%;
+			}
+			
+			dd > .children > dl > dd
+			{
+				margin-left: 13px;
+			}
+
+			.exclamation
+			{
+				padding: 7px 8px;
+				margin: 11px 0px;
+				background-color: #FFE9AA;
+				border: 1px solid yellow;
+				font-size: 15px;
+				font-weight: normal;
+			}
+
+			.text
+			{
+				font-size: 15px;
+				font-weight: normal;
+				margin-bottom: 14px;
+				margin-top: 10px;
+			}
+
+			.toc
+			{
+				border: 1px solid gray;
+				background-color: #E6E6E6;
+				padding: 8px 9px;
+				font-size: 15px;
+				margin-bottom: 12px;
+			}
+
+			.toc h2
+			{
+				margin: 0px 0px 3px 0px;
+				font-size: 19px;
+			}
+
+			.toc ul
+			{
+				margin-top: 0px;
+				margin-bottom: 0px;
+				padding-left: 25px;
+			}
+
+			.toc li
+			{
+				margin-bottom: 2px;
+			}
+
+			.toc .alternatives
+			{
+				font-size: 12px;
+			}
+
+			.toc a
+			{
+				color: #292722;
+			}
+
+			.toc a:hover
+			{
+				color: black;
+			}
+			
+			.fixed
+			{
+				font-family: monospace;
+				background-color: white;
+				padding: 1px 4px;
+				border: 1px solid silver;
+				border-radius: 4px;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="children"><h1>Configuring Envoy</h1><div class="text">All configuration for Envoy takes place in the <span class="fixed">config.json</span> file. By default, the code repository and packages include a  <span class="fixed">config.json.example</span> file, containing a template that you can use to set up your own configuration. This documentation page will explain all aspects of the configuration.</div><div class="text">Note that <span class="fixed">config.json</span> is parsed as JSON, and therefore requires all keys and string values to be quoted using double quotes. Numeric values, as well as booleans, are not quoted.</div><div class="text">If you run different parts of Envoy on different servers, you can still use the same <span class="fixed">config.json</span> on each of them - the configuration file format for every component of Envoy is identical.</div><dl><dt>database</dt><dd>This part of the configuration holds the information that is necessary to connect to and authenticate with your database.<div class="children"><dl><dt>driver</dt><dd>The database driver to use. Currently, only <span class="fixed">mysql</span> is supported.<div class="children"></div></dd></dl><dl><dt>hostname</dt><dd>The hostname of the database. If you run the database server on the same server as Envoy, this should be <span class="fixed">localhost</span>.<div class="children"></div></dd></dl><dl><dt>username</dt><dd>The username for the database user that Envoy should use.<div class="children"></div></dd></dl><dl><dt>password</dt><dd>The corresponding password.<div class="children"></div></dd></dl><dl><dt>database</dt><dd>The name of the database that should be used.<div class="children"></div></dd></dl></div></dd></dl><dl><dt>locale</dt><dd>This part of the configuration contains locale information.<div class="children"><div class="exclamation"><strong>Important:</strong> Except for the <span class="fixed">default_timezone</span> variable, you can skip this   section, and leave it set to its defaults. <div class="children"></div></div><dl><dt>path</dt><dd><em>API only.</em> The path where the locale files are stored.<div class="children"></div></dd></dl><dl><dt>extension</dt><dd><em>API only.</em> The file extension used for the locale files.<div class="children"></div></dd></dl><dl><dt>default_locale</dt><dd><em>API only.</em> The locale to use by default. This may affect both output language, and formatting of dates and numbers.<div class="children"></div></dd></dl><dl><dt>default_timezone</dt><dd>The timezone to use by default. Internally, all dates and times are stored in GMT. The <span class="fixed">default_timezone</span> (or any other timezone you may have configured elsewhere that overrides this setting) is used to determine in what timezone user-specified dates are, and in what timezone to show output dates.<div class="children"></div></dd></dl></div></dd></dl><dl><dt>memcache</dt><dd>This part of the configuration stores the settings for usage of memcache. Using memcache will greatly reduce the load on the API server (and it may be utilized at other points as well). It is not required to use Envoy, but is strongly recommended.<div class="children"><dl><dt>enabled</dt><dd>Whether to use memcache or not. Only enable this if you actually have <span class="fixed">memcached</span> installed and running, and you have the necessary client libraries (ie. php-memcache) installed.<div class="children"></div></dd></dl><dl><dt>compressed</dt><dd>Whether to turn on memcache compression in the API. This will reduce the RAM needed to keep your data in cache, but may incur a penalty in processing power and performance, depending on your hardware.<div class="children"></div></dd></dl><dl><dt>hostname</dt><dd>The hostname that your memcache server runs on.<div class="children"></div></dd></dl><dl><dt>port</dt><dd>The port that your memcache server runs on.<div class="children"></div></dd></dl></div></dd></dl><dl><dt>class_map</dt><dd>This part of the configuration is used for the internals of the API and maps 'types' to 'classes'.<div class="children"><div class="exclamation"><strong>Important:</strong> Unless you're planning on developing on Envoy, you can skip  this section entirely. <div class="children"></div></div></div></dd></dl><dl><dt>components</dt><dd>This part of the configuration is used to specify what extra framework modules have to be loaded for the API.<div class="children"><div class="exclamation"><strong>Important:</strong> Unless you're planning on developing on Envoy, you can skip this section entirely. If you <em>do</em> plan on developing on  Envoy, you probably still won't need to change it. <div class="children"></div></div></div></dd></dl><dl><dt>twilio</dt><dd>This section holds your authentication and number details for Twilio. You'll need to configure this to be able to send SMS notifications when idle users are highlighted or PMed.<div class="children"><dl><dt>sid</dt><dd>Your Twilio API SID.<div class="children"></div></dd></dl><dl><dt>token</dt><dd>Your Twilio API token.<div class="children"></div></dd></dl><dl><dt>sender</dt><dd>The Twilio number that you wish to send SMS notifications from.<div class="children"></div></dd></dl></div></dd></dl><dl><dt>smtp</dt><dd>This section holds your SMTP-related information. You will need to configure this part, to be able to send e-mail notifications.<div class="children"><dl><dt>hostname</dt><dd>The hostname of the SMTP server you wish to use.<div class="children"></div></dd></dl><dl><dt>port</dt><dd>The port of the SMTP server you wish to use. Note that to use TLS/SSL, you may need to pick a different port from the one you would use without encryption. Consult your system administrator, or the documentation of your SMTP provider.<div class="children"></div></dd></dl><dl><dt>tls</dt><dd>Whether to use TLS (or SSL) to encrypt the connection. This can be any of the following values:<div class="children"><dl><dt>required</dt><dd>Always use TLS. Fail if no TLS is available.<div class="children"></div></dd></dl><dl><dt>optional</dt><dd>Use TLS if it is available.<div class="children"></div></dd></dl><dl><dt>ssl</dt><dd>Use old-style SSL.<div class="children"></div></dd></dl><dl><dt>none</dt><dd>Don't use any form of encryption.<div class="children"></div></dd></dl></div></dd></dl><dl><dt>username</dt><dd>The username to use when authenticating with the SMTP server.<div class="children"></div></dd></dl><dl><dt>password</dt><dd>The corresponding password.<div class="children"></div></dd></dl><dl><dt>sender</dt><dd>The e-mail address to display as the sender of your notifications. Typically, this will be something along the lines of <span class="fixed">no-reply@domain.com</span> or <span class="fixed">notifications@domain.com</span>.<div class="children"></div></dd></dl></div></dd></dl><dl><dt>mock</dt><dd>This part of the configuration lets you set certain parts of the Envoy codebase to "mock mode", where they will pretend to do what they always do, but don't actually do anything. This is useful if, for example, you are testing things and don't want real notifications to be sent out.<div class="children"><dl><dt>sms</dt><dd>When set to <span class="fixed">true</span>, enables mock mode for SMS notifications. No actual SMS notifications will be sent, but they are still logged.<div class="children"></div></dd></dl><dl><dt>email</dt><dd>When set to <span class="fixed">true</span>, enables mock mode for e-mail notifications. No actual e-mails will be sent, but they are still logged.<div class="children"></div></dd></dl></div></dd></dl></div>
+	</body>
+</html>
