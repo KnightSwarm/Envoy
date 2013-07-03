@@ -175,8 +175,16 @@ class EnvoyComponent(Component):
 				sms_body = sms_prefix + sms_body
 				
 				try:
-					message = twilio_client.sms.messages.create(body=sms_body, to=sms_recipient, from_=configuration['twilio']['sender'])
-					logging.info("SMS sent to %s." % sms_recipient)
+					try:
+						send_sms = (configuration["mock"]["sms"] == False)
+					except KeyError, e:
+						send_sms = True
+						
+					if send_sms:
+						message = twilio_client.sms.messages.create(body=sms_body, to=sms_recipient, from_=configuration['twilio']['sender'])
+						logging.info("SMS sent to %s: %s" % (sms_recipient, sms_body))
+					else:
+						logging.info("Pretending to send SMS to %s: %s" % (sms_recipient, sms_body))
 				except TwilioRestException, e:
 					logging.error("An error occurred during sending of an SMS to %s: %s" % (sms_recipient, repr(e)))
 			else:
@@ -203,7 +211,15 @@ class EnvoyComponent(Component):
 				subject = "%s mentioned you in the room %s" % (sender_name, room.node)
 				email_body = template.format(first_name=recipient_name, sender=sender_name, room=room.node, message=body)
 			
-			self.send_email([(email_recipient, subject, email_body)])
+			try:
+				send_email = (configuration["mock"]["email"] == False)
+			except KeyError, e:
+				send_email = True
+				
+			if send_email:
+				self.send_email([(email_recipient, subject, email_body)])
+			else:
+				logging.info("Pretending to send e-mail to %s: %s" % (email_recipient, email_body))
 	
 	def send_email(self, emails):
 		# FIXME: Deal properly with older SMTP implementations that only support SSL and not STARTTLS.
@@ -229,7 +245,7 @@ class EnvoyComponent(Component):
 				
 				message = Message(author=sender, to=recipient, subject=subject, plain=body)
 				mailer.send(message)
-				logging.info("E-mail sent to %s." % recipient)
+				logging.info("E-mail sent to %s: %s" % (recipient, body))
 			except Exception, e:
 				logging.error("An error occurred during sending of an e-mail to %s: %s" % (recipient, repr(e)))
 			
