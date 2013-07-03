@@ -115,7 +115,11 @@ class EnvoyComponent(Component):
 	def on_private_message(self, sender, recipient, body):
 		self._envoy_log_event(datetime.now(), sender, recipient, self.event_types["pm"], body)
 		print "%s sent private message to %s: '%s'" % (sender, recipient, body)
-		self.notify_if_idle(sender, recipient.bare, "", body, "")
+		
+		# We will only send a notification if the user is not using OTR. Sending encrypted gibberish
+		# wouldn't make any sense.
+		if not body.startswith("?OTR:"):
+			self.notify_if_idle(sender, recipient.bare, "", body, "")
 	
 	def on_group_highlight(self, sender, recipient, room, body, highlight):
 		print "%s highlighted %s in %s in a channel message: %s (highlighted content is %s)" % (sender, recipient, room, body, highlight)
