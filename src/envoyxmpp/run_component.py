@@ -1,6 +1,6 @@
-import logging, json, oursql, os, smtplib
+import logging, json, oursql, os
 from datetime import datetime
-from email.mime.text import MIMEText
+from marrow.mailer import Message, Mailer
 
 from twilio import TwilioRestException
 from twilio.rest import TwilioRestClient
@@ -184,20 +184,19 @@ class EnvoyComponent(Component):
 	
 	def send_email(self, emails):
 		# FIXME: Deal properly with older SMTP implementations that only support SSL and not STARTTLS.
-		session = smtplib.SMTP(configuration['smtp']['host'], configuration['smtp']['port'])
-		session.ehlo()
+		mailer = Mailer({
+			"manager.use": "immediate",
+			"transport.use": "smtp",
+			"transport.host": configuration['smtp']['hostname'],
+			"transport.port": configuration['smtp']['port'],
+			"transport.tls": configuration['smtp']['tls'],
+			"transport.username": configuration['smtp']['username'],
+			"transport.password": configuration['smtp']['password'],
+			"transport.max_messages_per_connection": 5
+		})
 		
-		# If the configuration indicates the use of TLS, we will issue a STARTTLS
-		# command, and send another EHLO.
-		try:
-			if configuration['smtp']['tls'] == True:
-				session.starttls()
-				session.ehlo()
-		except KeyError, e:
-			pass
-			
-		session.login(configuration['smtp']['username'], configuration['smtp']['password'])
-		
+		mailer.start()
+
 		# FIXME: Exceptions when the below key doesn't exist, are silently eaten?
 		sender = configuration['smtp']['sender']
 		
@@ -205,18 +204,13 @@ class EnvoyComponent(Component):
 			try:
 				recipient, subject, body = email
 				
-				message = MIMEText(body)
-				message['Subject'] = subject
-				message['From'] = sender
-				message['To'] = recipient
-				
-				# FIXME: This doesn't work, for unclear reasons.
-				print session.sendmail(sender, recipient, message.as_string())
+				message = Message(author=sender, to=recipient, subject=subject, plain=body)
+				mailer.send(message)
 				logging.info("E-mail sent to %s." % recipient)
 			except Exception, e:
 				logging.error("An error occurred during sending of an e-mail to %s: %s" % (recipient, repr(e)))
 			
-		session.quit()
+		mailer.stop()
 	
 	# Envoy uses override methods for the user presence tracking feature in
 	# the XEP-0045 plugin. Instead of storing the presences in memory, they

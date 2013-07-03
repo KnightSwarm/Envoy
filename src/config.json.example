@@ -34,9 +34,9 @@
 		"sender": "+15005550006"
 	},
 	"smtp": {
-		"host": "smtp.gmail.com",
+		"hostname": "smtp.gmail.com",
 		"port": 587,
-		"tls": true,
+		"tls": "required",
 		"username": "your@email.com",
 		"password": "sekrit",
 		"sender": "notifications@your.service"
