@@ -8,6 +8,8 @@ from twilio.rest import TwilioRestClient
 from component import Component
 from util import state
 
+from sleekxmpp.exceptions import IqError
+
 def get_relative_path(path):
 	my_path = os.path.dirname(os.path.abspath(__file__))
 	return os.path.normpath(os.path.join(my_path, path))
@@ -120,6 +122,12 @@ class EnvoyComponent(Component):
 		# wouldn't make any sense.
 		if not body.startswith("?OTR:"):
 			self.notify_if_idle(sender, recipient.bare, "", body, "")
+			
+		# If development mode is turned on, and the message is directed at the component itself,
+		# follow up on that.
+		if configuration["development_mode"] == True:
+			if recipient == self.boundjid:
+				self.handle_development_command(sender, recipient, body)
 	
 	def on_group_highlight(self, sender, recipient, room, body, highlight):
 		print "%s highlighted %s in %s in a channel message: %s (highlighted content is %s)" % (sender, recipient, room, body, highlight)
@@ -250,6 +258,13 @@ class EnvoyComponent(Component):
 				logging.error("An error occurred during sending of an e-mail to %s: %s" % (recipient, repr(e)))
 			
 		mailer.stop()
+	
+	def handle_development_command(self, sender, recipient, body):
+		if body.startswith("$"):
+			try:
+				exec body[1:].strip() in {"self": self}
+			except IqError, e:
+				logging.error("IqError: %s" % e.iq)
 	
 	# Envoy uses override methods for the user presence tracking feature in
 	# the XEP-0045 plugin. Instead of storing the presences in memory, they

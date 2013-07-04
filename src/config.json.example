@@ -44,5 +44,6 @@
 	"mock": {
 		"sms": false,
 		"email": false
-	}
+	},
+	"development_mode": false
 }
