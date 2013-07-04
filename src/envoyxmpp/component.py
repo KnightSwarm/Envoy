@@ -83,7 +83,8 @@ class Component(ComponentXMPP):
 					affected_users = set(self._envoy_user_cache.find_by_room_presence(room) +
 					                  self._envoy_user_cache.find_by_room_membership(room))
 					for user in affected_users:
-						self._envoy_call_event("group_highlight", stanza["from"], JID(user.jid), JID(room), stanza["body"], highlight)
+						if str(user.jid) != str(stanza["from"].bare):
+							self._envoy_call_event("group_highlight", stanza["from"], JID(user.jid), JID(room), stanza["body"], highlight)
 				else:
 					# Highlight one particular nickname
 					for user in self._envoy_user_cache.find_nickname(highlight):
