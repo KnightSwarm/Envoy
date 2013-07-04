@@ -1,0 +1,115 @@
+# XEP-0045 Plugin: Multi-User Chat
+
+The XEP-0045 plugin for SleekXMPP handles interaction with XMPP MUC
+rooms. This is (partial) documentation for the new version of this
+plugin, which can currently be found in the `new_muc` branch of the main
+SleekXMPP repository. It is not yet available in a stable release.
+
+## Plugin methods
+
+^ xmpp['xep-0045'].get_rooms(`ifrom=`, `jid=`):
+
+	Retrieves a list of rooms from the specified XMPP conference
+	server.
+	
+	ifrom::
+		Keyword argument. This argument indicates the sender of
+		the request, and must be a JID. It can also just be the
+		JID of your component (accessible via `xmpp.boundjid`).
+		
+	jid::
+		Keyword argument. The conference server to ask for
+		a room list. This is usually a value in the form of
+		`conference.service.com`.
+		
+^ xmpp['xep-0045'].get_users(`room`, `ifrom=`, `affiliation=`, `role=`)
+
+	Retrieves a list of users with the given affiliation or role in
+	the room.
+	
+	! You must specify either an affiliation or a role to filter by!
+	  Sending a 'blank' request will not work.
+	
+	room::
+		The room to retrieve users for.
+		
+	ifrom::
+		Keyword argument. This argument indicates the sender of
+		the request, and must be a JID. It can also just be the
+		JID of your component (accessible via `xmpp.boundjid`).
+		
+	affiliation::
+		**Optional.** The affiliation to filter the userlist
+		by. Only users with the given affiliation will be
+		returned.
+		
+		member::
+			A user that is in the member list for a room.
+			
+		admin::
+			A user that has administrative privileges in
+			a room.
+			
+		owner::
+			The owner of a room. Can modify staff lists.
+		
+	role::
+		**Optional.** The role to filter the userlist by. Only
+		users with the given role will be returned.
+		
+		visitor::
+			A user that is present in a moderated room, but
+			does not have 'voice'.
+			
+		participant::
+			A user that is present in an unmoderated room,
+			or a user that is present in a moderated room
+			and has been granted voice.
+			
+		moderator::
+			A user that has certain channel management
+			privileges (eg. kicking users).
+
+^ xmpp['xep-0045'].set_affiliation(`room`, `jid`, `affiliation`, `reason=`, `ifrom=`)
+
+	Changes the affiliation for a given user in a given room.
+	
+	room::
+		The room to change the affiliation for.
+		
+	jid::
+		The JID of the user whose affiliation should be changed.
+		
+	affiliation::
+		The new affiliation to set.
+		
+	reason::
+		**Optional.** Keyword argument. The reason for the
+		affiliation change.
+		
+	ifrom::
+		Keyword argument. This argument indicates the sender of
+		the request, and must be a JID. It can also just be the
+		JID of your component (accessible via `xmpp.boundjid`).
+
+^ xmpp['xep-0045'].set_role(`room`, `jid`, `role`, `reason=`, `ifrom=`)
+
+	Changes the role for a given user in a given room.
+	
+	room::
+		The room to change the role for.
+		
+	jid::
+		The JID of the user whose role should be changed.
+		
+	role::
+		The new role to set.
+		
+	reason::
+		**Optional.** Keyword argument. The reason for the
+		role change.
+		
+	ifrom::
+		Keyword argument. This argument indicates the sender of
+		the request, and must be a JID. It can also just be the
+		JID of your component (accessible via `xmpp.boundjid`).
