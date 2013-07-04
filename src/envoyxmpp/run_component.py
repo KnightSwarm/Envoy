@@ -262,7 +262,8 @@ class EnvoyComponent(Component):
 	def handle_development_command(self, sender, recipient, body):
 		if body.startswith("$"):
 			try:
-				exec body[1:].strip() in {"self": self}
+				output = eval(body[1:].strip(), {"self": self})
+				self.send_message(mto=sender, mbody=unicode(output))
 			except IqError, e:
 				logging.error("IqError: %s" % e.iq)
 	
