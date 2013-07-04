@@ -80,7 +80,7 @@ class Component(ComponentXMPP):
 			for highlight in highlights:
 				if highlight == "all":
 					# Highlight everyone in the room
-					affected_users = (self._envoy_user_cache.find_by_room_presence(room) +
+					affected_users = set(self._envoy_user_cache.find_by_room_presence(room) +
 					                  self._envoy_user_cache.find_by_room_membership(room))
 					for user in affected_users:
 						self._envoy_call_event("group_highlight", stanza["from"], JID(user.jid), JID(room), stanza["body"], highlight)
@@ -193,7 +193,13 @@ class UserCache(object):
 			
 	def find_nickname(self, nickname):
 		return [user for jid, user in self.cache.iteritems() if user.nickname == nickname][:1]
-		
+	
+	def find_by_room_presence(self, room):
+		return [user for jid, user in self.cache.iteritems() if room in user.rooms]
+	
+	def find_by_room_membership(self, room):
+		return [user for jid, user in self.cache.iteritems() if room in user.affiliations and user.affiliations[room] != "none" and user.affiliations[room] != "outcast"]
+	
 	def get_debug_tree(self):
 		output = "Debug tree\n"
 		
@@ -240,7 +246,13 @@ class UserCacheItem(object):
 		self.email_address = ""
 		self.nickname = ""
 		self.mobile_number = ""
+	
+	def __eq__(self, other):
+		return (str(self.jid) == str(other.jid))
 		
+	def __hash__(self):
+		return hash(("jid", str(self.jid)))
+	
 	def update_presence(self, presence):
 		self.presence = presence
 		
