@@ -7,7 +7,7 @@ SleekXMPP repository. It is not yet available in a stable release.
 
 ## Plugin methods
 
-^ xmpp['xep-0045'].get_rooms(`ifrom=`, `jid=`):
+^ xmpp['xep_0045'].get_rooms(`ifrom=`, `jid=`):
 
 	Retrieves a list of rooms from the specified XMPP conference
 	server.
@@ -22,7 +22,7 @@ SleekXMPP repository. It is not yet available in a stable release.
 		a room list. This is usually a value in the form of
 		`conference.service.com`.
 		
-^ xmpp['xep-0045'].get_users(`room`, `ifrom=`, `affiliation=`, `role=`)
+^ xmpp['xep_0045'].get_users(`room`, `ifrom=`, `affiliation=`, `role=`)
 
 	Retrieves a list of users with the given affiliation or role in
 	the room.
@@ -70,7 +70,7 @@ SleekXMPP repository. It is not yet available in a stable release.
 			A user that has certain channel management
 			privileges (eg. kicking users).
 
-^ xmpp['xep-0045'].set_affiliation(`room`, `jid`, `affiliation`, `reason=`, `ifrom=`)
+^ xmpp['xep_0045'].set_affiliation(`room`, `jid`, `affiliation`, `reason=`, `ifrom=`)
 
 	Changes the affiliation for a given user in a given room.
 	
@@ -92,7 +92,7 @@ SleekXMPP repository. It is not yet available in a stable release.
 		the request, and must be a JID. It can also just be the
 		JID of your component (accessible via `xmpp.boundjid`).
 
-^ xmpp['xep-0045'].set_role(`room`, `jid`, `role`, `reason=`, `ifrom=`)
+^ xmpp['xep_0045'].set_role(`room`, `jid`, `role`, `reason=`, `ifrom=`)
 
 	Changes the role for a given user in a given room.
 	
