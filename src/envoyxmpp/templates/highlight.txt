@@ -1,0 +1,5 @@
+Hi {first_name},
+
+{sender} just mentioned you in the room {room}, but you seem to be away:
+
+> {message}

@@ -1,0 +1,161 @@
+<!doctype html>
+<html>
+	<head>
+		<style>
+			body {
+				background-color: #F5F5F5;
+				font-family: sans-serif;
+				margin-right: 40px;
+			}
+
+			h2, h3, h4, h5, h6, h7
+			{
+				margin-top: 16px;
+				margin-bottom: 4px;
+			}
+
+			.children { padding-left: 40px; }
+
+			.definition
+			{
+				font-weight: bold;
+				margin-bottom: 32px;
+			}
+
+			.example 
+			{ 
+				padding: 5px 6px;
+				font-weight: bold;
+				font-size: 15px;
+				background-color: #E6E6E6; 
+				margin-top: 11px;
+			}
+
+			.example > .children
+			{
+				padding-top: 11px;
+				padding-left: 10px;
+			}
+
+			.example > .children > h7
+			{
+				font-size: 13px;
+			}
+
+			h7
+			{
+				font-size: 14px;
+				font-weight: bold;
+				margin-bottom: 2px;
+			}
+
+			pre
+			{
+				margin-top: 0px;
+				padding: 6px 7px;
+				background-color: #D9D9D9;
+				font-weight: normal;
+				font-size: 13px;
+			}
+
+			dl
+			{
+				margin: 5px 0px;
+			}
+
+			dt
+			{
+				font-weight: bold;
+			}
+
+			dd
+			{
+				font-size: 14px;
+				font-weight: normal;
+				margin-left: 8px;
+			}
+			
+			dd > .children
+			{
+				font-size: 95%;
+			}
+			
+			dd > .children > dl > dd
+			{
+				margin-left: 13px;
+			}
+
+			.exclamation
+			{
+				padding: 7px 8px;
+				margin: 11px 0px;
+				background-color: #FFE9AA;
+				border: 1px solid yellow;
+				font-size: 15px;
+				font-weight: normal;
+			}
+
+			.text
+			{
+				font-size: 15px;
+				font-weight: normal;
+				margin-bottom: 14px;
+				margin-top: 10px;
+			}
+
+			.toc
+			{
+				border: 1px solid gray;
+				background-color: #E6E6E6;
+				padding: 8px 9px;
+				font-size: 15px;
+				margin-bottom: 12px;
+			}
+
+			.toc h2
+			{
+				margin: 0px 0px 3px 0px;
+				font-size: 19px;
+			}
+
+			.toc ul
+			{
+				margin-top: 0px;
+				margin-bottom: 0px;
+				padding-left: 25px;
+			}
+
+			.toc li
+			{
+				margin-bottom: 2px;
+			}
+
+			.toc .alternatives
+			{
+				font-size: 12px;
+			}
+
+			.toc a
+			{
+				color: #292722;
+			}
+
+			.toc a:hover
+			{
+				color: black;
+			}
+			
+			.fixed
+			{
+				font-family: monospace;
+				background-color: white;
+				padding: 1px 4px;
+				border: 1px solid silver;
+				border-radius: 4px;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="children"><h1>UserCacheItem</h1><div class="text">A UserCacheItem is an object representing a particular user in the UserCache. It contains status and vCard information about that user.</div><h2>Methods</h2><div class="definition"><a name="update_presencepresence">update_presence(<span class="fixed">presence</span>) <div class="children"><div class="text">Updates the presence for this user.</div><dl><dt>presence</dt><dd>The presence to set. Must be a <a href="states.html">state</a>.<div class="children"></div></dd></dl></div></a></div><div class="definition"><a name="add_roomroom">add_room(<span class="fixed">room</span>) <div class="children"><div class="text">Updates the cache to indicate that a user is present in a room.</div><dl><dt>room</dt><dd>The bare JID of the room that the user is present in.<div class="children"></div></dd></dl></div></a></div><div class="definition"><a name="remove_roomroom">remove_room(<span class="fixed">room</span>) <div class="children"><div class="text">Updates the cache to indicate that a user is no longer present in a room. When a room is indicated that the cache didn't know about, it will be silently ignored.</div><dl><dt>room</dt><dd>The bare JID of the room that the user is no longer present in.<div class="children"></div></dd></dl></div></a></div><div class="definition"><a name="in_roomroom">in_room(<span class="fixed">room</span>) <div class="children"><div class="text">Returns a boolean, indicating whether the user is present in the given room.</div><dl><dt>room</dt><dd>The bare JID of the room to check for.<div class="children"></div></dd></dl></div></a></div><div class="definition"><a name="set_affiliationroomaffiliation">set_affiliation(<span class="fixed">room</span>, <span class="fixed">affiliation</span>) <div class="children"><div class="text">Updates the cache to indicate that the users affiliation to a room has changed. If the new affiliation was already known to the cache, nothing will change.</div><dl><dt>room</dt><dd>The room that the affiliation change applies to.<div class="children"></div></dd></dl><dl><dt>affiliation</dt><dd>The new affiliation. Must be a string, containing one of the standard XMPP room affiliations (owner, member, admin, outcast, none).<div class="children"></div></dd></dl></div></a></div><div class="definition"><a name="get_affiliationroom">get_affiliation(<span class="fixed">room</span>) <div class="children"><div class="text">Returns the room affiliation for a user. If no affiliation is known, 'none' will be returned.</div><dl><dt>room</dt><dd>The room to retrieve the affiliation for.<div class="children"></div></dd></dl><h3>Return values</h3><dl><dt>none</dt><dd>The user is not affiliated to the room (or the affiliation is unknown, and no affiliation should be assumed).<div class="children"></div></dd></dl><dl><dt>outcast</dt><dd>The user is banned from the room.<div class="children"></div></dd></dl><dl><dt>member</dt><dd>The user is a member of the room.<div class="children"></div></dd></dl><dl><dt>admin</dt><dd>The user is an administrator in the room and has access to administrative features.<div class="children"></div></dd></dl><dl><dt>owner</dt><dd>The user is the owner of the room.<div class="children"></div></dd></dl></div></a></div><div class="definition"><a name="is_affiliated_toroom">is_affiliated_to(<span class="fixed">room</span>) <div class="children"><div class="text">Returns a boolean indicating whether an affiliation between the room and the user exists, that is not 'none' or 'outcast' (banned). To check whether a user has the 'outcast' affiliation, use the <span class="fixed">is_banned_from</span> method.</div><dl><dt>room</dt><dd>The room to check the affiliation for.<div class="children"></div></dd></dl></div></a></div><div class="definition"><a name="is_guest_inroom">is_guest_in(<span class="fixed">room</span>) <div class="children"><div class="text">Returns a boolean indicating whether a user is a guest in a  room; that is, whether they have the 'none' affiliation.</div><div class="exclamation"><strong>Important:</strong> This will always return True if either the affiliation is   'none' or no affiliation is known. Whether the user is   actually present in the room, is disregarded entirely! If you   want to check whether a user is *present* in a room as a   guest, you will have to use the <span class="fixed">in_room</span> method separately. <div class="children"></div></div><dl><dt>room</dt><dd>The room to verify the 'none' affiliation for.<div class="children"></div></dd></dl></div></a></div><div class="definition"><a name="is_banned_fromroom">is_banned_from(<span class="fixed">room</span>) <div class="children"><div class="text">Returns a boolean indicating whether a user is banned from a room; that is, whether their affiliation is 'outcast'.</div><dl><dt>room</dt><dd>The room to check the 'outcast' affiliation for.<div class="children"></div></dd></dl></div></a></div><div class="definition"><a name="update_vcarddata">update_vcard(<span class="fixed">data</span>) <div class="children"><div class="text">Updates the vCard information using the specified data.</div><div class="exclamation"><strong>Important:</strong> The UserCache currently does *not* automatically keep track of   vCard updates broadcast by users. It assumes that a pre-set   vCard is specified by your implementation, and that your   implementation makes the UserCache aware of this by using this   method. <div class="children"></div></div><dl><dt>data</dt><dd>A dictionary containing several keys. All keys are optional; only the specified keys will be updated.<div class="children"><dl><dt>first_name</dt><dd>The first name of the user.<div class="children"></div></dd></dl><dl><dt>last_name</dt><dd>The last name of the user.<div class="children"></div></dd></dl><dl><dt>job_title</dt><dd>The job title of the user.<div class="children"></div></dd></dl><dl><dt>nickname</dt><dd>The nickname of the user. This is the name that is typically displayed in contact lists, and is often used for highlights.<div class="children"></div></dd></dl><dl><dt>email_address</dt><dd>The e-mail address of the user.<div class="children"></div></dd></dl></div></dd></dl></div></a></div></div>
+	</body>
+</html>

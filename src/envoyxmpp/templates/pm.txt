@@ -1,0 +1,5 @@
+Hi {first_name},
+
+{sender} just sent you a private message, but you seem to be away:
+
+> {message}

@@ -1,0 +1,179 @@
+# Configuring Envoy
+
+All configuration for Envoy takes place in the `config.json` file. By
+default, the code repository and packages include a 
+`config.json.example` file, containing a template that you can use to
+set up your own configuration. This documentation page will explain all
+aspects of the configuration.
+
+Note that `config.json` is parsed as JSON, and therefore requires all
+keys and string values to be quoted using double quotes. Numeric values,
+as well as booleans, are not quoted.
+
+If you run different parts of Envoy on different servers, you can still
+use the same `config.json` on each of them - the configuration file
+format for every component of Envoy is identical.
+
+database::
+	This part of the configuration holds the information that is
+	necessary to connect to and authenticate with your database.
+	
+	driver::
+		The database driver to use. Currently, only `mysql` is
+		supported.
+	
+	hostname::
+		The hostname of the database. If you run the database
+		server on the same server as Envoy, this should be
+		`localhost`.
+		
+	username::
+		The username for the database user that Envoy should
+		use.
+		
+	password::
+		The corresponding password.
+		
+	database::
+		The name of the database that should be used.
+		
+locale::
+	This part of the configuration contains locale information.
+	
+	! Except for the `default_timezone` variable, you can skip this
+	  section, and leave it set to its defaults.
+	
+	path::
+		**API only.** The path where the locale files are
+		stored.
+		
+	extension::
+		**API only.** The file extension used for the locale
+		files.
+		
+	default_locale::
+		**API only.** The locale to use by default. This may
+		affect both output language, and formatting of dates and
+		numbers.
+		
+	default_timezone::
+		The timezone to use by default. Internally, all dates
+		and times are stored in GMT. The `default_timezone` (or
+		any other timezone you may have configured elsewhere
+		that overrides this setting) is used to determine in
+		what timezone user-specified dates are, and in what
+		timezone to show output dates.
+		
+memcache::
+	This part of the configuration stores the settings for usage of
+	memcache. Using memcache will greatly reduce the load on the
+	API server (and it may be utilized at other points as well). It
+	is not required to use Envoy, but is strongly recommended.
+	
+	enabled::
+		Whether to use memcache or not. Only enable this if you
+		actually have `memcached` installed and running, and you
+		have the necessary client libraries (ie. php-memcache)
+		installed.
+		
+	compressed::
+		Whether to turn on memcache compression in the API. This
+		will reduce the RAM needed to keep your data in cache,
+		but may incur a penalty in processing power and
+		performance, depending on your hardware.
+		
+	hostname::
+		The hostname that your memcache server runs on.
+		
+	port::
+		The port that your memcache server runs on.
+		
+class_map::
+	This part of the configuration is used for the internals of the
+	API and maps 'types' to 'classes'.
+	
+	! Unless you're planning on developing on Envoy, you can skip 
+	this section entirely.
+	
+components::
+	This part of the configuration is used to specify what extra
+	framework modules have to be loaded for the API.
+	
+	! Unless you're planning on developing on Envoy, you can skip
+	this section entirely. If you **do** plan on developing on 
+	Envoy, you probably still won't need to change it.
+	
+twilio::
+	This section holds your authentication and number details for
+	Twilio. You'll need to configure this to be able to send SMS
+	notifications when idle users are highlighted or PMed.
+	
+	sid::
+		Your Twilio API SID.
+		
+	token::
+		Your Twilio API token.
+		
+	sender::
+		The Twilio number that you wish to send SMS
+		notifications from.
+		
+smtp::
+	This section holds your SMTP-related information. You will need
+	to configure this part, to be able to send e-mail notifications.
+	
+	hostname::
+		The hostname of the SMTP server you wish to use.
+		
+	port::
+		The port of the SMTP server you wish to use. Note that
+		to use TLS/SSL, you may need to pick a different port
+		from the one you would use without encryption. Consult
+		your system administrator, or the documentation of your
+		SMTP provider.
+		
+	tls::
+		Whether to use TLS (or SSL) to encrypt the connection.
+		This can be any of the following values:
+		
+		required::
+			Always use TLS. Fail if no TLS is available.
+			
+		optional::
+			Use TLS if it is available.
+			
+		ssl::
+			Use old-style SSL.
+			
+		none::
+			Don't use any form of encryption.
+			
+	username::
+		The username to use when authenticating with the SMTP
+		server.
+		
+	password::
+		The corresponding password.
+		
+	sender::
+		The e-mail address to display as the sender of your
+		notifications. Typically, this will be something along
+		the lines of `no-reply@domain.com` or
+		`notifications@domain.com`.
+
+mock::
+	This part of the configuration lets you set certain parts of the
+	Envoy codebase to "mock mode", where they will pretend to do
+	what they always do, but don't actually do anything. This is
+	useful if, for example, you are testing things and don't want
+	real notifications to be sent out.
+	
+	sms::
+		When set to `true`, enables mock mode for SMS
+		notifications. No actual SMS notifications will be sent,
+		but they are still logged.
+		
+	email::
+		When set to `true`, enables mock mode for e-mail
+		notifications. No actual e-mails will be sent, but they
+		are still logged.

@@ -1,0 +1,73 @@
+# States
+
+States are constant-like values that indicate the current presence of a
+user. State-related methods and variables can be accessed through the
+`envoyxmpp.util.state` module.
+
+## Methods
+
+^ envoyxmpp.util.state.from_string(`string`)
+
+	Returns one of the state values listed below, depending on the
+	input string.
+	
+	string::
+		A string, according to the XMPP standard, representing
+		the desired presence. 'unknown' is also a valid input.
+		
+	### Error conditions
+	
+	Throws a `ValueException` if an invalid string is supplied (ie.
+	not part of the XMPP specification, and not 'unknown').
+
+^ envoyxmpp.util.state.from_state(`state`)
+
+	Turns a valid state value back into a string, containing either
+	the string as specified in the XMPP specification, or 'unknown'
+	(if the input was `envoyxmpp.util.state.unknown`).
+	
+	state::
+		One of the `envoyxmpp.util.state` values.
+		
+	### Error conditions
+	
+	Throws a `ValueException` if an invalid state is supplied (ie.
+	not listed below).
+	
+## Variables
+
+^ envoyxmpp.util.state.AVAILABLE
+
+	Represents the 'available' XMPP presence. This is the typical
+	'Online' status with no special attributes.
+	
+^ envoyxmpp.util.state.AWAY
+
+	Represents the 'away' XMPP presence.
+	
+^ envoyxmpp.util.state.XA
+	
+	Represents the 'xa' (Extended Away) XMPP presence.
+	
+^ envoyxmpp.util.state.DND
+
+	Represents the 'dnd' (Do Not Disturb) XMPP presence, also known
+	as 'Busy'.
+	
+^ envoyxmpp.util.state.CHAT
+
+	Represents the 'chat' (Chatty) XMPP presence. This indicates the
+	user is particularly interested in having a conversation. This
+	may be treated like 'available' in work environments.
+	
+^ envoyxmpp.util.state.UNAVAILABLE
+
+	Represents the 'unavailable' XMPP presence, also interpreted as
+	'Offline'. Indicates that a user is not currently logged on, or
+	that they are not joined to a particular room.
+	
+^ envoyxmpp.util.state.UNKNOWN
+
+	An extra value that indicates the presence of a user is unknown.
+	This does not represent an XMPP presence, rather it indicates
+	the **absence** of one. Represented in string form as 'unknown'.

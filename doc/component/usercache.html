@@ -1,0 +1,161 @@
+<!doctype html>
+<html>
+	<head>
+		<style>
+			body {
+				background-color: #F5F5F5;
+				font-family: sans-serif;
+				margin-right: 40px;
+			}
+
+			h2, h3, h4, h5, h6, h7
+			{
+				margin-top: 16px;
+				margin-bottom: 4px;
+			}
+
+			.children { padding-left: 40px; }
+
+			.definition
+			{
+				font-weight: bold;
+				margin-bottom: 32px;
+			}
+
+			.example 
+			{ 
+				padding: 5px 6px;
+				font-weight: bold;
+				font-size: 15px;
+				background-color: #E6E6E6; 
+				margin-top: 11px;
+			}
+
+			.example > .children
+			{
+				padding-top: 11px;
+				padding-left: 10px;
+			}
+
+			.example > .children > h7
+			{
+				font-size: 13px;
+			}
+
+			h7
+			{
+				font-size: 14px;
+				font-weight: bold;
+				margin-bottom: 2px;
+			}
+
+			pre
+			{
+				margin-top: 0px;
+				padding: 6px 7px;
+				background-color: #D9D9D9;
+				font-weight: normal;
+				font-size: 13px;
+			}
+
+			dl
+			{
+				margin: 5px 0px;
+			}
+
+			dt
+			{
+				font-weight: bold;
+			}
+
+			dd
+			{
+				font-size: 14px;
+				font-weight: normal;
+				margin-left: 8px;
+			}
+			
+			dd > .children
+			{
+				font-size: 95%;
+			}
+			
+			dd > .children > dl > dd
+			{
+				margin-left: 13px;
+			}
+
+			.exclamation
+			{
+				padding: 7px 8px;
+				margin: 11px 0px;
+				background-color: #FFE9AA;
+				border: 1px solid yellow;
+				font-size: 15px;
+				font-weight: normal;
+			}
+
+			.text
+			{
+				font-size: 15px;
+				font-weight: normal;
+				margin-bottom: 14px;
+				margin-top: 10px;
+			}
+
+			.toc
+			{
+				border: 1px solid gray;
+				background-color: #E6E6E6;
+				padding: 8px 9px;
+				font-size: 15px;
+				margin-bottom: 12px;
+			}
+
+			.toc h2
+			{
+				margin: 0px 0px 3px 0px;
+				font-size: 19px;
+			}
+
+			.toc ul
+			{
+				margin-top: 0px;
+				margin-bottom: 0px;
+				padding-left: 25px;
+			}
+
+			.toc li
+			{
+				margin-bottom: 2px;
+			}
+
+			.toc .alternatives
+			{
+				font-size: 12px;
+			}
+
+			.toc a
+			{
+				color: #292722;
+			}
+
+			.toc a:hover
+			{
+				color: black;
+			}
+			
+			.fixed
+			{
+				font-family: monospace;
+				background-color: white;
+				padding: 1px 4px;
+				border: 1px solid silver;
+				border-radius: 4px;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="children"><h1>UserCache</h1><div class="text">The UserCache is a simple object that keeps track of status changes, room presence changes, affiliation changes, vCard information, etc. for use in the internals of the component. It can also be addressed by your custom implementation directly.</div><div class="text">The component will ensure that the cache remains up to date based on  the stanzas it sees, and uses <a href="usercacheitem.html">UserCacheItem</a> objects to represent individual tracked users.</div><div class="exclamation"><strong>Important:</strong> The UserCache operates entirely on bare JIDs. Using full JIDs to   retrieve or update information will lead to inconsistent states! <div class="children"></div></div><h2>Methods</h2><div class="definition"><a name="touchjid">touch(<span class="fixed">jid</span>) <div class="children"><div class="text">If no UserCacheItem representing the user is present in the UserCache yet, this method will be created. If one already exists, no changes will occur. Used to ensure that a user is represented before calling their UserCacheItem object.</div><div class="text">This is roughly the equivalent of the <span class="fixed">touch</span> command on UNIX-style systems.</div><dl><dt>jid</dt><dd>The bare JID of the user you wish to 'touch'.<div class="children"></div></dd></dl></div></a></div><div class="definition"><a name="getjid">get(<span class="fixed">jid</span>) <div class="children"><div class="text">Returns the UserCacheItem for the given bare JID, creating one if it doesn't exist yet.</div><div class="text">This function will *always* return a UserCacheItem object, even if it's a newly created one without any useful information in  it.</div><dl><dt>jid</dt><dd>The bare JID to retrieve the UserCacheItem for.<div class="children"></div></dd></dl></div></a></div><div class="definition"><a name="find_nicknamenickname">find_nickname(<span class="fixed">nickname</span>) <div class="children"><div class="text">Returns a (possibly empty) list of UserCacheItem objects whose vCard information lists the given NICKNAME.</div><dl><dt>nickname</dt><dd>The NICKNAME to search for.<div class="children"></div></dd></dl></div></a></div></div>
+	</body>
+</html>

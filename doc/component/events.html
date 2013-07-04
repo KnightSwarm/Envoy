@@ -1,0 +1,161 @@
+<!doctype html>
+<html>
+	<head>
+		<style>
+			body {
+				background-color: #F5F5F5;
+				font-family: sans-serif;
+				margin-right: 40px;
+			}
+
+			h2, h3, h4, h5, h6, h7
+			{
+				margin-top: 16px;
+				margin-bottom: 4px;
+			}
+
+			.children { padding-left: 40px; }
+
+			.definition
+			{
+				font-weight: bold;
+				margin-bottom: 32px;
+			}
+
+			.example 
+			{ 
+				padding: 5px 6px;
+				font-weight: bold;
+				font-size: 15px;
+				background-color: #E6E6E6; 
+				margin-top: 11px;
+			}
+
+			.example > .children
+			{
+				padding-top: 11px;
+				padding-left: 10px;
+			}
+
+			.example > .children > h7
+			{
+				font-size: 13px;
+			}
+
+			h7
+			{
+				font-size: 14px;
+				font-weight: bold;
+				margin-bottom: 2px;
+			}
+
+			pre
+			{
+				margin-top: 0px;
+				padding: 6px 7px;
+				background-color: #D9D9D9;
+				font-weight: normal;
+				font-size: 13px;
+			}
+
+			dl
+			{
+				margin: 5px 0px;
+			}
+
+			dt
+			{
+				font-weight: bold;
+			}
+
+			dd
+			{
+				font-size: 14px;
+				font-weight: normal;
+				margin-left: 8px;
+			}
+			
+			dd > .children
+			{
+				font-size: 95%;
+			}
+			
+			dd > .children > dl > dd
+			{
+				margin-left: 13px;
+			}
+
+			.exclamation
+			{
+				padding: 7px 8px;
+				margin: 11px 0px;
+				background-color: #FFE9AA;
+				border: 1px solid yellow;
+				font-size: 15px;
+				font-weight: normal;
+			}
+
+			.text
+			{
+				font-size: 15px;
+				font-weight: normal;
+				margin-bottom: 14px;
+				margin-top: 10px;
+			}
+
+			.toc
+			{
+				border: 1px solid gray;
+				background-color: #E6E6E6;
+				padding: 8px 9px;
+				font-size: 15px;
+				margin-bottom: 12px;
+			}
+
+			.toc h2
+			{
+				margin: 0px 0px 3px 0px;
+				font-size: 19px;
+			}
+
+			.toc ul
+			{
+				margin-top: 0px;
+				margin-bottom: 0px;
+				padding-left: 25px;
+			}
+
+			.toc li
+			{
+				margin-bottom: 2px;
+			}
+
+			.toc .alternatives
+			{
+				font-size: 12px;
+			}
+
+			.toc a
+			{
+				color: #292722;
+			}
+
+			.toc a:hover
+			{
+				color: black;
+			}
+			
+			.fixed
+			{
+				font-family: monospace;
+				background-color: white;
+				padding: 1px 4px;
+				border: 1px solid silver;
+				border-radius: 4px;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="children"><h1>Component events</h1><div class="definition"><a name="loginuser">login (<span class="fixed">user</span>) <div class="children"><div class="text">Signifies that a user just logged in to the Envoy server.</div><dl><dt>user</dt><dd>The full JID of the user that logged in.<div class="children"></div></dd></dl></div></a></div><div class="definition"><a name="logoutuserreason">logout (<span class="fixed">user</span>, <span class="fixed">reason</span>) <div class="children"><div class="text">Signifies that a user just disconnected from the Envoy server.</div><dl><dt>user</dt><dd>The full JID of the user that logged out.<div class="children"></div></dd></dl><dl><dt>reason</dt><dd>The reason for disconnection. This may be an empty string.<div class="children"></div></dd></dl></div></a></div><div class="definition"><a name="pinguser">ping (<span class="fixed">user</span>) <div class="children"><div class="text">Signifies that an XMPP ping was received from a user. You're  unlikely to need this for anything other than debugging purposes.</div><div class="exclamation"><strong>Important:</strong> Note that this is a very common event. Doing intensive processing   in this event is discouraged, as it may cause significant delays   in processing other stanzas. <div class="children"></div></div><dl><dt>user</dt><dd>The full JID of the user that sent a ping.<div class="children"></div></dd></dl></div></a></div><div class="definition"><a name="statususerstatusmessage">status (<span class="fixed">user</span>, <span class="fixed">status</span>, <span class="fixed">message</span>) <div class="children"><div class="text">Signifies a status (presence) change for a user.</div><div class="exclamation"><strong>Important:</strong> Unlike in normal XMPP presence change events, this only fires   when an online presence is broadcast - the 'unavailable' presence   should be handled separately in the <span class="fixed">logout</span> event. <div class="children"></div></div><dl><dt>user</dt><dd>The full JID of the user that changed their presence.<div class="children"></div></dd></dl><dl><dt>status</dt><dd>The new status of the user.<div class="children"><dl><dt>available</dt><dd>The 'online' status. No special circumstances.<div class="children"></div></dd></dl><dl><dt>away</dt><dd>Indicates the user is Away. May be set either manually or automatically due to the client not receiving any user input.<div class="children"></div></dd></dl><dl><dt>xa</dt><dd>Extended Away. May also be set either manually or automatically.<div class="children"></div></dd></dl><dl><dt>dnd</dt><dd>Do Not Disturb. The user does not wish to be disturbed for anything unless it is urgent. You should not send any notifications.<div class="children"></div></dd></dl><dl><dt>chat</dt><dd>Chatty. This means that the user is particularly interested in having a conversation. Not very commonly used, and can be treated as <span class="fixed">available</span> if the Envoy server is used for work purposes.<div class="children"></div></dd></dl></div></dd></dl><dl><dt>message</dt><dd>The custom status message set by the user or their client. This may be an empty string.<div class="children"></div></dd></dl></div></a></div><div class="definition"><a name="joinuserroomnickname">join (<span class="fixed">user</span>, <span class="fixed">room</span>, <span class="fixed">nickname</span>) <div class="children"><div class="text">Signifies that a user joined a MUC room.</div><dl><dt>user</dt><dd>The full JID of the user that joined.<div class="children"></div></dd></dl><dl><dt>room</dt><dd>The bare JID of the room that was joined. The resource part of the JID, which for MUC rooms is used to indicate the nickname of the new participant, is not present.<div class="children"></div></dd></dl><dl><dt>nickname</dt><dd>The nickname that the user has joined under. This is normally the resource part of the room JID.<div class="children"></div></dd></dl></div></a></div><div class="definition"><a name="leaveuserroom">leave (<span class="fixed">user</span>, <span class="fixed">room</span>) <div class="children"><div class="text">Signifies that a user left a MUC room.</div><dl><dt>user</dt><dd>The full JID of the user that left.<div class="children"></div></dd></dl><dl><dt>room</dt><dd>The bare JID of the room that was left.<div class="children"></div></dd></dl></div></a></div><div class="definition"><a name="group_messageuserroombody">group_message (<span class="fixed">user</span>, <span class="fixed">room</span>, <span class="fixed">body</span>) <div class="children"><div class="text">Signifies that a message was sent to a MUC room by one of its participants.</div><dl><dt>user</dt><dd>The full JID of the user that sent the message.<div class="children"></div></dd></dl><dl><dt>room</dt><dd>The bare JID of the room that the message was sent to.<div class="children"></div></dd></dl><dl><dt>body</dt><dd>The body of the message that was sent.<div class="children"></div></dd></dl></div></a></div><div class="definition"><a name="private_messagesenderrecipientbody">private_message (<span class="fixed">sender</span>, <span class="fixed">recipient</span>, <span class="fixed">body</span>) <div class="children"><div class="text">Signifies that a private message was sent from one user to another user.</div><dl><dt>sender</dt><dd>The full JID of the user that sent the message.<div class="children"></div></dd></dl><dl><dt>recipient</dt><dd>The full JID of the user that the message is addressed to.<div class="children"></div></dd></dl><dl><dt>body</dt><dd>The body of the message that was sent.<div class="children"></div></dd></dl></div></a></div><div class="definition"><a name="group_highlightsenderrecipientroombodyhighlight">group_highlight (<span class="fixed">sender</span>, <span class="fixed">recipient</span>, <span class="fixed">room</span>, <span class="fixed">body</span>, <span class="fixed">highlight</span>) <div class="children"><div class="text">Signifies that a highlight of a user in a MUC room has taken place. A 'highlight' is a part of a message in the format <span class="fixed">@nickname</span>,  intended to alert a participant that a message is intended for them. Useful for sending out e-mail or SMS notifications.</div><dl><dt>sender</dt><dd>The full JID of the user that caused the highlight.<div class="children"></div></dd></dl><dl><dt>recipient</dt><dd>The bare JID of the user that the highlight was targeted at.<div class="children"></div></dd></dl><dl><dt>room</dt><dd>The bare JID of the room that the highlight occurred in.<div class="children"></div></dd></dl><dl><dt>body</dt><dd>The full body of the message that the highlight occurred in.<div class="children"></div></dd></dl><dl><dt>highlight</dt><dd>The snippet of text (minus the <span class="fixed">@</span> symbol) that triggered this particular highlight. Useful to distinguish between user-specific highlights and global (<span class="fixed">@all</span>) highlights.<div class="children"></div></dd></dl></div></a></div><div class="definition"><a name="topic_changeuserroomtopic">topic_change (<span class="fixed">user</span>, <span class="fixed">room</span>, <span class="fixed">topic</span>) <div class="children"><div class="text">Signifies that the topic of a MUC room was changed.</div><dl><dt>user</dt><dd>The full JID of the user that changed the topic.<div class="children"></div></dd></dl><dl><dt>room</dt><dd>The room of which the topic was changed.<div class="children"></div></dd></dl><dl><dt>topic</dt><dd>The new topic that was set.<div class="children"></div></dd></dl></div></a></div></div>
+	</body>
+</html>
