@@ -40,5 +40,9 @@
 		"username": "your@email.com",
 		"password": "sekrit",
 		"sender": "notifications@your.service"
+	},
+	"mock": {
+		"sms": false,
+		"email": false
 	}
 }
