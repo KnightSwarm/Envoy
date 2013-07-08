@@ -266,6 +266,8 @@ class EnvoyComponent(Component):
 				self.send_message(mto=sender, mbody=unicode(output))
 			except IqError, e:
 				logging.error("IqError: %s" % e.iq)
+		elif body == "purge":
+			self._envoy_purge_presences()
 	
 	# Envoy uses override methods for the user presence tracking feature in
 	# the XEP-0045 plugin. Instead of storing the presences in memory, they
@@ -316,7 +318,7 @@ class EnvoyComponent(Component):
 			cursor.execute(query, (timestamp, str(sender), str(recipient), event_type, payload, extra))
 			
 
-logging.basicConfig(level=logging.INFO, format='%(levelname)-8s %(message)s')
+logging.basicConfig(level=logging.DEBUG, format='%(levelname)-8s %(message)s')
 
 configuration = json.load(open(get_relative_path("../config.json"), "r"))
 

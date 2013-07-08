@@ -10,6 +10,7 @@ from sleekxmpp.xmlstream.matcher import MatchXPath, StanzaPath
 from sleekxmpp.jid import JID
 
 from util import state
+from util.dedup import dedup
 
 reload(sys)
 sys.setdefaultencoding('utf8')
@@ -22,6 +23,7 @@ class Component(ComponentXMPP):
 		self.add_event_handler("groupchat_joined", self._envoy_handle_group_join)
 		self.add_event_handler("groupchat_left", self._envoy_handle_group_leave)
 		self.add_event_handler("groupchat_presence", self._envoy_handle_group_presence)
+		self.add_event_handler("session_start", self._envoy_start)
 		
 		self.registerPlugin('xep_0030') # Service Discovery
 		self.registerPlugin('xep_0004') # Data Forms
@@ -33,6 +35,14 @@ class Component(ComponentXMPP):
 		self._envoy_events = {}
 		self._envoy_members = {}
 		self._envoy_user_cache = UserCache()
+		
+		# We can't check all the presences straight away, because the component hasn't connected yet - it
+		# will hang while waiting for an <iq /> response that never comes. We'll therefore do the first
+		# check (and set the timer) in the session_start event, defined in the _envoy_start method.
+	
+	def _envoy_start(self, event):
+		self.scheduler.add("Purge Presences", 300, self._envoy_purge_presences, repeat=True)
+		self._envoy_purge_presences()
 	
 	def _envoy_update_roster(self, room):
 		self._envoy_members[room] = []
@@ -41,7 +51,44 @@ class Component(ComponentXMPP):
 		for item in self['xep_0045'].get_users(room, ifrom=self.boundjid, affiliation="member")['muc_admin']['items']:
 			if item['jid'] not in self._envoy_members[room]:
 				self._envoy_members[room].append(item['jid'])
+	
+	def _envoy_purge_presences(self):
+		# TODO: Conference component JID should be a configuration setting
+		logging.info("Purging outdated presences")
+		
+		current_presences = {}
+		
+		for room in self['xep_0045'].get_rooms(ifrom=self.boundjid, jid="conference.envoy.local")['disco_items']['items']:
+			# TODO: Keep a room cache?
+			room_jid, room_node, room_name = room
+			
+			# We will do a two pass here. On the first pass, all missing rooms are added. On the second pass, all
+			# outdated presences are removed. This way, there won't be any chance of race conditions, as there would
+			# be when clearing the cache first and then re-filling it.
+			presences = (self['xep_0045'].get_users(room_jid, ifrom=self.boundjid, role="visitor")['muc_admin']['items'] +
+			             self['xep_0045'].get_users(room_jid, ifrom=self.boundjid, role="participant")['muc_admin']['items'] +
+			             self['xep_0045'].get_users(room_jid, ifrom=self.boundjid, role="moderator")['muc_admin']['items'])
+			
+			for user in presences:
+				cache_user = self._envoy_user_cache.get(user['jid'].bare)
 				
+				if not cache_user.in_room(room_jid):
+					cache_user.add_room(room_jid)
+				
+			current_presences[room_jid] = [user['jid'].bare for user in presences]
+		
+		for jid, user in self._envoy_user_cache.cache.iteritems():
+			for room in user.rooms:
+				try:
+					if user.jid not in current_presences[room]:
+						user.remove_room(room)
+				except KeyError, e:
+					user.remove_room(room)
+					
+			user.rooms = dedup(user.rooms)
+		
+		logging.debug("New presence list: %s" % [(jid, user.rooms) for jid, user in self._envoy_user_cache.cache.iteritems()])
+	
 	def _envoy_handle_stanza(self, wrapper):
 		stanza = wrapper['forwarded']['stanza']
 		
@@ -258,9 +305,11 @@ class UserCacheItem(object):
 		self.presence = presence
 		
 	def add_room(self, room):
+		logging.debug("Adding presence from user %s for room %s" % (self.jid, room))
 		self.rooms.append(room)
 		
 	def remove_room(self, room):
+		logging.debug("Removing presence from user %s for room %s" % (self.jid, room))
 		self.rooms = [x for x in self.rooms if x != room]
 		
 	def in_room(self, room):
