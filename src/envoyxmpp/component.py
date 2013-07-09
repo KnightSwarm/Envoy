@@ -64,7 +64,9 @@ class Component(ComponentXMPP):
 		
 		current_presences = {}
 		
-		for room in self['xep_0045'].get_rooms(ifrom=self.boundjid, jid=self.conference_host)['disco_items']['items']:
+		room_list = self['xep_0045'].get_rooms(ifrom=self.boundjid, jid=self.conference_host)['disco_items']['items']
+		
+		for room in room_list:
 			# TODO: Keep a room cache?
 			room_jid, room_node, room_name = room
 			
@@ -99,6 +101,25 @@ class Component(ComponentXMPP):
 				user.rooms[room] = dedup(resources)
 		
 		logging.debug("New presence list: %s" % [(jid, user.rooms) for jid, user in self._envoy_user_cache.cache.iteritems()])
+		
+		# Finally, we'll also want to make sure that we have up to date affiliation information
+		# for all the users.
+		
+		for room in room_list:
+			room_jid, room_node, room_name = room
+			
+			affiliations = (self['xep_0045'].get_users(room_jid, ifrom=self.boundjid, affiliation="owner")['muc_admin']['items'] +
+			                self['xep_0045'].get_users(room_jid, ifrom=self.boundjid, affiliation="admin")['muc_admin']['items'] +
+			                self['xep_0045'].get_users(room_jid, ifrom=self.boundjid, affiliation="member")['muc_admin']['items'])
+			
+			for user in affiliations:
+				cache_user = self._envoy_user_cache.get(user['jid'].bare)
+				affiliation = user['affiliation']
+				
+				if cache_user.get_affiliation(room_jid) != affiliation:
+					cache_user.set_affiliation(room_jid, affiliation)
+					
+		logging.debug("Affiliation list updated")
 		
 		self._envoy_call_event("presences_purged")
 		
