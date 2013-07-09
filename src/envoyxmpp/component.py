@@ -9,6 +9,8 @@ from sleekxmpp.stanza import Message, Presence, Iq
 from sleekxmpp.xmlstream.matcher import MatchXPath, StanzaPath
 from sleekxmpp.jid import JID
 
+from sleekxmpp.exceptions import IqError
+
 from util import state
 from util.dedup import dedup
 
@@ -48,9 +50,12 @@ class Component(ComponentXMPP):
 		self._envoy_members[room] = []
 		
 		# TODO: Also add admins to this list
-		for item in self['xep_0045'].get_users(room, ifrom=self.boundjid, affiliation="member")['muc_admin']['items']:
-			if item['jid'] not in self._envoy_members[room]:
-				self._envoy_members[room].append(item['jid'])
+		try:
+			for item in self['xep_0045'].get_users(room, ifrom=self.boundjid, affiliation="member")['muc_admin']['items']:
+				if item['jid'] not in self._envoy_members[room]:
+					self._envoy_members[room].append(item['jid'])
+		except IqError, e:
+			pass  # The room doesn't exist anymore
 	
 	def _envoy_purge_presences(self):
 		# TODO: Conference component JID should be a configuration setting
@@ -77,7 +82,10 @@ class Component(ComponentXMPP):
 				
 			current_presences[room_jid] = [unicode(user['jid']) for user in presences]
 		
+		logging.debug("Current presences according to XMPP daemon: %s" % current_presences)
+		
 		for jid, user in self._envoy_user_cache.cache.items():
+			logging.debug("Current UserCache room presence list for %s: %s" % (user.jid, user.rooms))
 			for room, resources in user.rooms.items():
 				for resource in resources:
 					try:
@@ -303,6 +311,7 @@ class UserCacheItem(object):
 		return hash(("jid", str(self.jid)))
 	
 	def update_presence(self, presence):
+		logging.debug("Changing presence for user %s to %s" % (self.jid, affiliation))
 		self.presence = presence
 		
 	def add_room(self, room, resource):
@@ -312,7 +321,7 @@ class UserCacheItem(object):
 			self.rooms[room].append(resource)
 		except KeyError, e:
 			self.rooms[room] = [resource]
-		
+			
 	def remove_room(self, room, resource):
 		logging.debug("Removing presence from user %s/%s for room %s" % (self.jid, resource, room))
 		
@@ -328,6 +337,7 @@ class UserCacheItem(object):
 		return (room in self.rooms)
 		
 	def set_affiliation(self, room, affiliation):
+		logging.debug("Changing affiliation for user %s in room %s to %s" % (self.jid, room, affiliation))
 		self.affiliations[room] = affiliation
 		
 	def get_affiliation(self, room):

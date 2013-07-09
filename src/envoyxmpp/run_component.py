@@ -1,4 +1,4 @@
-import logging, json, oursql, os
+import logging, json, oursql, os, copy
 from datetime import datetime
 from marrow.mailer import Message, Mailer
 
@@ -145,7 +145,7 @@ class EnvoyComponent(Component):
 		all_presences = {}
 		
 		for jid, user in self._envoy_user_cache.cache.iteritems():
-			all_presences[jid] = user.rooms
+			all_presences[jid] = copy.deepcopy(user.rooms)
 			
 		deletable_ids = []
 			
@@ -193,7 +193,10 @@ class EnvoyComponent(Component):
 			for room, resources in rooms.iteritems():
 				for resource in resources:
 					cursor.execute("INSERT INTO presences (`UserJid`, `RoomJid`) VALUES (?, ?)", ("%s/%s" % (user, resource), room))
-					
+		
+		for jid, user in self._envoy_user_cache.cache.iteritems():
+			logging.debug("Room presence list AFTER database sync for user %s: %s" % (jid, user.rooms))
+		
 		logging.info("Synchronized database with UserCache.")
 	
 	def notify_if_idle(self, sender, recipient, room, body, highlight):
