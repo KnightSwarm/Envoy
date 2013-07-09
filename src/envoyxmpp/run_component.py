@@ -269,6 +269,8 @@ class EnvoyComponent(Component):
 				logging.error("IqError: %s" % e.iq)
 		elif body == "purge":
 			self._envoy_purge_presences()
+		elif body == "debugtree":
+			self.send_message(mto=sender, mbody=self._envoy_user_cache.get_debug_tree())
 	
 	# Envoy uses override methods for the user presence tracking feature in
 	# the XEP-0045 plugin. Instead of storing the presences in memory, they

@@ -211,9 +211,6 @@ class Component(ComponentXMPP):
 		if user != "":
 			# TODO: Implement event for changing affiliation?
 			self._envoy_user_cache.get(user.bare).set_affiliation(room, affiliation)
-			# FIXME: This is a debug call. This shouldn't go into production. Perhaps have some way to
-			#        permanently use this functionality in the future, through configuration?
-			self.send_message(mto="testuser@envoy.local", mbody=self._envoy_user_cache.get_debug_tree())
 		
 	def _envoy_call_event(self, event_name, *args, **kwargs):
 		try:
