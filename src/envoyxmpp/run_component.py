@@ -82,7 +82,8 @@ class EnvoyComponent(Component):
 		
 		for row in cursor:
 			user, room = row
-			self._envoy_user_cache.get(user.split("/", 1)[0]).add_room(room)
+			bare_jid, resource = user.split("/", 1)
+			self._envoy_user_cache.get(bare_jid).add_room(room, resource)
 			
 		for jid, user in self._envoy_user_cache.cache.iteritems():
 			print user.jid, user.nickname, user.rooms

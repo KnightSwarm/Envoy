@@ -73,19 +73,21 @@ class Component(ComponentXMPP):
 				cache_user = self._envoy_user_cache.get(user['jid'].bare)
 				
 				if not cache_user.in_room(room_jid):
-					cache_user.add_room(room_jid)
+					cache_user.add_room(room_jid, user['jid'].resource)
 				
-			current_presences[room_jid] = [user['jid'].bare for user in presences]
+			current_presences[room_jid] = [unicode(user['jid']) for user in presences]
 		
-		for jid, user in self._envoy_user_cache.cache.iteritems():
-			for room in user.rooms:
-				try:
-					if user.jid not in current_presences[room]:
-						user.remove_room(room)
-				except KeyError, e:
-					user.remove_room(room)
-					
-			user.rooms = dedup(user.rooms)
+		for jid, user in self._envoy_user_cache.cache.items():
+			for room, resources in user.rooms.items():
+				for resource in resources:
+					try:
+						if "%s/%s" % (jid, resource) not in current_presences[room]:
+							user.remove_room(room, resource)
+					except KeyError, e:
+						user.remove_room(room, resource)
+			
+			for room, resources in user.rooms.iteritems():
+				user.rooms[room] = dedup(resources)
 		
 		logging.debug("New presence list: %s" % [(jid, user.rooms) for jid, user in self._envoy_user_cache.cache.iteritems()])
 	
@@ -173,7 +175,7 @@ class Component(ComponentXMPP):
 		nickname = stanza["from"].resource
 		
 		# Update presence in the user cache
-		self._envoy_user_cache.get(user.bare).add_room(room)
+		self._envoy_user_cache.get(user.bare).add_room(room, user.resource)
 		
 		# Update affiliation in the user cache
 		affiliation = stanza['muc']['affiliation']
@@ -188,7 +190,7 @@ class Component(ComponentXMPP):
 	def _envoy_handle_group_leave(self, stanza):
 		user = stanza["to"]
 		room = stanza["from"].bare
-		self._envoy_user_cache.get(user.bare).remove_room(room)
+		self._envoy_user_cache.get(user.bare).remove_room(room, user.resource)
 		self._envoy_call_event("leave", user, JID(room))
 		# We can optimize this by updating the roster once and tracking state changes from then on
 		self._envoy_update_roster(room)
@@ -285,7 +287,7 @@ class UserCacheItem(object):
 	def __init__(self, jid):
 		self.jid = jid
 		self.presence = state.UNKNOWN
-		self.rooms = []
+		self.rooms = {}
 		self.affiliations = {}
 		self.first_name = ""
 		self.last_name = ""
@@ -304,13 +306,24 @@ class UserCacheItem(object):
 	def update_presence(self, presence):
 		self.presence = presence
 		
-	def add_room(self, room):
-		logging.debug("Adding presence from user %s for room %s" % (self.jid, room))
-		self.rooms.append(room)
+	def add_room(self, room, resource):
+		logging.debug("Adding presence from user %s/%s for room %s" % (self.jid, resource, room))
 		
-	def remove_room(self, room):
-		logging.debug("Removing presence from user %s for room %s" % (self.jid, room))
-		self.rooms = [x for x in self.rooms if x != room]
+		try:
+			self.rooms[room].append(resource)
+		except KeyError, e:
+			self.rooms[room] = [resource]
+		
+	def remove_room(self, room, resource):
+		logging.debug("Removing presence from user %s/%s for room %s" % (self.jid, resource, room))
+		
+		try:
+			self.rooms[room] = [x for x in self.rooms[room] if x != resource]
+			
+			if len(self.rooms[room]) == 0:
+				del self.rooms[room]
+		except KeyError, e:
+			logging.warning("Tried to remove presence for %s/%s from %s, but this presence was not previously known" % (self.jid, resource, room))
 		
 	def in_room(self, room):
 		return (room in self.rooms)
