@@ -38,8 +38,8 @@ class EnvoyComponent(Component):
 		"chat": 5
 	}
 	
-	def __init__(self, jid, host, port, password):
-		Component.__init__(self, jid, host, port, password)
+	def __init__(self, jid, host, port, password, conference_host):
+		Component.__init__(self, jid, host, port, password, conference_host)
 		
 		# Hook events
 		self.register_event("login", self.on_login)
@@ -392,6 +392,6 @@ db = oursql.connect(host=configuration['database']['hostname'], user=configurati
 
 twilio_client = TwilioRestClient(configuration['twilio']['sid'], configuration['twilio']['token'])
 
-xmpp = EnvoyComponent("component.envoy.local", "127.0.0.1", 5347, "password")
+xmpp = EnvoyComponent("component.envoy.local", "127.0.0.1", 5347, "password", "conference.envoy.local")
 xmpp.connect()
 xmpp.process(block=True)

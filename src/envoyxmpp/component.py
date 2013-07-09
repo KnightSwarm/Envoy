@@ -18,8 +18,10 @@ reload(sys)
 sys.setdefaultencoding('utf8')
 
 class Component(ComponentXMPP):
-	def __init__(self, jid, host, port, password):
+	def __init__(self, jid, host, port, password, conference_host):
 		ComponentXMPP.__init__(self, jid, password, host, port)
+		
+		self.conference_host = conference_host
 		
 		self.add_event_handler("forwarded_stanza", self._envoy_handle_stanza)
 		self.add_event_handler("groupchat_joined", self._envoy_handle_group_join)
@@ -58,12 +60,11 @@ class Component(ComponentXMPP):
 			pass  # The room doesn't exist anymore
 	
 	def _envoy_purge_presences(self):
-		# TODO: Conference component JID should be a configuration setting
 		logging.info("Purging outdated presences")
 		
 		current_presences = {}
 		
-		for room in self['xep_0045'].get_rooms(ifrom=self.boundjid, jid="conference.envoy.local")['disco_items']['items']:
+		for room in self['xep_0045'].get_rooms(ifrom=self.boundjid, jid=self.conference_host)['disco_items']['items']:
 			# TODO: Keep a room cache?
 			room_jid, room_node, room_name = room
 			
