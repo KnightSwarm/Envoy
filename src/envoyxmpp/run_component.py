@@ -52,6 +52,7 @@ class EnvoyComponent(Component):
 		self.register_event("private_message", self.on_private_message)
 		self.register_event("topic_change", self.on_topic_change)
 		self.register_event("group_highlight", self.on_group_highlight)
+		self.register_event("presences_purged", self.on_presences_purged)
 		
 		# Hook XEP-0045 presence tracking to use the Envoy database
 		self['xep_0045'].api.register(self._envoy_is_joined_room, 'is_joined_room')
@@ -137,6 +138,63 @@ class EnvoyComponent(Component):
 	def on_topic_change(self, user, room, topic):
 		self._envoy_log_event(datetime.now(), user, room, self.event_types["topic"], topic)
 		print "%s changed topic for %s to '%s'" % (user, room, topic)
+	
+	def on_presences_purged(self):
+		# We'll build a local dict of all the current presences in the UserCache, that we can modify
+		# in place later on.
+		all_presences = {}
+		
+		for jid, user in self._envoy_user_cache.cache.iteritems():
+			all_presences[jid] = user.rooms
+			
+		deletable_ids = []
+			
+		# During the first pass, we will retrieve all recorded presences from the database and
+		# iterate through them. Every presence that also exists in the dict, will be removed from
+		# the dict and left intact in the database. Every presence that doesn't exist in the dict,
+		# will be removed from the database. After the first pass, the dict will only hold the
+		# "missing" entries that are not in the database yet.
+		query = "SELECT `Id`, `UserJid`, `RoomJid` FROM presences"
+		cursor = db.cursor()
+		cursor.execute(query)
+		
+		for row in cursor:
+			id_, user_jid, room_jid = row
+			user_bare, user_resource = user_jid.split("/")
+			
+			try:
+				if user_resource in all_presences[user_bare][room_jid]:
+					# FIXME: This can probably be optimized for speed by keeping a separate list of to-be-deleted resources
+					#        and recreating the resource list in one pass.
+					all_presences[user_bare][room_jid] = [x for x in all_presences[user_bare][room_jid] if x != user_resource]
+				else:
+					deletable_ids.append(id_)
+			except KeyError, e:
+				deletable_ids.append(id_)
+		
+		print all_presences
+		
+		# Before doing actual database insertion, we'll want to clean up empty entries.
+		for user in all_presences.keys():
+			for room in all_presences[user].keys():
+				if len(all_presences[user][room]) == 0:
+					del all_presences[user][room]
+			
+			if len(all_presences[user]) == 0:
+				del all_presences[user]
+				
+		logging.info("Deletable presence IDs: %s" % deletable_ids)
+		logging.info("Remaining presences for database insertion: %s" % all_presences)
+		
+		for id_ in deletable_ids:
+			cursor.execute("DELETE FROM `presences` WHERE `Id` = ?", (id_,))
+			
+		for user, rooms in all_presences.iteritems():
+			for room, resources in rooms.iteritems():
+				for resource in resources:
+					cursor.execute("INSERT INTO presences (`UserJid`, `RoomJid`) VALUES (?, ?)", ("%s/%s" % (user, resource), room))
+					
+		logging.info("Synchronized database with UserCache.")
 	
 	def notify_if_idle(self, sender, recipient, room, body, highlight):
 		# We should only send a notification if we can reasonable assume that the user is not paying

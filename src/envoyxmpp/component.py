@@ -92,7 +92,7 @@ class Component(ComponentXMPP):
 		logging.debug("New presence list: %s" % [(jid, user.rooms) for jid, user in self._envoy_user_cache.cache.iteritems()])
 		
 		self._envoy_call_event("presences_purged")
-	
+		
 	def _envoy_handle_stanza(self, wrapper):
 		stanza = wrapper['forwarded']['stanza']
 		
@@ -213,7 +213,7 @@ class Component(ComponentXMPP):
 		if user != "":
 			# TODO: Implement event for changing affiliation?
 			self._envoy_user_cache.get(user.bare).set_affiliation(room, affiliation)
-		
+	
 	def _envoy_call_event(self, event_name, *args, **kwargs):
 		try:
 			self._envoy_events[event_name](*args, **kwargs)
