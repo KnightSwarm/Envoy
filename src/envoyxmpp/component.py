@@ -90,6 +90,8 @@ class Component(ComponentXMPP):
 				user.rooms[room] = dedup(resources)
 		
 		logging.debug("New presence list: %s" % [(jid, user.rooms) for jid, user in self._envoy_user_cache.cache.iteritems()])
+		
+		self._envoy_call_event("presences_purged")
 	
 	def _envoy_handle_stanza(self, wrapper):
 		stanza = wrapper['forwarded']['stanza']
