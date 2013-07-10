@@ -30,6 +30,12 @@ class User extends CPHPDatabaseRecordClass
 			'Fqdn'			=> "Fqdn",
 			'Hash'			=> "Hash",
 			'Salt'			=> "Salt",
+			'Nickname'		=> "Nickname",
+			'EmailAddress'		=> "EmailAddress",
+			'FirstName'		=> "FirstName",
+			'LastName'		=> "LastName",
+			'JobTitle'		=> "JobTitle",
+			'MobileNumber'		=> "MobileNumber"
 		),
 		'numeric' => array(
 			'FqdnId'		=> "FqdnId"

@@ -129,6 +129,12 @@ catch (AlreadyExistsException $e)
 	echo(json_encode(array("error" => $e->getMessage())));
 	die();
 }
+catch (InvalidParameterException $e)
+{
+	http_status_code(400);
+	echo(json_encode(array("error" => $e->getMessage())));
+	die();
+}
 catch (Exception $e)
 {
 	/* TODO: Log error, this should really never happen. */
