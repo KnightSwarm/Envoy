@@ -206,15 +206,16 @@ class EnvoyComponent(Component):
 		# will be sent an external notification. When a user is automatically marked idle by their
 		# client for lack of interaction, they will turn to an 'away' or 'extended away' state - we
 		# don't need to handle this separately.
-		if self._envoy_user_cache.get(recipient).presence in [state.AWAY, state.XA, state.UNAVAILABLE]:
+		if self._envoy_user_cache.get(recipient).presence in [state.AWAY, state.XA, state.UNAVAILABLE, state.DND]:
 			self.notify(sender, recipient, room, body, highlight)
 		elif self._envoy_user_cache.get(recipient).presence == state.UNKNOWN:
 			# FIXME: Fetch the correct state?
 			logging.error("Unknown state detected for user %s" % recipient)
 		
 	def notify(self, sender, recipient, room, body, highlight):
-		# We never want to send external notifications if the user state is set to Do Not Disturb.
-		if self._envoy_user_cache.get(recipient).presence != state.DND:
+		# We don't want to send external notifications if the user state is set to Do Not Disturb,
+		# unless the settings for the user explicitly indicate that this is okay..
+		if self._envoy_user_cache.get(recipient).presence != state.DND or self.get_user_setting(recipient, "notify_on_dnd", "0") == "1":
 			# Actually send a notification. We can use the phone number and e-mail address from
 			# their vCard information (in the user cache) to do so.
 			is_private = (room == "")
@@ -364,6 +365,10 @@ class EnvoyComponent(Component):
 		
 		cursor = db.cursor()
 		cursor.execute("UPDATE user_settings SET `Value` = ? WHERE `UserId` = ? AND `Key` = ?", (value, user_id, key))
+		
+		if cursor.rowcount == 0:
+			# The entry didn't exist yet... insert a new one
+			cursor.execute("INSERT INTO user_settings (`Value`, `UserId`, `Key`) VALUES (?, ?, ?)", (value, user_id, key))
 	
 	# Envoy uses override methods for the user presence tracking feature in
 	# the XEP-0045 plugin. Instead of storing the presences in memory, they
