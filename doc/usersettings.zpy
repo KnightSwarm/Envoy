@@ -1,0 +1,18 @@
+# User settings
+
+This page lists all the possible per-user settings.
+
+^ notify_on_dnd
+
+	This setting specifies whether the user desires to receive SMS
+	and e-mail notifications, when they are highlighted or PMed and
+	their status is set to "Do Not Disturb".
+	
+	0::
+		Do not send notifications when set to "Do Not Disturb".
+		
+	1::
+		Always send notifications when set to "Do Not Disturb".
+	
+	The default value is `0`, meaning no notifications are sent
+	when the users status is set to "Do Not Disturb".
