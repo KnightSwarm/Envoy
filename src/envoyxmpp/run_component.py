@@ -1,4 +1,4 @@
-import logging, json, oursql, os, copy
+import logging, json, oursql, os, copy, time
 from datetime import datetime
 from marrow.mailer import Message, Mailer
 
@@ -362,13 +362,14 @@ class EnvoyComponent(Component):
 	def set_user_setting(self, jid, key, value):
 		username, fqdn = JID(jid).bare.split("@")
 		user_id = self.get_user_id(username, fqdn)
+		current_timestamp = datetime.utcnow()
 		
 		cursor = db.cursor()
-		cursor.execute("UPDATE user_settings SET `Value` = ? WHERE `UserId` = ? AND `Key` = ?", (value, user_id, key))
+		cursor.execute("UPDATE user_settings SET `Value` = ?, `LastModified` = ? WHERE `UserId` = ? AND `Key` = ?", (value, current_timestamp, user_id, key))
 		
 		if cursor.rowcount == 0:
 			# The entry didn't exist yet... insert a new one
-			cursor.execute("INSERT INTO user_settings (`Value`, `UserId`, `Key`) VALUES (?, ?, ?)", (value, user_id, key))
+			cursor.execute("INSERT INTO user_settings (`Value`, `LastModified`, `UserId`, `Key`) VALUES (?, ?, ?)", (value, current_timestamp, user_id, key))
 	
 	# Envoy uses override methods for the user presence tracking feature in
 	# the XEP-0045 plugin. Instead of storing the presences in memory, they
