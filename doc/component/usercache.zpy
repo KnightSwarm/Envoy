@@ -46,3 +46,21 @@ represent individual tracked users.
 	
 	nickname::
 		The NICKNAME to search for.
+
+^ find_by_room_presence(`room`):
+	
+	Returns a (possibly empty) list of UserCacheItem objects that
+	represent users that are currently present in the given room.
+	
+	room::
+		The room to check presence for.
+
+^ find_by_room_membership(`room`):
+	
+	Returns a (possibly empty) list of UserCacheItem objects that
+	represent users that are currently a member of the given room,
+	ie. have an affiliation with the room that is not `none` or
+	`outcast`.
+	
+	room::
+		The room to check membership for.
