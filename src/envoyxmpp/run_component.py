@@ -1,4 +1,4 @@
-import logging, json, oursql, os
+import logging, json, oursql, os, copy
 from datetime import datetime
 from marrow.mailer import Message, Mailer
 
@@ -7,6 +7,8 @@ from twilio.rest import TwilioRestClient
 
 from component import Component
 from util import state
+
+from sleekxmpp.exceptions import IqError
 
 def get_relative_path(path):
 	my_path = os.path.dirname(os.path.abspath(__file__))
@@ -36,8 +38,8 @@ class EnvoyComponent(Component):
 		"chat": 5
 	}
 	
-	def __init__(self, jid, host, port, password):
-		Component.__init__(self, jid, host, port, password)
+	def __init__(self, jid, host, port, password, conference_host):
+		Component.__init__(self, jid, host, port, password, conference_host)
 		
 		# Hook events
 		self.register_event("login", self.on_login)
@@ -50,6 +52,7 @@ class EnvoyComponent(Component):
 		self.register_event("private_message", self.on_private_message)
 		self.register_event("topic_change", self.on_topic_change)
 		self.register_event("group_highlight", self.on_group_highlight)
+		self.register_event("presences_purged", self.on_presences_purged)
 		
 		# Hook XEP-0045 presence tracking to use the Envoy database
 		self['xep_0045'].api.register(self._envoy_is_joined_room, 'is_joined_room')
@@ -80,7 +83,8 @@ class EnvoyComponent(Component):
 		
 		for row in cursor:
 			user, room = row
-			self._envoy_user_cache.get(user.split("/", 1)[0]).add_room(room)
+			bare_jid, resource = user.split("/", 1)
+			self._envoy_user_cache.get(bare_jid).add_room(room, resource)
 			
 		for jid, user in self._envoy_user_cache.cache.iteritems():
 			print user.jid, user.nickname, user.rooms
@@ -120,6 +124,12 @@ class EnvoyComponent(Component):
 		# wouldn't make any sense.
 		if not body.startswith("?OTR:"):
 			self.notify_if_idle(sender, recipient.bare, "", body, "")
+			
+		# If development mode is turned on, and the message is directed at the component itself,
+		# follow up on that.
+		if configuration["development_mode"] == True:
+			if recipient == self.boundjid:
+				self.handle_development_command(sender, recipient, body)
 	
 	def on_group_highlight(self, sender, recipient, room, body, highlight):
 		print "%s highlighted %s in %s in a channel message: %s (highlighted content is %s)" % (sender, recipient, room, body, highlight)
@@ -128,6 +138,66 @@ class EnvoyComponent(Component):
 	def on_topic_change(self, user, room, topic):
 		self._envoy_log_event(datetime.now(), user, room, self.event_types["topic"], topic)
 		print "%s changed topic for %s to '%s'" % (user, room, topic)
+	
+	def on_presences_purged(self):
+		# We'll build a local dict of all the current presences in the UserCache, that we can modify
+		# in place later on.
+		all_presences = {}
+		
+		for jid, user in self._envoy_user_cache.cache.iteritems():
+			all_presences[jid] = copy.deepcopy(user.rooms)
+			
+		deletable_ids = []
+			
+		# During the first pass, we will retrieve all recorded presences from the database and
+		# iterate through them. Every presence that also exists in the dict, will be removed from
+		# the dict and left intact in the database. Every presence that doesn't exist in the dict,
+		# will be removed from the database. After the first pass, the dict will only hold the
+		# "missing" entries that are not in the database yet.
+		query = "SELECT `Id`, `UserJid`, `RoomJid` FROM presences"
+		cursor = db.cursor()
+		cursor.execute(query)
+		
+		for row in cursor:
+			id_, user_jid, room_jid = row
+			user_bare, user_resource = user_jid.split("/")
+			
+			try:
+				if user_resource in all_presences[user_bare][room_jid]:
+					# FIXME: This can probably be optimized for speed by keeping a separate list of to-be-deleted resources
+					#        and recreating the resource list in one pass.
+					all_presences[user_bare][room_jid] = [x for x in all_presences[user_bare][room_jid] if x != user_resource]
+				else:
+					deletable_ids.append(id_)
+			except KeyError, e:
+				deletable_ids.append(id_)
+		
+		print all_presences
+		
+		# Before doing actual database insertion, we'll want to clean up empty entries.
+		for user in all_presences.keys():
+			for room in all_presences[user].keys():
+				if len(all_presences[user][room]) == 0:
+					del all_presences[user][room]
+			
+			if len(all_presences[user]) == 0:
+				del all_presences[user]
+				
+		logging.info("Deletable presence IDs: %s" % deletable_ids)
+		logging.info("Remaining presences for database insertion: %s" % all_presences)
+		
+		for id_ in deletable_ids:
+			cursor.execute("DELETE FROM `presences` WHERE `Id` = ?", (id_,))
+			
+		for user, rooms in all_presences.iteritems():
+			for room, resources in rooms.iteritems():
+				for resource in resources:
+					cursor.execute("INSERT INTO presences (`UserJid`, `RoomJid`) VALUES (?, ?)", ("%s/%s" % (user, resource), room))
+		
+		for jid, user in self._envoy_user_cache.cache.iteritems():
+			logging.debug("Room presence list AFTER database sync for user %s: %s" % (jid, user.rooms))
+		
+		logging.info("Synchronized database with UserCache.")
 	
 	def notify_if_idle(self, sender, recipient, room, body, highlight):
 		# We should only send a notification if we can reasonable assume that the user is not paying
@@ -251,6 +321,18 @@ class EnvoyComponent(Component):
 			
 		mailer.stop()
 	
+	def handle_development_command(self, sender, recipient, body):
+		if body.startswith("$"):
+			try:
+				output = eval(body[1:].strip(), {"self": self})
+				self.send_message(mto=sender, mbody=unicode(output))
+			except IqError, e:
+				logging.error("IqError: %s" % e.iq)
+		elif body == "purge":
+			self._envoy_purge_presences()
+		elif body == "debugtree":
+			self.send_message(mto=sender, mbody=self._envoy_user_cache.get_debug_tree())
+	
 	# Envoy uses override methods for the user presence tracking feature in
 	# the XEP-0045 plugin. Instead of storing the presences in memory, they
 	# are stored in the Envoy database. This way, user presences are preserved 
@@ -300,7 +382,7 @@ class EnvoyComponent(Component):
 			cursor.execute(query, (timestamp, str(sender), str(recipient), event_type, payload, extra))
 			
 
-logging.basicConfig(level=logging.INFO, format='%(levelname)-8s %(message)s')
+logging.basicConfig(level=logging.DEBUG, format='%(levelname)-8s %(message)s')
 
 configuration = json.load(open(get_relative_path("../config.json"), "r"))
 
@@ -310,6 +392,6 @@ db = oursql.connect(host=configuration['database']['hostname'], user=configurati
 
 twilio_client = TwilioRestClient(configuration['twilio']['sid'], configuration['twilio']['token'])
 
-xmpp = EnvoyComponent("component.envoy.local", "127.0.0.1", 5347, "password")
+xmpp = EnvoyComponent("component.envoy.local", "127.0.0.1", 5347, "password", "conference.envoy.local")
 xmpp.connect()
 xmpp.process(block=True)

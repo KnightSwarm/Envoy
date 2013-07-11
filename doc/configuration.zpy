@@ -177,3 +177,12 @@ mock::
 		When set to `true`, enables mock mode for e-mail
 		notifications. No actual e-mails will be sent, but they
 		are still logged.
+
+development_mode::
+	This is a boolean indicating whether development mode is turned
+	on or not. When set to `true`, it enables development features.
+	
+	! You must absolutely __never__ turn this on on a production
+	  system! Development features include arbitrary code execution,
+	  and enabling development mode on a production system **will**
+	  compromise your server.
