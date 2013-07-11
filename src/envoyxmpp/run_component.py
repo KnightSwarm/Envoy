@@ -9,6 +9,7 @@ from component import Component
 from util import state
 
 from sleekxmpp.exceptions import IqError
+from sleekxmpp.jid import JID
 
 def get_relative_path(path):
 	my_path = os.path.dirname(os.path.abspath(__file__))
@@ -332,6 +333,37 @@ class EnvoyComponent(Component):
 			self._envoy_purge_presences()
 		elif body == "debugtree":
 			self.send_message(mto=sender, mbody=self._envoy_user_cache.get_debug_tree())
+	
+	def get_user_id(self, username, fqdn):
+		cursor = db.cursor()
+		cursor.execute("SELECT `Id` FROM users WHERE `Username` = ? AND `Fqdn` = ? LIMIT 1", (username, fqdn))
+		row = cursor.fetchone()
+		
+		if row is None:
+			raise Exception("No such user exists.")
+			
+		return row[0]
+	
+	def get_user_setting(self, jid, key, default=""):
+		username, fqdn = JID(jid).bare.split("@")
+		user_id = self.get_user_id(username, fqdn)
+		
+		cursor = db.cursor()
+		cursor.execute("SELECT `Value` FROM user_settings WHERE `UserId` = ? AND `Key` = ? LIMIT 1", (user_id, key))
+		row = cursor.fetchone()
+		
+		if row is None:
+			return default
+			
+		return row[0]
+		
+		
+	def set_user_setting(self, jid, key, value):
+		username, fqdn = JID(jid).bare.split("@")
+		user_id = self.get_user_id(username, fqdn)
+		
+		cursor = db.cursor()
+		cursor.execute("UPDATE user_settings SET `Value` = ? WHERE `UserId` = ? AND `Key` = ?", (value, user_id, key))
 	
 	# Envoy uses override methods for the user presence tracking feature in
 	# the XEP-0045 plugin. Instead of storing the presences in memory, they
