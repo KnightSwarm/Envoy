@@ -1,7 +1,7 @@
 --------- Template configuration file for Prosody as a part of Envoy -----------
 
 -- We have additional plugins installed.
-plugin_paths = { "/etc/envoy/prosody-modules" }
+plugin_paths = { "/etc/envoy/prosody/modules" }
 
 -- The pidfile keeps track of the running Prosody process.
 pidfile = "/etc/envoy/prosody/prosody.pid"
