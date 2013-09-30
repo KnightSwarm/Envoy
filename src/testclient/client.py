@@ -1,4 +1,4 @@
-import sys
+import sys, time
 from PyQt4.QtGui import QApplication, QMainWindow
 from ui.main import Ui_MainWindow
 from core import application
@@ -13,4 +13,7 @@ main_thread = application.ApplicationThread()
 main_thread.start()
 
 window.show()
-sys.exit(app.exec_())
+return_code = app.exec_()
+main_thread.stop()
+
+sys.exit(return_code)
