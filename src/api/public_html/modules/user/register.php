@@ -19,13 +19,15 @@
 if(!isset($_APP)) { die("Unauthorized."); }
 
 /* Validation steps for user registration:
- * - A username, FQDN, and password must be supplied and be non-empty.
+ * - A username, FQDN, e-mail address, nickname, first name and password must be supplied and be non-empty.
  * - The user must not already exist on the given FQDN.
- * - The API user must have administrative access to the supplied FQDN. */
+ * - The API user must have administrative access to the supplied FQDN.
+ * - The e-mail address must be in a valid format. 
+ * - If a mobile number is specified, validate the format as being international. */
 
 $sApiKeypair->RequireAdministrativeAccess($_POST['fqdn']);
 
-if(empty($_POST['username']) || empty($_POST['password']))
+if(empty($_POST['username']) || empty($_POST['password']) || empty($_POST['email_address']) || empty($_POST['nickname']) || empty($_POST['first_name']))
 {
 	throw new MissingParameterException("Missing one or more required fields.");
 }
@@ -41,6 +43,25 @@ catch (NotFoundException $e)
 	$found = false;
 }
 
+if(!empty($_POST['phone']))
+{
+	/* NOTE: This is a very loose validation. There is no guarantee that the resulting phone number is actually valid,
+	 * it just checks whether the format seems correct. */
+	if(preg_match("/^\+[0-9 -]+$/", $_POST['phone']))
+	{
+		$uPhoneNumber = str_replace(array(" ", "-"), "", $_POST['phone']);
+	}
+	else
+	{
+		throw new InvalidParameterException("The specified phone number is in an invalid format.");
+	}
+}
+
+if(filter_var($_POST['email_address'], FILTER_VALIDATE_EMAIL) === false)
+{
+	throw new InvalidParameterException("The specified e-mail address is in an invalid format.");
+}
+
 if($found === true)
 {
 	throw new AlreadyExistsException("The specified combination of username and FQDN is already in use.");
@@ -51,6 +72,12 @@ $sUser = new User(0);
 $sUser->uUsername = $_POST['username'];
 $sUser->uFqdn = $_POST['fqdn'];
 $sUser->uPassword = $_POST['password'];
+$sUser->uNickname = $_POST['nickname'];
+$sUser->uEmailAddress = $_POST['email_address'];
+$sUser->uFirstName = $_POST['first_name'];
+$sUser->uLastName = isset($_POST['last_name']) ? $_POST['last_name'] : "";
+$sUser->uJobTitle = isset($_POST['job_title']) ? $_POST['job_title'] : "";
+$sUser->uMobileNumber = isset($_POST['phone']) ? $_POST['phone'] : "";
 $sUser->uActive = true;
 $sUser->GenerateSalt();
 $sUser->GenerateHash();

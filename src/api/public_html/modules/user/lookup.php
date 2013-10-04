@@ -37,5 +37,11 @@ catch (NotFoundException $e)
 
 $sResponse = array(
 	"username"	=> $sUser->uUsername,
-	"active"	=> $sUser->sActive
+	"active"	=> $sUser->sActive,
+	"first_name"	=> $sUser->uFirstName,
+	"last_name"	=> $sUser->uLastName,
+	"email"		=> $sUser->uEmailAddress,
+	"phone"		=> $sUser->uMobileNumber,
+	"nickname"	=> $sUser->uNickname,
+	"job_title"	=> $sUser->uJobTitle
 );

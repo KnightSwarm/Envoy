@@ -25,3 +25,4 @@ class NotAuthorizedException extends ApiException {}
 class MissingParameterException extends ApiException {}
 class ResourceNotFoundException extends ApiException {}
 class InvalidFqdnException extends ApiException {}
+class InvalidParameterException extends ApiException {}

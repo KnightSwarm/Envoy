@@ -18,6 +18,26 @@
 		
 	password::
 		**Required.** The password to be used for the new user account.
+		
+	email_address::
+		**Required.** The e-mail address for the new user. This is where notifications are sent.
+		
+	nickname::
+		**Required.** The nickname for the new user. This is the name that will trigger a notification.
+		
+	first_name::
+		**Required.** The first name of the user.
+		
+	last_name::
+		The last name of the user.
+		
+	phone::
+		The mobile phone number for this user. If specified, notifications will be sent here. This number must be given in
+		international format, eg. `+15005550006`.
+		
+	job_title::
+		The job title of the new user. This is only used for display in the client right now, and does not grant any access
+		to any functionality.
 	
 	### Return values
 	
@@ -67,6 +87,24 @@
 	active::
 		Boolean. Whether the specified user is activated or not.
 	
+	email_address::
+		String. The e-mail address for the user.
+	
+	nickname::
+		String. The nickname used by the user. This is the name that triggers notifications.
+		
+	first_name::
+		String. The first name of the user.
+		
+	last_name::
+		String. The last name of the user. May be empty.
+		
+	phone::
+		String. The mobile phone number of the user, in international format. May be empty.
+		
+	job_title::
+		String. The job title of the user. May be empty.
+	
 	### Error conditions
 	
 	HTTP 400::
@@ -85,7 +123,13 @@
 		> {
 			"response": {
 				"username": "user",
-				"active": true
+				"active": true,
+				"first_name": "Testing",
+				"last_name": "User",
+				"phone": "+15005550006",
+				"nickname": "testuser",
+				"email": "testuser@mailprovider.com",
+				"job_title": "First Dummy"
 			}
 		}
 
@@ -110,7 +154,7 @@
 	
 	### Return values
 	
-	active::
+	valid::
 		Boolean. Whether the specified password is valid or not.
 	
 	### Error conditions
