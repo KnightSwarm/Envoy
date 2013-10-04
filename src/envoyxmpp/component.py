@@ -137,7 +137,7 @@ class Component(ComponentXMPP):
 		elif isinstance(stanza, Presence):
 			self._envoy_handle_presence(wrapper, stanza)
 		else:
-			print "Unknown:", repr(stanza) # TODO: Log unknown stanza type
+			logging.warn("Unknown stanza type encountered: %s" % repr(stanza))
 	
 	def _envoy_handle_iq(self, wrapper, stanza):
 		if MatchXPath("{jabber:client}iq/{urn:xmpp:ping}ping").match(stanza):
