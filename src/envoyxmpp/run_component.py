@@ -1,4 +1,4 @@
-import logging, json, oursql, os, copy, time
+import logging, json, oursql, os, copy, time, traceback
 from datetime import datetime
 from marrow.mailer import Message, Mailer
 
@@ -340,7 +340,10 @@ class EnvoyComponent(Component):
 				output = eval(body[1:].strip(), {"self": self})
 				self.send_message(mto=sender, mbody=unicode(output))
 			except IqError, e:
+				self.send_message(mto=sender, mbody=unicode("IqError encountered\n%s" % traceback.format_exc()))
 				logging.error("IqError: %s" % e.iq)
+			except:
+				self.send_message(mto=sender, mbody=unicode("Uncaught exception encountered:\n%s" % traceback.format_exc()))
 		elif body == "purge":
 			self._envoy_purge_presences()
 		elif body == "debugtree":
