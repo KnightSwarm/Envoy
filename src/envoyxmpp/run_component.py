@@ -390,7 +390,14 @@ db = oursql.connect(host=configuration['database']['hostname'], user=configurati
                     passwd=configuration['database']['password'], db=configuration['database']['database'],
                     autoreconnect=True)
 
-twilio_client = TwilioRestClient(configuration['twilio']['sid'], configuration['twilio']['token'])
+try:
+	sms_enabled = (configuration['mock']['sms'] == False)
+except KeyError, e:
+	sms_enabled = True
+
+if sms_enabled == True:
+	# If mock mode is turned on for SMS, we don't need to send actual API requests, so configuration is also not necessary.
+	twilio_client = TwilioRestClient(configuration['twilio']['sid'], configuration['twilio']['token'])
 
 xmpp = EnvoyComponent("component.envoy.local", "127.0.0.1", 5347, "password", "conference.envoy.local")
 xmpp.connect()
