@@ -8,17 +8,23 @@ from PyQt4 import QtCore
 
 from sleekxmpp.exceptions import IqError, IqTimeout
 
+class Room(object):
+	def __init__(self, room_name):
+		self.name = room_name
+
 class ApplicationThread(thread.BaseThread):
+	def __init__(self, *args, **kwargs):
+		thread.BaseThread.__init__(self, *args, **kwargs)
+		self.main_application = Application()
+		
 	@QtCore.pyqtSlot()
 	def run(self):
-		global main_application
-		main_application = Application()
-		main_application.connect("testuser2@envoy.local", "testpass")
+		self.main_application.connect("testuser2@envoy.local", "testpass")
 	
 	@QtCore.pyqtSlot()
 	def shutdown(self):
 		logging.info("[application] Shutting down client...")
-		main_application.xmpp.disconnect()
+		self.main_application.xmpp.disconnect()
 		logging.info("[application] Client disconnected, waiting for all threads to exit...")
 	
 	def done(self):
@@ -26,10 +32,15 @@ class ApplicationThread(thread.BaseThread):
 		pass
 		# TODO: Not sure what to do with this method... it runs after cleanly finishing, but may not be very useful.
 
-class Application(object):
+class Application(QtCore.QObject):
 	# Main application code (SleekXMPP, etc.) goes here
+	# This lives in the application thread
+	event_signal = QtCore.pyqtSignal(str, dict)
+	
 	def __init__(self):
-		pass
+		QtCore.QObject.__init__(self)
+		self.handler = ApplicationHandler(self)
+		self.event_signal.connect(self.handler.receive_event)
 		
 	def connect(self, jid, password):
 		self.xmpp = xmpp.Client(jid, password)
@@ -41,3 +52,30 @@ class Application(object):
 		
 	def on_private_message(self, message):
 		print "Private (from %s): %s" % (message['from'], message['body'])
+	
+	def fire_event(self, event, data):
+		
+		pass#
+		
+	@QtCore.pyqtSlot(str, dict)
+	def receive_event(self, event, data):
+		pass#
+
+class ApplicationHandler(QtCore.QObject):
+	# This lives in the GUI thread
+	event_signal = QtCore.pyqtSignal(str, dict)
+	
+	def __init__(self, application):
+		QtCore.QObject.__init__(self)
+		self.app = application
+		
+		self.event_signal.connect(self.app.receive_event)
+		
+		self._rooms = []
+		
+	def fire_event(self, event, data):
+		pass#
+	
+	@QtCore.pyqtSlot(str, dict)
+	def receive_event(self, event, data):
+		pass#
