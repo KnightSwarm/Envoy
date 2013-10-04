@@ -60,6 +60,8 @@ log = {
 -- Virtual hosts
 VirtualHost "envoy.local"
         enabled = true -- Remove this line to enable this host
+        
+        admins = { "component.envoy.local" }
 
         -- Assign this host a certificate for TLS, otherwise it would use the one
         -- set in the global section (if any).
