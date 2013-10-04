@@ -30,6 +30,7 @@ modules_enabled = {
                 "watchregistrations"; -- Alert admins of registrations
                 "auth_external"; -- Handles user authentication via an ejabberd extauth script.
                 "forward"; -- Forwards all stanzas to an external component and relays responses.
+                "muc"; -- Multi-User Conferencing (ie. rooms)
 };
 
 -- For now, we will only allow registration through the API.
@@ -68,6 +69,11 @@ VirtualHost "envoy.local"
                 key = "/etc/envoy/certs/envoy.local.key";
                 certificate = "/etc/envoy/certs/envoy.local.crt";
         }
+
+-- The standard MUC component (TODO: this needs to go into host config)
+Component "conference.envoy.local" "muc"
+	name = "Rooms for envoy.local"
+	restrict_room_creation = true
 
 -- The external Envoy component
 Component "component.envoy.local"
