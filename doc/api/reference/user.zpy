@@ -177,3 +177,72 @@
 				"valid": true
 			}
 		}
+
+^ GET /user/settings/lookup
+
+	__Requires administrative FQDN read access.__ 
+	
+	Looks up the value and last modification date for a user setting.
+	
+	username::
+		**Required.** The username. This is the part before the @ in their JID.
+		
+	fqdn::
+		**Required.** The FQDN that this user account exists on.
+		
+	key::
+		**Required.** The key of the user setting to look up.
+		
+	### Return values
+	
+	value::
+		The value for the specified setting.
+		
+	last_modified::
+		A Unix timestamp representing the last modification (or creation) date of this setting.
+		
+	### Error conditions
+	
+	HTTP 400::
+		One or more of the required arguments is missing.
+	
+	HTTP 404::
+		The specified user or setting does not exist.
+		
+	HTTP 422::
+		The specified FQDN does not exist.
+		
+^ POST /user/settings/set
+
+	__Requires administrative FQDN access.__
+	
+	Changes or creates the specified user setting. A list of possible user settings
+	can be found {>../../usersettings}(here).
+	
+	username::
+		**Required.** The username. This is the part before the @ in their JID.
+		
+	fqdn::
+		**Required.** The FQDN that this user account exists on.
+		
+	key::
+		**Required.** The key of the user setting to change.
+		
+	value::
+		**Required.** The value to set the user setting to.
+		
+	### Return value
+	
+	Returns `true` if the change was successful, or one of the HTTP status codes
+	mentioned below with an error message if the change failed.
+	
+	### Error conditions
+	
+	HTTP 400::
+		One or more of the required arguments is missing.
+	
+	HTTP 404::
+		The specified user does not exist.
+		
+	HTTP 422::
+		The specified FQDN does not exist.
