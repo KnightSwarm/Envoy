@@ -333,7 +333,7 @@ class UserCacheItem(object):
 		return hash(("jid", str(self.jid)))
 	
 	def update_presence(self, presence):
-		logging.debug("Changing presence for user %s to %s" % (self.jid, affiliation))
+		logging.debug("Changing presence for user %s to %s" % (self.jid, presence))
 		self.presence = presence
 		
 	def add_room(self, room, resource):
