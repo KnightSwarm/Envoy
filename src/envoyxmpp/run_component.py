@@ -84,7 +84,13 @@ class EnvoyComponent(Component):
 		
 		for row in cursor:
 			user, room = row
-			bare_jid, resource = user.split("/", 1)
+			
+			try:
+				bare_jid, resource = user.split("/", 1)
+			except ValueError, e:
+				bare_jid = user
+				resource = ""
+				
 			self._envoy_user_cache.get(bare_jid).add_room(room, resource)
 			
 		for jid, user in self._envoy_user_cache.cache.iteritems():
@@ -161,7 +167,12 @@ class EnvoyComponent(Component):
 		
 		for row in cursor:
 			id_, user_jid, room_jid = row
-			user_bare, user_resource = user_jid.split("/")
+			
+			try:
+				user_bare, user_resource = user_jid.split("/", 1)
+			except ValueError, e:
+				user_bare = user
+				user_resource = ""
 			
 			try:
 				if user_resource in all_presences[user_bare][room_jid]:
