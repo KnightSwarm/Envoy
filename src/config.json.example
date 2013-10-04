@@ -22,7 +22,8 @@
 		"user": "User",
 		"fqdn": "Fqdn",
 		"apikey": "ApiKey",
-		"apipermission": "ApiPermission"
+		"apipermission": "ApiPermission",
+		"room": "Room"
 	},
 	"components": [
 		"router",
