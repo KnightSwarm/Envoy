@@ -335,27 +335,25 @@ class EnvoyComponent(Component):
 			self.send_message(mto=sender, mbody=self._envoy_user_cache.get_debug_tree())
 	
 	def get_user_id(self, username, fqdn):
-		cursor = db.cursor()
-		cursor.execute("SELECT `Id` FROM users WHERE `Username` = ? AND `Fqdn` = ? LIMIT 1", (username, fqdn))
+		cursor = database.query("SELECT * FROM users WHERE `Username` = ? AND `Fqdn` = ? LIMIT 1", (username, fqdn))
 		row = cursor.fetchone()
 		
 		if row is None:
 			raise Exception("No such user exists.")
 			
-		return row[0]
+		return row['Id']
 	
 	def get_user_setting(self, jid, key, default=""):
 		username, fqdn = JID(jid).bare.split("@")
 		user_id = self.get_user_id(username, fqdn)
 		
-		cursor = db.cursor()
-		cursor.execute("SELECT `Value` FROM user_settings WHERE `UserId` = ? AND `Key` = ? LIMIT 1", (user_id, key))
+		database.query("SELECT * FROM user_settings WHERE `UserId` = ? AND `Key` = ? LIMIT 1", (user_id, key))
 		row = cursor.fetchone()
 		
 		if row is None:
 			return default
 			
-		return row[0]
+		return row['Value']
 		
 		
 	def set_user_setting(self, jid, key, value):
@@ -363,12 +361,11 @@ class EnvoyComponent(Component):
 		user_id = self.get_user_id(username, fqdn)
 		current_timestamp = datetime.utcnow()
 		
-		cursor = db.cursor()
-		cursor.execute("UPDATE user_settings SET `Value` = ?, `LastModified` = ? WHERE `UserId` = ? AND `Key` = ?", (value, current_timestamp, user_id, key))
+		cursor = database.query("UPDATE user_settings SET `Value` = ?, `LastModified` = ? WHERE `UserId` = ? AND `Key` = ?", (value, current_timestamp, user_id, key), commit=True)
 		
 		if cursor.rowcount == 0:
 			# The entry didn't exist yet... insert a new one
-			cursor.execute("INSERT INTO user_settings (`Value`, `LastModified`, `UserId`, `Key`) VALUES (?, ?, ?)", (value, current_timestamp, user_id, key))
+			database.query("INSERT INTO user_settings (`Value`, `LastModified`, `UserId`, `Key`) VALUES (?, ?, ?)", (value, current_timestamp, user_id, key), commit=True)
 	
 	# Envoy uses override methods for the user presence tracking feature in
 	# the XEP-0045 plugin. Instead of storing the presences in memory, they
