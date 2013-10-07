@@ -153,13 +153,13 @@ class EnvoyComponent(Component):
 		# the dict and left intact in the database. Every presence that doesn't exist in the dict,
 		# will be removed from the database. After the first pass, the dict will only hold the
 		# "missing" entries that are not in the database yet.
-		query = "SELECT `Id`, `UserJid`, `RoomJid` FROM presences"
-		cursor = db.cursor()
-		cursor.execute(query)
+		
+		cursor = database.query("SELECT * FROM presences")
 		
 		for row in cursor:
-			id_, user_jid, room_jid = row
-			user_bare, user_resource = user_jid.split("/")
+			room_jid = row['RoomJid']
+			# FIXME: Use SleekXMPP's JID parsing
+			user_bare, user_resource = row['UserJid'].split("/")
 			
 			try:
 				if user_resource in all_presences[user_bare][room_jid]:
@@ -167,11 +167,9 @@ class EnvoyComponent(Component):
 					#        and recreating the resource list in one pass.
 					all_presences[user_bare][room_jid] = [x for x in all_presences[user_bare][room_jid] if x != user_resource]
 				else:
-					deletable_ids.append(id_)
+					deletable_ids.append(row['Id'])
 			except KeyError, e:
-				deletable_ids.append(id_)
-		
-		print all_presences
+				deletable_ids.append(row['Id'])
 		
 		# Before doing actual database insertion, we'll want to clean up empty entries.
 		for user in all_presences.keys():
