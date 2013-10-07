@@ -335,7 +335,9 @@ class EnvoyComponent(Component):
 	def handle_development_command(self, sender, recipient, body):
 		if body.startswith("$"):
 			try:
-				output = eval(body[1:].strip(), {"self": self})
+				scope = {"self": self}
+				scope.update(globals())
+				output = eval(body[1:].strip(), scope)
 				self.send_message(mto=sender, mbody=unicode(output))
 			except IqError, e:
 				self.send_message(mto=sender, mbody=unicode("IqError encountered\n%s" % traceback.format_exc()))
