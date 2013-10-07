@@ -184,12 +184,15 @@ class EnvoyComponent(Component):
 		logging.info("Remaining presences for database insertion: %s" % all_presences)
 		
 		for id_ in deletable_ids:
-			cursor.execute("DELETE FROM `presences` WHERE `Id` = ?", (id_,))
+			database.query("DELETE FROM `presences` WHERE `Id` = ?", (id_,))
 			
 		for user, rooms in all_presences.iteritems():
 			for room, resources in rooms.iteritems():
 				for resource in resources:
-					cursor.execute("INSERT INTO presences (`UserJid`, `RoomJid`) VALUES (?, ?)", ("%s/%s" % (user, resource), room))
+					database.query("INSERT INTO presences (`UserJid`, `RoomJid`) VALUES (?, ?)", ("%s/%s" % (user, resource), room))
+					
+		# We manually commit, for performance reasons
+		database.commit()
 		
 		for jid, user in self._envoy_user_cache.cache.iteritems():
 			logging.debug("Room presence list AFTER database sync for user %s: %s" % (jid, user.rooms))
