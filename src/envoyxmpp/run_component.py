@@ -365,7 +365,12 @@ class EnvoyComponent(Component):
 		
 		if cursor.rowcount == 0:
 			# The entry didn't exist yet... insert a new one
-			database.query("INSERT INTO user_settings (`Value`, `LastModified`, `UserId`, `Key`) VALUES (?, ?, ?)", (value, current_timestamp, user_id, key), commit=True)
+			row = db.Row()
+			row['Value'] = value
+			row['LastModified'] = current_timestamp
+			row['UserId'] = user_id
+			row['Key'] = key
+			database['user_settings'].append(row)
 	
 	# Envoy uses override methods for the user presence tracking feature in
 	# the XEP-0045 plugin. Instead of storing the presences in memory, they
