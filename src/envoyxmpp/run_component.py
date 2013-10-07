@@ -399,13 +399,25 @@ class EnvoyComponent(Component):
 		cursor = db.cursor()
 		
 		if event_type == 1 or event_type == 2 or event_type == 5:  # Message
-			query = "INSERT INTO log_messages (`Date`, `Sender`, `Recipient`, `Type`, `Message`) VALUES (?, ?, ?, ?, ?)"
-			cursor.execute(query, (timestamp, str(sender), str(recipient), event_type, payload))
+			row = db.Row()
+			row['Date'] = timestamp
+			row['Sender'] = str(sender)
+			row['Recipient'] = str(recipient)
+			row['Type'] = event_type
+			row['Message'] = payload
+			database['log_messages'].append(row)
 		elif event_type == 3 or event_type == 4:  # Event
 			if extra is None:
 				extra = ""
-			query = "INSERT INTO log_events (`Date`, `Sender`, `Recipient`, `Type`, `Event`, `Extra`) VALUES (?, ?, ?, ?, ?, ?)"
-			cursor.execute(query, (timestamp, str(sender), str(recipient), event_type, payload, extra))
+				
+			row = db.Row()
+			row['Date'] = timestamp
+			row['Sender'] = str(sender)
+			row['Recipient'] = str(recipient)
+			row['Type'] = event_type
+			row['Event'] = payload
+			row['Extra'] = extra
+			database['log_events'].append(row)
 			
 
 logging.basicConfig(level=logging.DEBUG, format='%(levelname)-8s %(message)s')
