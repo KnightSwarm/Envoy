@@ -7,6 +7,7 @@ from twilio.rest import TwilioRestClient
 
 from component import Component
 from util import state
+from core import db
 
 from sleekxmpp.exceptions import IqError
 from sleekxmpp.jid import JID
@@ -62,36 +63,33 @@ class EnvoyComponent(Component):
 		self['xep_0045'].api.register(self._envoy_del_joined_room, 'del_joined_room')
 		
 		# TODO: Update internal user cache when vCard changes occur
-		cursor = db.cursor()
-		cursor.execute("SELECT Username, Fqdn, EmailAddress, FirstName, LastName, Nickname, JobTitle, MobileNumber FROM users WHERE `Active` = 1")
+		cursor = database.query("SELECT * FROM users WHERE `Active` = 1")
 		
 		for row in cursor:
-			jid = "%s@%s" % (row[0], row[1])
-			email_address, first_name, last_name, nickname, job_title, mobile_number = row[2:]
+			jid = "%s@%s" % (row['Username'], row['Fqdn'])
 			user = self._envoy_user_cache.get(jid)
 			user.update_vcard({
-				"email_address": email_address,
-				"first_name": first_name,
-				"last_name": last_name,
-				"nickname": nickname,
-				"job_title": job_title,
-				"mobile_number": mobile_number
+				"email_address": row['EmailAddress'],
+				"first_name": row['FirstName'],
+				"last_name": row['LastName'],
+				"nickname": row['Nickname'],
+				"job_title": row['JobTitle'],
+				"mobile_number": row['MobileNumber']
 			})
 			
-			logging.info("Found user %s in database with nickname @%s" % (jid, nickname))
+			logging.info("Found user %s in database with nickname @%s" % (jid, row['Nickname']))
 			
-		cursor.execute("SELECT UserJid, RoomJid FROM presences")
+		cursor = database.query("SELECT * FROM presences")
 		
 		for row in cursor:
-			user, room = row
-			
+			# FIXME: Use SleekXMPPs JID parsing
 			try:
-				bare_jid, resource = user.split("/", 1)
+				bare_jid, resource = row['UserJid'].split("/", 1)
 			except ValueError, e:
 				bare_jid = user
 				resource = ""
 				
-			self._envoy_user_cache.get(bare_jid).add_room(room, resource)
+			self._envoy_user_cache.get(bare_jid).add_room(row['RoomJid'], resource)
 			
 		for jid, user in self._envoy_user_cache.cache.iteritems():
 			print user.jid, user.nickname, user.rooms
@@ -161,15 +159,14 @@ class EnvoyComponent(Component):
 		# the dict and left intact in the database. Every presence that doesn't exist in the dict,
 		# will be removed from the database. After the first pass, the dict will only hold the
 		# "missing" entries that are not in the database yet.
-		query = "SELECT `Id`, `UserJid`, `RoomJid` FROM presences"
-		cursor = db.cursor()
-		cursor.execute(query)
+		
+		cursor = database.query("SELECT * FROM presences")
 		
 		for row in cursor:
-			id_, user_jid, room_jid = row
-			
+			room_jid = row['RoomJid']
+
 			try:
-				user_bare, user_resource = user_jid.split("/", 1)
+				user_bare, user_resource = row['UserJid'].split("/")
 			except ValueError, e:
 				user_bare = user
 				user_resource = ""
@@ -180,11 +177,9 @@ class EnvoyComponent(Component):
 					#        and recreating the resource list in one pass.
 					all_presences[user_bare][room_jid] = [x for x in all_presences[user_bare][room_jid] if x != user_resource]
 				else:
-					deletable_ids.append(id_)
+					deletable_ids.append(row['Id'])
 			except KeyError, e:
-				deletable_ids.append(id_)
-		
-		print all_presences
+				deletable_ids.append(row['Id'])
 		
 		# Before doing actual database insertion, we'll want to clean up empty entries.
 		for user in all_presences.keys():
@@ -199,12 +194,15 @@ class EnvoyComponent(Component):
 		logging.info("Remaining presences for database insertion: %s" % all_presences)
 		
 		for id_ in deletable_ids:
-			cursor.execute("DELETE FROM `presences` WHERE `Id` = ?", (id_,))
+			database.query("DELETE FROM `presences` WHERE `Id` = ?", (id_,))
 			
 		for user, rooms in all_presences.iteritems():
 			for room, resources in rooms.iteritems():
 				for resource in resources:
-					cursor.execute("INSERT INTO presences (`UserJid`, `RoomJid`) VALUES (?, ?)", ("%s/%s" % (user, resource), room))
+					database.query("INSERT INTO presences (`UserJid`, `RoomJid`) VALUES (?, ?)", ("%s/%s" % (user, resource), room))
+					
+		# We manually commit, for performance reasons
+		database.commit()
 		
 		for jid, user in self._envoy_user_cache.cache.iteritems():
 			logging.debug("Room presence list AFTER database sync for user %s: %s" % (jid, user.rooms))
@@ -350,27 +348,25 @@ class EnvoyComponent(Component):
 			self.send_message(mto=sender, mbody=self._envoy_user_cache.get_debug_tree())
 	
 	def get_user_id(self, username, fqdn):
-		cursor = db.cursor()
-		cursor.execute("SELECT `Id` FROM users WHERE `Username` = ? AND `Fqdn` = ? LIMIT 1", (username, fqdn))
+		cursor = database.query("SELECT * FROM users WHERE `Username` = ? AND `Fqdn` = ? LIMIT 1", (username, fqdn))
 		row = cursor.fetchone()
 		
 		if row is None:
 			raise Exception("No such user exists.")
 			
-		return row[0]
+		return row['Id']
 	
 	def get_user_setting(self, jid, key, default=""):
 		username, fqdn = JID(jid).bare.split("@")
 		user_id = self.get_user_id(username, fqdn)
 		
-		cursor = db.cursor()
-		cursor.execute("SELECT `Value` FROM user_settings WHERE `UserId` = ? AND `Key` = ? LIMIT 1", (user_id, key))
+		database.query("SELECT * FROM user_settings WHERE `UserId` = ? AND `Key` = ? LIMIT 1", (user_id, key))
 		row = cursor.fetchone()
 		
 		if row is None:
 			return default
 			
-		return row[0]
+		return row['Value']
 		
 		
 	def set_user_setting(self, jid, key, value):
@@ -378,12 +374,16 @@ class EnvoyComponent(Component):
 		user_id = self.get_user_id(username, fqdn)
 		current_timestamp = datetime.utcnow()
 		
-		cursor = db.cursor()
-		cursor.execute("UPDATE user_settings SET `Value` = ?, `LastModified` = ? WHERE `UserId` = ? AND `Key` = ?", (value, current_timestamp, user_id, key))
+		cursor = database.query("UPDATE user_settings SET `Value` = ?, `LastModified` = ? WHERE `UserId` = ? AND `Key` = ?", (value, current_timestamp, user_id, key), commit=True)
 		
 		if cursor.rowcount == 0:
 			# The entry didn't exist yet... insert a new one
-			cursor.execute("INSERT INTO user_settings (`Value`, `LastModified`, `UserId`, `Key`) VALUES (?, ?, ?)", (value, current_timestamp, user_id, key))
+			row = db.Row()
+			row['Value'] = value
+			row['LastModified'] = current_timestamp
+			row['UserId'] = user_id
+			row['Key'] = key
+			database['user_settings'].append(row)
 	
 	# Envoy uses override methods for the user presence tracking feature in
 	# the XEP-0045 plugin. Instead of storing the presences in memory, they
@@ -394,53 +394,59 @@ class EnvoyComponent(Component):
 	def _envoy_is_joined_room(self, jid, node, ifrom, data):
 		# Override for the _is_joined_room method.
 		# Checks whether a JID was already present in a room.
-		query = "SELECT COUNT(*) FROM presences WHERE `UserJid` = ? AND `RoomJid` = ?"
-		cursor = db.cursor()
-		cursor.execute(query, (str(jid), str(node)))
-		return (cursor.fetchone()[0] > 0)
+		cursor = database.query("SELECT COUNT(*) FROM presences WHERE `UserJid` = ? AND `RoomJid` = ?", (str(jid), str(node)))
+		return (cursor.fetchone()['COUNT(*)'] > 0)
 	
 	def _envoy_get_joined_rooms(self, jid, node, ifrom, data):
 		# Override for the _get_joined_rooms method.
 		# Retrieves a list of all rooms a JID is present in.
-		query = "SELECT * FROM presences WHERE `UserJid` = ?"
-		cursor = db.cursor()
-		cursor.execute(query, (str(jid)))
-		return set([row[2] for row in cursor])
+		cursor = database.query("SELECT * FROM presences WHERE `UserJid` = ?", (str(jid),))
+		return set([row['RoomJid'] for row in cursor])
 		
 	def _envoy_add_joined_room(self, jid, node, ifrom, data):
 		# Override for the _add_joined_room method.
 		# Registers a JID presence in a room.
-		query = "INSERT INTO presences (`UserJid`, `RoomJid`) VALUES (?, ?)"
-		cursor = db.cursor()
-		cursor.execute(query, (str(jid), str(node)))
+		database.query("INSERT INTO presences (`UserJid`, `RoomJid`) VALUES (?, ?)", (str(jid), str(node)))
 		
 	def _envoy_del_joined_room(self, jid, node, ifrom, data):
 		# Override for the _del_joined_room method.
 		# Removes a JID presence in a room.
-		query = "DELETE FROM presences WHERE `UserJid` = ? AND `RoomJid` = ?"
-		cursor = db.cursor()
-		cursor.execute(query, (str(jid), str(node)))
+		database.query("DELETE FROM presences WHERE `UserJid` = ? AND `RoomJid` = ?", (str(jid), str(node)))
 		
 	def _envoy_log_event(self, timestamp, sender, recipient, event_type, payload, extra=None):
 		cursor = db.cursor()
 		
 		if event_type == 1 or event_type == 2 or event_type == 5:  # Message
-			query = "INSERT INTO log_messages (`Date`, `Sender`, `Recipient`, `Type`, `Message`) VALUES (?, ?, ?, ?, ?)"
-			cursor.execute(query, (timestamp, str(sender), str(recipient), event_type, payload))
+			row = db.Row()
+			row['Date'] = timestamp
+			row['Sender'] = str(sender)
+			row['Recipient'] = str(recipient)
+			row['Type'] = event_type
+			row['Message'] = payload
+			database['log_messages'].append(row)
 		elif event_type == 3 or event_type == 4:  # Event
 			if extra is None:
 				extra = ""
-			query = "INSERT INTO log_events (`Date`, `Sender`, `Recipient`, `Type`, `Event`, `Extra`) VALUES (?, ?, ?, ?, ?, ?)"
-			cursor.execute(query, (timestamp, str(sender), str(recipient), event_type, payload, extra))
+				
+			row = db.Row()
+			row['Date'] = timestamp
+			row['Sender'] = str(sender)
+			row['Recipient'] = str(recipient)
+			row['Type'] = event_type
+			row['Event'] = payload
+			row['Extra'] = extra
+			database['log_events'].append(row)
 			
 
 logging.basicConfig(level=logging.DEBUG, format='%(levelname)-8s %(message)s')
 
 configuration = json.load(open(get_relative_path("../config.json"), "r"))
 
-db = oursql.connect(host=configuration['database']['hostname'], user=configuration['database']['username'], 
-                    passwd=configuration['database']['password'], db=configuration['database']['database'],
-                    autoreconnect=True)
+#db = oursql.connect(host=configuration['database']['hostname'], user=configuration['database']['username'], 
+#                    passwd=configuration['database']['password'], db=configuration['database']['database'],
+#                    autoreconnect=True)
+database = db.Database(configuration['database']['hostname'], configuration['database']['username'], 
+                       configuration['database']['password'], configuration['database']['database'])
 
 try:
 	sms_enabled = (configuration['mock']['sms'] == False)
