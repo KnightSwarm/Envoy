@@ -254,14 +254,14 @@ class Component(ComponentXMPP):
 	def register_event(self, event_name, func):
 		self._envoy_events[event_name] = func
 
-class UserCache(object):
+class NodeCache(object):
 	def __init__(self):
 		self.cache = {}
 		
 	def touch(self, jid):
 		if jid not in self.cache:
-			logging.debug("Created UserCache item %s" % jid)
-			self.cache[jid] = UserCacheItem(jid)
+			logging.debug("Created %s item %s" % (self.__class__, jid))
+			self.cache[jid] = self.item_factory(jid)
 		
 	def get(self, jid):
 		try:
@@ -269,6 +269,21 @@ class UserCache(object):
 		except KeyError, e:
 			self.touch(jid)
 			return self.cache[jid]
+
+class NodeCacheItem(object):
+	def __init__(self, jid):
+		self.jid = jid
+	
+	def __eq__(self, other):
+		return (str(self.jid) == str(other.jid))
+		
+	def __hash__(self):
+		return hash(("jid", str(self.jid)))
+
+class UserCache(NodeCache):
+	def __init__(self, *args, **kwargs):
+		NodeCache.__init__(self, *args, **kwargs)
+		self.item_factory = UserCacheItem
 			
 	def find_nickname(self, nickname):
 		return [user for jid, user in self.cache.iteritems() if user.nickname == nickname][:1]
@@ -312,9 +327,9 @@ class UserCache(object):
 			
 		return output
 			
-class UserCacheItem(object):
+class UserCacheItem(NodeCacheItem):
 	def __init__(self, jid):
-		self.jid = jid
+		NodeCacheItem.__init__(self, jid)
 		self.presence = state.UNKNOWN
 		self.rooms = {}
 		self.affiliations = {}
@@ -325,12 +340,6 @@ class UserCacheItem(object):
 		self.email_address = ""
 		self.nickname = ""
 		self.mobile_number = ""
-	
-	def __eq__(self, other):
-		return (str(self.jid) == str(other.jid))
-		
-	def __hash__(self):
-		return hash(("jid", str(self.jid)))
 	
 	def update_presence(self, presence):
 		logging.debug("Changing presence for user %s to %s" % (self.jid, state.from_state(presence)))
