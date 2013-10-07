@@ -39,6 +39,7 @@ class Component(ComponentXMPP):
 		self._envoy_events = {}
 		self._envoy_members = {}
 		self._envoy_user_cache = UserCache()
+		self._envoy_room_cache = RoomCache()
 		
 		# We can't check all the presences straight away, because the component hasn't connected yet - it
 		# will hang while waiting for an <iq /> response that never comes. We'll therefore do the first
@@ -58,6 +59,33 @@ class Component(ComponentXMPP):
 					self._envoy_members[room].append(item['jid'])
 		except IqError, e:
 			pass  # The room doesn't exist anymore
+	
+	def _envoy_update_roominfo(self, room_jid):
+		room = self._envoy_room_cache.get(room_jid)
+		
+		try:
+			info = self['xep_0030'].get_info(jid=room_jid, ifrom=self.boundjid)
+			room.registered = True
+		except IqError, e:
+			room.registered = False
+			return
+			
+		for identity in info['identities']:
+			category, type_, lang, name = identity
+			
+			if category == "conference" and type_ == "text":
+				room.title = name
+				
+		for feature in info['features']:
+			if feature == "muc_membersonly":
+				room.private = True
+			elif feature == "muc_public":
+				room.private = False
+			elif feature == "muc_moderated":
+				room.moderated = True
+			elif feature == "muc_unmoderated":
+				room.moderated = False
+			
 	
 	def _envoy_purge_presences(self):
 		logging.info("Purging outdated presences")
@@ -279,6 +307,34 @@ class NodeCacheItem(object):
 		
 	def __hash__(self):
 		return hash(("jid", str(self.jid)))
+
+class RoomCache(NodeCache):
+	def __init__(self, *args, **kwargs):
+		NodeCache.__init__(self, *args, **kwargs)
+		self.item_factory = RoomCacheItem
+
+class RoomCacheItem(NodeCacheItem):
+	def __init__(self, jid):
+		NodeCacheItem.__init__(self, jid)
+		self.registered = False
+		self.participants = {}
+		self.members = {}
+		self.name = ""
+		self.private = True
+		self.moderated = True
+		self.owner = ""
+		
+	def is_registered(self):
+		pass
+		
+	def register(self):
+		pass
+		
+	def add_participant(self, nickname, jid):
+		pass
+		
+	def remove_participant(self, nickname):
+		pass
 
 class UserCache(NodeCache):
 	def __init__(self, *args, **kwargs):
