@@ -414,8 +414,6 @@ class EnvoyComponent(Component):
 		database.query("DELETE FROM presences WHERE `UserJid` = ? AND `RoomJid` = ?", (str(jid), str(node)))
 		
 	def _envoy_log_event(self, timestamp, sender, recipient, event_type, payload, extra=None):
-		cursor = db.cursor()
-		
 		if event_type == 1 or event_type == 2 or event_type == 5:  # Message
 			row = db.Row()
 			row['Date'] = timestamp
