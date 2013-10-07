@@ -37,6 +37,9 @@ class Database(object):
 	def __getitem__(self, key):
 		return self.get_database_table(key)
 		
+	def commit(self):
+		self.conn.commit()
+		
 	def get_database_table(self, name):
 		return self._get_table(name, in_memory=False)
 	
