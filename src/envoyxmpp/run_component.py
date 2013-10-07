@@ -376,32 +376,24 @@ class EnvoyComponent(Component):
 	def _envoy_is_joined_room(self, jid, node, ifrom, data):
 		# Override for the _is_joined_room method.
 		# Checks whether a JID was already present in a room.
-		query = "SELECT COUNT(*) FROM presences WHERE `UserJid` = ? AND `RoomJid` = ?"
-		cursor = db.cursor()
-		cursor.execute(query, (str(jid), str(node)))
-		return (cursor.fetchone()[0] > 0)
+		cursor = database.query("SELECT COUNT(*) FROM presences WHERE `UserJid` = ? AND `RoomJid` = ?", (str(jid), str(node)))
+		return (cursor.fetchone()['COUNT(*)'] > 0)
 	
 	def _envoy_get_joined_rooms(self, jid, node, ifrom, data):
 		# Override for the _get_joined_rooms method.
 		# Retrieves a list of all rooms a JID is present in.
-		query = "SELECT * FROM presences WHERE `UserJid` = ?"
-		cursor = db.cursor()
-		cursor.execute(query, (str(jid)))
-		return set([row[2] for row in cursor])
+		cursor = database.query("SELECT * FROM presences WHERE `UserJid` = ?", (str(jid),)))
+		return set([row['RoomJid'] for row in cursor])
 		
 	def _envoy_add_joined_room(self, jid, node, ifrom, data):
 		# Override for the _add_joined_room method.
 		# Registers a JID presence in a room.
-		query = "INSERT INTO presences (`UserJid`, `RoomJid`) VALUES (?, ?)"
-		cursor = db.cursor()
-		cursor.execute(query, (str(jid), str(node)))
+		database.query("INSERT INTO presences (`UserJid`, `RoomJid`) VALUES (?, ?)", (str(jid), str(node)))
 		
 	def _envoy_del_joined_room(self, jid, node, ifrom, data):
 		# Override for the _del_joined_room method.
 		# Removes a JID presence in a room.
-		query = "DELETE FROM presences WHERE `UserJid` = ? AND `RoomJid` = ?"
-		cursor = db.cursor()
-		cursor.execute(query, (str(jid), str(node)))
+		database.query("DELETE FROM presences WHERE `UserJid` = ? AND `RoomJid` = ?", (str(jid), str(node)))
 		
 	def _envoy_log_event(self, timestamp, sender, recipient, event_type, payload, extra=None):
 		cursor = db.cursor()
