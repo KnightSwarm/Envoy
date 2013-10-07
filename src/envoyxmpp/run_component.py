@@ -7,6 +7,7 @@ from twilio.rest import TwilioRestClient
 
 from component import Component
 from util import state
+from core import db
 
 from sleekxmpp.exceptions import IqError
 from sleekxmpp.jid import JID
@@ -83,7 +84,7 @@ class EnvoyComponent(Component):
 		for row in cursor:
 			# FIXME: Use SleekXMPPs JID parsing
 			bare_jid, resource = row['UserJid'].split("/", 1)
-			self._envoy_user_cache.get(bare_jid).add_room(row[RoomJid'], resource)
+			self._envoy_user_cache.get(bare_jid).add_room(row['RoomJid'], resource)
 			
 		for jid, user in self._envoy_user_cache.cache.iteritems():
 			print user.jid, user.nickname, user.rooms
@@ -387,7 +388,7 @@ class EnvoyComponent(Component):
 	def _envoy_get_joined_rooms(self, jid, node, ifrom, data):
 		# Override for the _get_joined_rooms method.
 		# Retrieves a list of all rooms a JID is present in.
-		cursor = database.query("SELECT * FROM presences WHERE `UserJid` = ?", (str(jid),)))
+		cursor = database.query("SELECT * FROM presences WHERE `UserJid` = ?", (str(jid),))
 		return set([row['RoomJid'] for row in cursor])
 		
 	def _envoy_add_joined_room(self, jid, node, ifrom, data):
