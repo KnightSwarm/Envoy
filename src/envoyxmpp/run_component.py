@@ -62,30 +62,28 @@ class EnvoyComponent(Component):
 		self['xep_0045'].api.register(self._envoy_del_joined_room, 'del_joined_room')
 		
 		# TODO: Update internal user cache when vCard changes occur
-		cursor = db.cursor()
-		cursor.execute("SELECT Username, Fqdn, EmailAddress, FirstName, LastName, Nickname, JobTitle, MobileNumber FROM users WHERE `Active` = 1")
+		cursor = database.query("SELECT * FROM users WHERE `Active` = 1")
 		
 		for row in cursor:
-			jid = "%s@%s" % (row[0], row[1])
-			email_address, first_name, last_name, nickname, job_title, mobile_number = row[2:]
+			jid = "%s@%s" % (row['Username'], row['Fqdn'])
 			user = self._envoy_user_cache.get(jid)
 			user.update_vcard({
-				"email_address": email_address,
-				"first_name": first_name,
-				"last_name": last_name,
-				"nickname": nickname,
-				"job_title": job_title,
-				"mobile_number": mobile_number
+				"email_address": row['EmailAddress'],
+				"first_name": row['FirstName'],
+				"last_name": row['LastName'],
+				"nickname": row['Nickname'],
+				"job_title": row['JobTitle'],
+				"mobile_number": row['MobileNumber']
 			})
 			
-			logging.info("Found user %s in database with nickname @%s" % (jid, nickname))
+			logging.info("Found user %s in database with nickname @%s" % (jid, row['Nickname']))
 			
-		cursor.execute("SELECT UserJid, RoomJid FROM presences")
+		cursor = database.query("SELECT * FROM presences")
 		
 		for row in cursor:
-			user, room = row
-			bare_jid, resource = user.split("/", 1)
-			self._envoy_user_cache.get(bare_jid).add_room(room, resource)
+			# FIXME: Use SleekXMPPs JID parsing
+			bare_jid, resource = row['UserJid'].split("/", 1)
+			self._envoy_user_cache.get(bare_jid).add_room(row[RoomJid'], resource)
 			
 		for jid, user in self._envoy_user_cache.cache.iteritems():
 			print user.jid, user.nickname, user.rooms
@@ -424,9 +422,11 @@ logging.basicConfig(level=logging.DEBUG, format='%(levelname)-8s %(message)s')
 
 configuration = json.load(open(get_relative_path("../config.json"), "r"))
 
-db = oursql.connect(host=configuration['database']['hostname'], user=configuration['database']['username'], 
-                    passwd=configuration['database']['password'], db=configuration['database']['database'],
-                    autoreconnect=True)
+#db = oursql.connect(host=configuration['database']['hostname'], user=configuration['database']['username'], 
+#                    passwd=configuration['database']['password'], db=configuration['database']['database'],
+#                    autoreconnect=True)
+database = db.Database(configuration['database']['hostname'], configuration['database']['username'], 
+                       configuration['database']['password'], configuration['database']['database'])
 
 try:
 	sms_enabled = (configuration['mock']['sms'] == False)
