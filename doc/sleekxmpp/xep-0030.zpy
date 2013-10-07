@@ -1,0 +1,61 @@
+# XEP-0030 Plugin: Service Discovery
+
+! This is partial documentation.
+
+## Plugin methods
+
+^ xmpp['xep_0030'].get_info(`jid=`, `node=`, `local=`, `cached=`)
+
+	Retrieves information for a given JID. Returns a DiscoInfo
+	stanza.
+	
+	jid::
+		The JID to request information for.
+	
+	ifrom::
+		The sender JID. Should normally be set to 
+		`self.boundjid` for a component.
+	
+	node::
+		**Optional.** The node to query. Defaults to the node
+		for the specified `jid`.
+		
+	local::
+		**Optional.** Whether this query is intended for this
+		SleekXMPP instance itself - this would mean that no
+		actual request is sent, and it is simply looked up in
+		the local instance. Defaults to `False`.
+		
+	cached::
+		**Optional.** Consult the local cache before sending off
+		a query. Only useful when `self.use_cache` is set to
+		`True`. Defaults to `False`.
+
+	block::
+		**Optional.** Block and wait for a reply. Defaults to
+		`True`.
+		
+	timeout::
+		**Optional.** How many seconds to wait for a reply at
+		most. Only useful when `block` is set to `True`.
+		Defaults to the standard response timeout.
+		
+	callback::
+		**Optional.** The callback to execute when a reply is
+		received in non-blocking mode.
+
+## Plugin stanzas
+
+^ DiscoInfo.node
+
+	The name of the node whose information is queried or returned.
+	
+^ DiscoInfo.identities
+
+	A tuple with 4 elements; `category`, `type`, `xml:lang` and 
+	`name` in that order.
+	
+^ DiscoInfo.features
+
+	A list of feature namespaces and/or settings. The list will
+	contain the values for the `var` attribute.
