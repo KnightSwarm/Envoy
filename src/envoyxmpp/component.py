@@ -27,7 +27,7 @@ class Component(ComponentXMPP):
 		self.add_event_handler("groupchat_joined", self._envoy_handle_group_join)
 		self.add_event_handler("groupchat_left", self._envoy_handle_group_leave)
 		self.add_event_handler("groupchat_presence", self._envoy_handle_group_presence)
-		self.add_event_handler("session_start", self._envoy_start)
+		self.add_event_handler("session_start", self._envoy_start, threaded=True)
 		
 		self.registerPlugin('xep_0030') # Service Discovery
 		self.registerPlugin('xep_0004') # Data Forms
@@ -69,23 +69,76 @@ class Component(ComponentXMPP):
 		except IqError, e:
 			room.registered = False
 			return
-			
-		for identity in info['identities']:
+		
+		needs_reconfiguration = False
+		
+		# Check if the title is set correctly
+		
+		titles = []
+		
+		for identity in info['disco_info']['identities']:
 			category, type_, lang, name = identity
 			
 			if category == "conference" and type_ == "text":
-				room.title = name
+				titles.append(name)
 				
-		for feature in info['features']:
-			if feature == "muc_membersonly":
-				room.private = True
-			elif feature == "muc_public":
-				room.private = False
-			elif feature == "muc_moderated":
-				room.moderated = True
-			elif feature == "muc_unmoderated":
-				room.moderated = False
-			
+		if room.title not in titles:
+			logging.debug("Mismatch for 'title' setting for room %s: %s not in %s" % (room.jid, room.title, repr(titles)))
+			needs_reconfiguration = True
+		
+		# Check if features are set correctly
+		
+		for feature in info['disco_info']['features']:
+			if feature == "muc_membersonly" and room.private != True:
+				logging.debug("Mismatch for 'private' setting for room %s: %s vs. %s" % (room.jid, True, room.private))
+				needs_reconfiguration = True
+			elif feature == "muc_open" and room.private != False:
+				logging.debug("Mismatch for 'private' setting for room %s: %s vs. %s" % (room.jid, False, room.private))
+				needs_reconfiguration = True
+			elif feature == "muc_moderated" and room.moderated != True:
+				logging.debug("Mismatch for 'moderated' setting for room %s: %s vs. %s" % (room.jid, True, room.moderated))
+				needs_reconfiguration = True
+			elif feature == "muc_unmoderated" and room.moderated != False:
+				logging.debug("Mismatch for 'moderated' setting for room %s: %s vs. %s" % (room.jid, False, room.moderated))
+				needs_reconfiguration = True
+		
+		if needs_reconfiguration:
+			logging.debug("Room configuration for %s incorrect; attempting reconfiguration" % room_jid)
+			self._envoy_configure_room(room)
+	
+	def _envoy_register_room(self, room_jid):
+		self._envoy_update_roominfo(room_jid)
+		
+		if self._envoy_room_cache.get(room_jid).registered == False:
+			self['xep_0045'].join(room_jid, "Envoy_Component")
+			logging.debug("Room %s created." % room_jid)
+			self._envoy_configure_room(self._envoy_room_cache.get(room_jid))
+		
+	def _envoy_configure_room(self, room):
+		iq = self['xep_0045'].get_room_config(room.jid, ifrom=self.boundjid)
+		logging.debug("Received room configuration form for %s" % room.jid)
+		form = iq['muc_owner']['form']
+		
+		configuration = {
+			"muc#roomconfig_roomname": room.title,
+			"muc#roomconfig_roomdesc": "",
+			"muc#roomconfig_persistentroom": True,
+			"muc#roomconfig_publicroom": bool(not room.private), # Whether room is public/private
+			"muc#roomconfig_changesubject": False, # Whether to allow occupants to change subject
+			"muc#roomconfig_whois": "anyone", # Turn off semi-anonymous
+			"muc#roomconfig_moderatedroom": bool(room.moderated), # Whether moderated/archived
+			"muc#roomconfig_membersonly": bool(room.private), # Whether members-only
+			"muc#roomconfig_historylength": "20",
+			"FORM_TYPE": "http://jabber.org/protocol/muc#roomconfig"
+		}
+		
+		form['fields'] = [(item_var, {'value': item_value}) for item_var, item_value in configuration.iteritems()]
+		form['type'] = "submit"
+		
+		new_iq = self.make_iq_set(ifrom=self.boundjid, ito=room.jid, iq=iq)
+		new_iq.send()
+		
+		logging.debug("Room configuration form for %s filled in and submitted" % room.jid)
 	
 	def _envoy_purge_presences(self):
 		logging.info("Purging outdated presences")

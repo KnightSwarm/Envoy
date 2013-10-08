@@ -208,6 +208,23 @@ class EnvoyComponent(Component):
 			logging.debug("Room presence list AFTER database sync for user %s: %s" % (jid, user.rooms))
 		
 		logging.info("Synchronized database with UserCache.")
+		
+		cursor = database.query("SELECT * FROM rooms")
+		
+		for row in cursor:
+			fqdn_cursor = database.query("SELECT * FROM fqdns WHERE `Id` = ?", (row['FqdnId'],))
+			fqdn_row = fqdn_cursor.fetchone()
+			
+			room_jid = "%s@conference.%s" % (row['Node'], fqdn_row['Fqdn'])
+			room = self._envoy_room_cache.get(room_jid)
+			
+			room.title = row['Description']
+			room.private = row['IsPrivate']
+			room.moderated = row['IsArchived']
+			
+			self._envoy_register_room(room_jid)
+			
+		logging.info("Synchronized RoomCache with database.")
 	
 	def notify_if_idle(self, sender, recipient, room, body, highlight):
 		# We should only send a notification if we can reasonable assume that the user is not paying
@@ -397,7 +414,8 @@ class EnvoyComponent(Component):
 		# Override for the _is_joined_room method.
 		# Checks whether a JID was already present in a room.
 		cursor = database.query("SELECT COUNT(*) FROM presences WHERE `UserJid` = ? AND `RoomJid` = ?", (str(jid), str(node)))
-		return (cursor.fetchone()['COUNT(*)'] > 0)
+		row = cursor.fetchone()
+		return (row['COUNT(*)'] > 0)
 	
 	def _envoy_get_joined_rooms(self, jid, node, ifrom, data):
 		# Override for the _get_joined_rooms method.
