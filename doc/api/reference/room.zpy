@@ -1,0 +1,72 @@
+# Room management
+
+^ GET /room/lookup
+
+	__Requires administrative FQDN read access.__ 
+	
+	Looks up information for the specified room.
+	
+	roomname::
+		**Required.** The roomname (node). This is the part before the @ in the room JID.
+		
+	fqdn::
+		**Required.** The FQDN that this room exists on (without the conference. part).
+	
+	### Return values
+	
+	roomname::
+		String. The roomname of the specified room (will usually be identical to the roomname specified
+		in the request).
+		
+	archived::
+		Boolean. Whether the room is archived or not.
+		
+	private::
+		Boolean. Whether the room is private (invite-only) or not.
+	
+	friendlyname::
+		String. A friendly (human-readable) given name for the room.
+	
+	description::
+		String. A description of the room.
+		
+	creationdate::
+		Timestamp. The date the room was created.
+		
+	archiveldate::
+		Timestamp. The date the room was archived. Is `null` if the room is not an archived room.
+		
+	owner::
+		Number. The user ID of the owner of the room.
+		
+	usercount::
+		Number. The amount of users currently in the room.
+		
+	### Error conditions
+	
+	HTTP 400::
+		One or more of the required arguments is missing.
+	
+	HTTP 404::
+		The specified room does not exist.
+		
+	HTTP 422::
+		The specified FQDN does not exist.
+	
+	@ Room lookup
+	
+		$ GET /room/lookup?roomname=testingroom&fqdn=test.local
+		
+		> {
+			"response": {
+				"archived": false, 
+				"private": true, 
+				"friendlyname": "Testing room.", 
+				"description": "Testing room.", 
+				"roomname": "testingroom", 
+				"owner": "1", 
+				"archivaldate": null, 
+				"creationdate": 1381266676, 
+				"usercount": "0"
+			}
+		}

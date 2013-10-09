@@ -18,26 +18,31 @@
 
 if(!isset($_APP)) { die("Unauthorized."); }
 
-if(strtolower($_SERVER["REQUEST_METHOD"]) == "get" && !empty($_GET['fqdn']))
+if(empty($_GET['roomname']))
 {
-	$fqdn = $_GET['fqdn'];
+	throw new MissingParameterException("Missing required roomname field.");
 }
-elseif(strtolower($_SERVER["REQUEST_METHOD"]) == "post" && !empty($_POST['fqdn']))
-{
-	$fqdn = $_POST['fqdn'];
-}
-else
-{
-	throw new InvalidFqdnException("No FQDN specified.");
-}
+
+$sApiKeypair->RequireAdministrativeReadAccess($_GET['fqdn']);
 
 try
 {
-	$sCurrentFqdn = Fqdn::CreateFromQuery("SELECT * FROM fqdns WHERE `Fqdn` = :Fqdn", array(":Fqdn" => $fqdn), 5, true);
+	$sRoom = Room::CreateFromQuery("SELECT * FROM rooms WHERE `Node` = :Node AND `FqdnId` = :Fqdn", array(
+	                               ":Node" => $_GET['roomname'], ":Fqdn" => $sCurrentFqdn->sId), 10, true);
 }
 catch (NotFoundException $e)
 {
-	throw new InvalidFqdnException("The specified FQDN does not exist.");
+	throw new ResourceNotFoundException("The specified room does not exist.");
 }
 
-$sRouterAuthenticated = true;
+$sResponse = array(
+	"roomname"	=> $sRoom->uNode,
+	"friendlyname"	=> $sRoom->uDescription,
+	"description"	=> $sRoom->uDescription,
+	"private"	=> $sRoom->sIsPrivate,
+	"archived"	=> $sRoom->sIsArchived,
+	"owner"		=> $sRoom->uOwnerId,
+	"creationdate"	=> $sRoom->sCreationDate,
+	"archivaldate"	=> $sRoom->sArchivalDate,
+	"usercount"	=> $sRoom->uLastUserCount
+);

@@ -1,0 +1,173 @@
+<!doctype html>
+<html>
+	<head>
+		<style>
+			body {
+				background-color: #F5F5F5;
+				font-family: sans-serif;
+				margin-right: 40px;
+			}
+
+			h2, h3, h4, h5, h6, h7
+			{
+				margin-top: 16px;
+				margin-bottom: 4px;
+			}
+
+			.children { padding-left: 40px; }
+
+			.definition
+			{
+				font-weight: bold;
+				margin-bottom: 32px;
+			}
+
+			.example 
+			{ 
+				padding: 5px 6px;
+				font-weight: bold;
+				font-size: 15px;
+				background-color: #E6E6E6; 
+				margin-top: 11px;
+			}
+
+			.example > .children
+			{
+				padding-top: 11px;
+				padding-left: 10px;
+			}
+
+			.example > .children > h7
+			{
+				font-size: 13px;
+			}
+
+			h7
+			{
+				font-size: 14px;
+				font-weight: bold;
+				margin-bottom: 2px;
+			}
+
+			pre
+			{
+				margin-top: 0px;
+				padding: 6px 7px;
+				background-color: #D9D9D9;
+				font-weight: normal;
+				font-size: 13px;
+			}
+
+			dl
+			{
+				margin: 5px 0px;
+			}
+
+			dt
+			{
+				font-weight: bold;
+			}
+
+			dd
+			{
+				font-size: 14px;
+				font-weight: normal;
+				margin-left: 8px;
+			}
+			
+			dd > .children
+			{
+				font-size: 95%;
+			}
+			
+			dd > .children > dl > dd
+			{
+				margin-left: 13px;
+			}
+
+			.exclamation
+			{
+				padding: 7px 8px;
+				margin: 11px 0px;
+				background-color: #FFE9AA;
+				border: 1px solid yellow;
+				font-size: 15px;
+				font-weight: normal;
+			}
+
+			.text
+			{
+				font-size: 15px;
+				font-weight: normal;
+				margin-bottom: 14px;
+				margin-top: 10px;
+			}
+
+			.toc
+			{
+				border: 1px solid gray;
+				background-color: #E6E6E6;
+				padding: 8px 9px;
+				font-size: 15px;
+				margin-bottom: 12px;
+			}
+
+			.toc h2
+			{
+				margin: 0px 0px 3px 0px;
+				font-size: 19px;
+			}
+
+			.toc ul
+			{
+				margin-top: 0px;
+				margin-bottom: 0px;
+				padding-left: 25px;
+			}
+
+			.toc li
+			{
+				margin-bottom: 2px;
+			}
+
+			.toc .alternatives
+			{
+				font-size: 12px;
+			}
+
+			.toc a
+			{
+				color: #292722;
+			}
+
+			.toc a:hover
+			{
+				color: black;
+			}
+			
+			.fixed
+			{
+				font-family: monospace;
+				background-color: white;
+				padding: 1px 4px;
+				border: 1px solid silver;
+				border-radius: 4px;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="children"><h1>Room management</h1><div class="definition"><a name="GETroomlookup">GET /room/lookup <div class="children"><div class="text"><strong>Requires administrative FQDN read access.</strong></div><div class="text">Looks up information for the specified room.</div><dl><dt>roomname</dt><dd><em>Required.</em> The roomname (node). This is the part before the @ in the room JID.<div class="children"></div></dd></dl><dl><dt>fqdn</dt><dd><em>Required.</em> The FQDN that this room exists on (without the conference. part).<div class="children"></div></dd></dl><h3>Return values</h3><dl><dt>roomname</dt><dd>String. The roomname of the specified room (will usually be identical to the roomname specified in the request).<div class="children"></div></dd></dl><dl><dt>archived</dt><dd>Boolean. Whether the room is archived or not.<div class="children"></div></dd></dl><dl><dt>private</dt><dd>Boolean. Whether the room is private (invite-only) or not.<div class="children"></div></dd></dl><dl><dt>friendlyname</dt><dd>String. A friendly (human-readable) given name for the room.<div class="children"></div></dd></dl><dl><dt>description</dt><dd>String. A description of the room.<div class="children"></div></dd></dl><dl><dt>creationdate</dt><dd>Timestamp. The date the room was created.<div class="children"></div></dd></dl><dl><dt>archiveldate</dt><dd>Timestamp. The date the room was archived. Is <span class="fixed">null</span> if the room is not an archived room.<div class="children"></div></dd></dl><dl><dt>owner</dt><dd>Number. The user ID of the owner of the room.<div class="children"></div></dd></dl><dl><dt>usercount</dt><dd>Number. The amount of users currently in the room.<div class="children"></div></dd></dl><h3>Error conditions</h3><dl><dt>HTTP 400</dt><dd>One or more of the required arguments is missing.<div class="children"></div></dd></dl><dl><dt>HTTP 404</dt><dd>The specified room does not exist.<div class="children"></div></dd></dl><dl><dt>HTTP 422</dt><dd>The specified FQDN does not exist.<div class="children"></div></dd></dl><div class="example">Example: Room lookup <div class="children"><h7>Code:</h7><pre class="code">GET /room/lookup?roomname=testingroom&fqdn=test.local</pre><h7>Output:</h7><pre class="output">{
+	"response": {
+		"archived": false, 
+		"private": true, 
+		"friendlyname": "Testing room.", 
+		"description": "Testing room.", 
+		"roomname": "testingroom", 
+		"owner": "1", 
+		"archivaldate": null, 
+		"creationdate": 1381266676, 
+		"usercount": "0"
+	}
+}</pre></div></div></div></a></div></div>
+	</body>
+</html>
