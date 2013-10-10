@@ -36,21 +36,9 @@
 			</div>
 		</div>
 		<div id="user_list">
-			<div class="user">
-				<i class="status available icon-circle"></i>
-				John Doe
-			</div>
-			<div class="user">
-				<i class="status busy icon-circle"></i>
-				Jane Doe
-			</div>
-			<div class="user">
-				<i class="status away icon-circle"></i>
-				Tom Smith
-			</div>
-			<div class="user">
-				<i class="status offline icon-circle"></i>
-				James Miller
+			<div class="user" ng-repeat="user in users">
+				<i class="status {{user.status}} icon-circle"></i>
+				{{user.name}}
 			</div>
 		</div>
 		<div id="main">
