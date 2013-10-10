@@ -5,14 +5,15 @@
 		<script>
 			var menu = new ApplicationMenu({
 				"File": {
-					"New": function(){ console.log("Selected new"); },
-					"Quit": function(){ console.log("Selected quit"); }
+					"Quit": function(){ Ti.App.exit(); }
+				},
+				"Edit": {
+					"Preferences": function(){ openPreferences(); }
 				},
 				"Help": {
-					"Manual": {
-						"Sub Item 1": function(){ console.log("Subitem 1"); },
-						"Sub Item 2": function(){ console.log("Subitem 2"); }
-					}
+					"Quickstart": function(){ openQuickstart(); },
+					"Manual": function(){ openManual(); },
+					"About": function(){ openAbout(); }
 				}
 			});
 			menu.setDefault();
