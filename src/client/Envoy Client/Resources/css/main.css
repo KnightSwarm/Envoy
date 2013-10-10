@@ -1,0 +1,77 @@
+.clear {
+  /* This should be possible using the clearfix mixin, but 
+   * apparently isn't. Is this a problem with TideSDK? */
+  clear: both; }
+
+body {
+  font-family: "Istok Web", sans-serif; }
+
+#main {
+  background-color: white;
+  position: absolute;
+  top: 0px;
+  bottom: 0px;
+  left: 200px;
+  right: 150px; }
+  #main .chat .message {
+    border-bottom: 1px solid #d0d0d0;
+    font-size: 14px; }
+    #main .chat .message.own {
+      background-color: #DFE5FF; }
+      #main .chat .message.own .author {
+        background-color: #D0D5EE; }
+    #main .chat .message .author, #main .chat .message .body {
+      padding: 4px 10px;
+      display: block;
+      float: left; }
+    #main .chat .message .author {
+      width: 110px;
+      margin-right: 9px;
+      font-weight: bold;
+      background-color: #EEEEEE; }
+
+#room_list {
+  background-color: #181818;
+  color: white;
+  position: absolute;
+  top: 0px;
+  bottom: 0px;
+  left: 0px;
+  width: 200px; }
+  #room_list .room {
+    background-color: #373737;
+    padding: 8px 10px;
+    font-size: 15px; }
+    #room_list .room:hover {
+      background-color: #303030; }
+    #room_list .room.selected {
+      background-color: #454545; }
+    #room_list .room i.status {
+      font-size: 14px;
+      margin-right: 4px; }
+
+#user_list {
+  background-color: #EBEBEB;
+  position: absolute;
+  top: 0px;
+  bottom: 0px;
+  right: 0px;
+  width: 150px; }
+  #user_list .user {
+    background-color: #DCDCDC;
+    padding: 6px 8px;
+    font-size: 14px;
+    font-weight: bold; }
+    #user_list .user.selected {
+      background-color: #BFBFBF; }
+    #user_list .user i.status {
+      font-size: 13px;
+      margin-right: 4px; }
+      #user_list .user i.status.available {
+        color: #1F960E; }
+      #user_list .user i.status.busy {
+        color: #C02413; }
+      #user_list .user i.status.away {
+        color: #898300; }
+      #user_list .user i.status.offline {
+        color: #848484; }

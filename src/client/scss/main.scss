@@ -1,1 +1,191 @@
+$roomlist_width: 200px;
+$userlist_width: 150px;
 
+@mixin clearfix
+{
+	&:after {
+		content: ".";
+		display: block;
+		height: 0;
+		clear: both;
+		visibility: hidden;
+	}
+}
+
+.clear
+{
+	/* This should be possible using the clearfix mixin, but 
+	 * apparently isn't. Is this a problem with TideSDK? */
+	clear: both;
+}
+
+@mixin pull-left
+{
+	position: absolute;
+	top: 0px;
+	bottom: 0px;
+	left: 0px;
+}
+@mixin pull-right
+{
+	position: absolute;
+	top: 0px;
+	bottom: 0px;
+	right: 0px;
+}
+@mixin pull-top
+{
+	position: absolute;
+	top: 0px;
+	left: 0px;
+	right: 0px;
+}
+@mixin pull-bottom
+{
+	position: absolute;
+	bottom: 0px;
+	left: 0px;
+	right: 0px;
+}
+
+@mixin stretch-horizontal
+{
+	position: absolute;
+	left: 0px;
+	right: 0px;
+}
+
+@mixin stretch-vertical
+{
+	position: absolute;
+	top: 0px;
+	bottom: 0px;
+}
+
+body
+{
+	font-family: "Istok Web", sans-serif;
+}
+
+#main
+{
+	background-color: white;
+	
+	@include stretch-vertical;
+	left: $roomlist_width;
+	right: $userlist_width;
+	
+	.chat
+	{
+		.message
+		{
+			
+			border-bottom: 1px solid #D0D0D0;
+			font-size: 14px;
+			
+			&.own
+			{
+				background-color: #DFE5FF;
+				
+				.author
+				{
+					background-color: #D0D5EE;
+				}
+			}
+			
+			.author, .body
+			{
+				padding: 4px 10px;
+				display: block;
+				float: left;
+			}
+			
+			.author
+			{
+				width: 110px;
+				margin-right: 9px;
+				font-weight: bold;
+				background-color: #EEEEEE;
+			}
+		}
+	}
+}
+
+#room_list
+{
+	background-color: #181818;
+	color: white;
+	
+	@include pull-left;
+	width: $roomlist_width;
+	
+	.room
+	{
+		background-color: #373737;
+		padding: 8px 10px;
+		font-size: 15px;
+		
+		&:hover
+		{
+			background-color: #303030;
+		}
+		
+		&.selected
+		{
+			background-color: #454545;
+		}
+		
+		i.status
+		{
+			font-size: 14px;
+			margin-right: 4px;
+		}
+	}
+}
+
+#user_list
+{
+	background-color: #EBEBEB;
+	
+	@include pull-right;
+	width: $userlist_width;
+	
+	.user
+	{
+		background-color: #DCDCDC;
+		padding: 6px 8px;
+		font-size: 14px;
+		font-weight: bold;
+		
+		&.selected
+		{
+			background-color: #BFBFBF;
+		}
+		
+		i.status
+		{
+			font-size: 13px;
+			margin-right: 4px;
+			
+			&.available
+			{
+				color: #1F960E;
+			}
+			
+			&.busy
+			{
+				color: #C02413;
+			}
+			
+			&.away
+			{
+				color: #898300;
+			}
+			
+			&.offline
+			{
+				color: #848484;
+			}
+		}
+	}
+}

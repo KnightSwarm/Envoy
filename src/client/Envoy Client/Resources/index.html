@@ -1,7 +1,12 @@
 <!doctype html>
 <html>
 	<head>
+		<link rel="stylesheet" href="css/pure-min.css">
+		<link rel="stylesheet" href="font-awesome/css/font-awesome.min.css">
+		<link rel="stylesheet" href="css/main.css">
+		<link rel="stylesheet" href="istok/stylesheet.css">
 		<script src="script/menu.js"></script>
+		<script src="script/angular.min.js"></script>
 		<script>
 			var menu = new ApplicationMenu({
 				"File": {
@@ -18,10 +23,61 @@
 			});
 			menu.setDefault();
 		</script>
+		<script type="text/python">
+			
+		</script>
 	</head>
 	<body>
-		<div class="room-list"></div>
-		<div class="user-list"></div>
-		<div class="main"></div>
+		<div id="room_list">
+			<div class="room selected">
+				<i class="status icon-circle-blank"></i>
+				<span class="name">Room One</span>
+			</div>
+			<div class="room">
+				<i class="status icon-circle-blank"></i>
+				<span class="name">Room Two</span>
+			</div>
+			<div class="room">
+				<i class="status icon-circle-blank"></i>
+				<span class="name">Room Three</span>
+			</div>
+		</div>
+		<div id="user_list">
+			<div class="user">
+				<i class="status available icon-circle"></i>
+				John Doe
+			</div>
+			<div class="user">
+				<i class="status busy icon-circle"></i>
+				Jane Doe
+			</div>
+			<div class="user">
+				<i class="status away icon-circle"></i>
+				Tom Smith
+			</div>
+			<div class="user">
+				<i class="status offline icon-circle"></i>
+				James Miller
+			</div>
+		</div>
+		<div id="main">
+			<div class="chat">
+				<div class="message own">
+					<span class="author">John Doe</span>
+					<span class="body">Hi, test</span>
+					<div class="clear"></div>
+				</div>
+				<div class="message own">
+					<span class="author">John Doe</span>
+					<span class="body">Another test...</span>
+					<div class="clear"></div>
+				</div>
+				<div class="message">
+					<span class="author">Jane Doe</span>
+					<span class="body">Ohai</span>
+					<div class="clear"></div>
+				</div>
+			</div>
+		</div>
 	</body>
 </html>
