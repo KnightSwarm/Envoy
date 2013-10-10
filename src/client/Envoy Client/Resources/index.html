@@ -23,23 +23,16 @@
 			});
 			menu.setDefault();
 		</script>
+		<script src="script/ui.js"></script>
 		<script type="text/python">
 			
 		</script>
 	</head>
-	<body>
+	<body ng-app="envoyClient" ng-controller="UiController">
 		<div id="room_list">
-			<div class="room selected">
-				<i class="status icon-circle-blank"></i>
-				<span class="name">Room One</span>
-			</div>
-			<div class="room">
-				<i class="status icon-circle-blank"></i>
-				<span class="name">Room Two</span>
-			</div>
-			<div class="room">
-				<i class="status icon-circle-blank"></i>
-				<span class="name">Room Three</span>
+			<div class="room" ng-repeat="room in rooms" ng-class="{selected : $first}">
+				<i class="status icon-{{room.icon}} icon-fixed-width"></i>
+				<span class="name">{{ room.name }}</span>
 			</div>
 		</div>
 		<div id="user_list">

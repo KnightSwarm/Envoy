@@ -32,7 +32,7 @@ body {
 
 #room_list {
   background-color: #181818;
-  color: white;
+  color: #DEDEDE;
   position: absolute;
   top: 0px;
   bottom: 0px;
@@ -48,7 +48,8 @@ body {
       background-color: #454545; }
     #room_list .room i.status {
       font-size: 14px;
-      margin-right: 4px; }
+      margin-right: 4px;
+      width: 18px; }
 
 #user_list {
   background-color: #EBEBEB;
