@@ -5,8 +5,63 @@
 		<link rel="stylesheet" href="font-awesome/css/font-awesome.min.css">
 		<link rel="stylesheet" href="css/main.css">
 		<link rel="stylesheet" href="istok/stylesheet.css">
+		<script src="script/jquery-1.10.2.min.js"></script>
 		<script src="script/menu.js"></script>
 		<script src="script/angular.min.js"></script>
+		<script type="text/python">
+			import sys
+			sys.path.insert(1, "/home/sven/projects/SleekXMPP/")
+		</script>
+		<script type="text/python" src="script/queue.py"></script>
+		<script type="text/python">
+			import time, sleekxmpp
+			from sleekxmpp import ClientXMPP
+			from sleekxmpp.util import Queue, QueueEmpty
+			import logging
+			
+			logging.basicConfig(level=logging.DEBUG, format="%(asctime)s %(levelname)s %(message)s")
+			
+			q = PyQueue();
+			
+			class Client(ClientXMPP):
+				def __init__(self, username, fqdn, password):
+					self._jid = "%s@%s" % (username, fqdn)
+					self.conference_host = "conference.%s" % fqdn
+					ClientXMPP.__init__(self, self._jid, password)
+					
+					self.add_event_handler("session_start", self.session_start)
+					self.registerPlugin('xep_0030') # Service Discovery
+					self.registerPlugin('xep_0004') # Data Forms
+					self.registerPlugin('xep_0045') # MUC
+					self.registerPlugin('xep_0199') # XMPP Ping
+					
+				def session_start(self, event):
+					self.get_roster()
+					self.send_presence()
+					
+					console.log("CONNECTED!")
+					
+					rooms = self['xep_0045'].get_rooms(ifrom=self.boundjid, jid=self.conference_host)['disco_items']['items']
+					
+					room_list = []
+					for room_jid, room_node, room_name in rooms:
+						room_list.append({
+							"name": room_name,
+							"roomname": room_jid,
+							"icon": "comments"
+						})
+					
+					time.sleep(5)
+					q.put({"type": "room_list", "data": room_list})
+					
+					console.log("Room list updated...")
+				
+			def dom_load():
+				angular.element("[ng-controller=UiController]").scope()
+				xmpp = Client("testuser", "envoy.local", "testpass")
+				xmpp.connect()
+				xmpp.process(block=False)
+		</script>
 		<script>
 			var menu = new ApplicationMenu({
 				"File": {
@@ -22,15 +77,29 @@
 				}
 			});
 			menu.setDefault();
+			
+			$(function(){
+				dom_load();
+			});
 		</script>
 		<script src="script/ui.js"></script>
-		<script type="text/python">
+		<script>
+			q.set_callback(function(item){
+				var data = item.data;
+				
+				/* TODO: Instead of replacing an entire list at once, add/remove elements as we encounter them. */
+				/* TODO: Check for queue item type, perhaps find a better syntax for this? */
+				var ui_scope = angular.element("[ng-controller=UiController]").scope()
+				ui_scope.rooms = data;
+				ui_scope.$apply();
+			});
 			
+			setInterval(q.check, 250);
 		</script>
 	</head>
 	<body ng-app="envoyClient" ng-controller="UiController">
 		<div id="room_list">
-			<div class="room" ng-repeat="room in rooms" ng-class="{selected : $first}">
+			<div class="room" ng-repeat="room in rooms" ng-class="{selected : $first}" onclick="testfunc();">
 				<i class="status icon-{{room.icon}} icon-fixed-width"></i>
 				<span class="name">{{ room.name }}</span>
 			</div>
@@ -38,24 +107,14 @@
 		<div id="user_list">
 			<div class="user" ng-repeat="user in users">
 				<i class="status {{user.status}} icon-circle"></i>
-				{{user.name}}
+				{{ user.name }}
 			</div>
 		</div>
 		<div id="main">
 			<div class="chat">
-				<div class="message own">
-					<span class="author">John Doe</span>
-					<span class="body">Hi, test</span>
-					<div class="clear"></div>
-				</div>
-				<div class="message own">
-					<span class="author">John Doe</span>
-					<span class="body">Another test...</span>
-					<div class="clear"></div>
-				</div>
-				<div class="message">
-					<span class="author">Jane Doe</span>
-					<span class="body">Ohai</span>
+				<div class="message" ng-repeat="message in messages" ng-class="{own : message.jid == own_jid}">
+					<span class="author">{{ message.author_name }}</span>
+					<span class="body">{{ message.body }}</span>
 					<div class="clear"></div>
 				</div>
 			</div>
