@@ -82,9 +82,10 @@ class EnvoyComponent(Component):
 		cursor = database.query("SELECT * FROM presences")
 		
 		for row in cursor:
-			# FIXME: Use SleekXMPPs JID parsing
 			try:
-				bare_jid, resource = row['UserJid'].split("/", 1)
+				jid = JID(row['UserJid'])
+				bare_jid = jid.bare
+				resource = jid.resource
 			except ValueError, e:
 				bare_jid = user
 				resource = ""
