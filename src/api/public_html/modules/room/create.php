@@ -18,13 +18,12 @@
 
 if(!isset($_APP)) { die("Unauthorized."); }
 
-/* TODO: Auth check, also double-check FQDN creation auth */
-/* TODO: Testing */
-
 if(empty($_POST['fqdn']) || empty($_POST['roomname']) || empty($_POST['name']) || empty($_POST['owner']) || !isset($_POST['private']))
 {
 	throw new MissingParameterException("Missing one or more required fields.");
 }
+
+$sApiKeypair->RequireAdministrativeAccess($_POST['fqdn']);
 
 try
 {
