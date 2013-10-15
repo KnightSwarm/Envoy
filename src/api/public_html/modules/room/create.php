@@ -50,6 +50,11 @@ catch (NotFoundException $e)
 	throw new InvalidParameterException("The specified owner does not exist.");
 }
 
+if($sOwner->sFqdnId !== $sCurrentFqdn->sId)
+{
+	throw new InvalidParameterException("The specified owner does not belong to this FQDN.");
+}
+
 $sRoom = new Room();
 $sRoom->uNode = $_POST['roomname'];
 $sRoom->uName = $_POST['name'];
