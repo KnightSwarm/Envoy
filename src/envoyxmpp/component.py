@@ -167,8 +167,6 @@ class Component(ComponentXMPP):
 						self._envoy_room_cache.get(room.jid).remove_participant_by_jid(user_jid)
 				except KeyError, e:
 					self._envoy_room_cache.get(room.jid).remove_participant_by_jid(user_jid)
-					
-			# TODO: Is a dedup necessary here?
 		
 		logging.debug("New participant list: %s" % [(jid, room.participants) for jid, room in self._envoy_room_cache.cache.iteritems()])
 	
