@@ -52,11 +52,13 @@ class Component(ComponentXMPP):
 	def _envoy_update_roster(self, room):
 		self._envoy_members[room] = []
 		
-		# TODO: Also add admins to this list
 		try:
-			for item in self['xep_0045'].get_users(room, ifrom=self.boundjid, affiliation="member")['muc_admin']['items']:
+			presences = (self['xep_0045'].get_users(room, ifrom=self.boundjid, affiliation="owner")['muc_admin']['items']
+			           + self['xep_0045'].get_users(room, ifrom=self.boundjid, affiliation="admin")['muc_admin']['items']
+			           + self['xep_0045'].get_users(room, ifrom=self.boundjid, affiliation="member")['muc_admin']['items'])
+			for item in presences:
 				if item['jid'] not in self._envoy_members[room]:
-					self._envoy_members[room].append(item['jid'])
+					self._envoy_members[room].append(item['jid']) # TODO: Can this be replaced with RoomCache entirely?
 		except IqError, e:
 			pass  # The room doesn't exist anymore
 	
