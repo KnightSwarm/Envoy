@@ -191,7 +191,6 @@ class Component(ComponentXMPP):
 			logging.debug("Current RoomCache user presence list for %s: %s" % (room.jid, room.participants))
 			for user_jid, user in room.participants.items():
 				try:
-					logging.warn("%s -> %s (%s)" % (user_jid, room.jid, current_presences[room.jid]))
 					if user_jid not in current_presences[room.jid]:
 						self._envoy_room_cache.get(room.jid).remove_participant_by_jid(user_jid)
 				except KeyError, e:
