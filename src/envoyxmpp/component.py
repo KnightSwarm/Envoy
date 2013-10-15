@@ -141,6 +141,7 @@ class Component(ComponentXMPP):
 		logging.debug("Room configuration form for %s filled in and submitted" % room.jid)
 	
 	def _envoy_purge_presences(self):
+		# TODO: Split this into multiple functions
 		logging.info("Purging outdated presences")
 		
 		current_presences = {}
@@ -148,7 +149,6 @@ class Component(ComponentXMPP):
 		room_list = self['xep_0045'].get_rooms(ifrom=self.boundjid, jid=self.conference_host)['disco_items']['items']
 		
 		for room in room_list:
-			# TODO: Keep a room cache?
 			room_jid, room_node, room_name = room
 			
 			# We will do a two pass here. On the first pass, all missing rooms are added. On the second pass, all
@@ -163,6 +163,8 @@ class Component(ComponentXMPP):
 				
 				if not cache_user.in_room(room_jid):
 					cache_user.add_room(room_jid, user['jid'].resource)
+					
+				self._envoy_room_cache.get(room_jid).add_participant(user['nick'], user['jid'], user['role'])
 				
 			current_presences[room_jid] = [unicode(user['jid']) for user in presences]
 		
@@ -182,6 +184,20 @@ class Component(ComponentXMPP):
 				user.rooms[room] = dedup(resources)
 		
 		logging.debug("New presence list: %s" % [(jid, user.rooms) for jid, user in self._envoy_user_cache.cache.iteritems()])
+		
+		for jid, room in self._envoy_room_cache.cache.items():
+			logging.debug("Current RoomCache user presence list for %s: %s" % (room.jid, room.participants))
+			for user_jid, user in room.participants.items():
+				try:
+					logging.warn("%s -> %s (%s)" % (user_jid, room.jid, current_presences[room.jid]))
+					if user_jid not in current_presences[room.jid]:
+						self._envoy_room_cache.get(room.jid).remove_participant_by_jid(user_jid)
+				except KeyError, e:
+					self._envoy_room_cache.get(room.jid).remove_participant_by_jid(user_jid)
+					
+			# TODO: Is a dedup necessary here?
+		
+		logging.debug("New participant list: %s" % [(jid, room.participants) for jid, room in self._envoy_room_cache.cache.iteritems()])
 		
 		# Finally, we'll also want to make sure that we have up to date affiliation information
 		# for all the users.
@@ -384,11 +400,20 @@ class RoomCacheItem(NodeCacheItem):
 	def register(self):
 		pass
 		
-	def add_participant(self, nickname, jid):
-		pass
+	def add_participant(self, nickname, jid, role):
+		self.participants[unicode(jid)] = {"nick": nickname, "role": role}
 		
 	def remove_participant(self, nickname):
-		pass
+		for jid, participant in self.participants.items():
+			if participant['nick'] == nickname:
+				del self.participants[jid]
+				
+	def remove_participant_by_jid(self, jid):
+		try:
+			del self.participants[unicode(jid)]
+			logging.debug("Removed %s from participant list for  %s" % (jid, self.jid))
+		except KeyError, e:
+			logging.warn("Could not remove %s from participants list for %s" % (jid, self.jid))
 
 class UserCache(NodeCache):
 	def __init__(self, *args, **kwargs):
