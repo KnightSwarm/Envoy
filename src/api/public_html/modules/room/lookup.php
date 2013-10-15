@@ -37,7 +37,7 @@ catch (NotFoundException $e)
 
 $sResponse = array(
 	"roomname"	=> $sRoom->uNode,
-	"friendlyname"	=> $sRoom->uDescription,
+	"friendlyname"	=> $sRoom->uName,
 	"description"	=> $sRoom->uDescription,
 	"private"	=> $sRoom->sIsPrivate,
 	"archived"	=> $sRoom->sIsArchived,

@@ -48,9 +48,4 @@ class Room extends CPHPDatabaseRecordClass
 			"Fqdn"			=> "FqdnId"
 		)
 	);
-	
-	public function SampleFunction($input)
-	{
-		/* Function body goes here */
-	}
 }

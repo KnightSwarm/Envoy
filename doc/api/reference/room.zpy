@@ -1,5 +1,29 @@
 # Room management
 
+^ POST /room/create
+
+	__Requires administrative FQDN access.__ 
+
+	Creates a new room for the specified FQDN.
+	
+	roomname::
+		**Required.** The roomname (node). This is the part before the @ in the room JID.
+		
+	fqdn::
+		**Required.** The FQDN that this room should be created on (without the conference. part).
+		
+	name::
+		**Required.** The friendly name for the room. This is what will be displayed as the room name in the client.
+		
+	owner::
+		**Required.** The user ID of the owner of the room.
+	
+	private::
+		**Required.** Determines whether the room is private (only accessible to members) or public (anyone on the FQDN can join). Valid values are 0 (false, public) and 1 (true, private).
+		
+	description::
+		**Optional.** A brief description for the room. Useful if the friendly name does not make it immediately obvious what the room is for.
+
 ^ GET /room/lookup
 
 	__Requires administrative FQDN read access.__ 

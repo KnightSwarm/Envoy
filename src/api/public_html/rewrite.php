@@ -94,6 +94,12 @@ $router->routes = array(
 			"authenticator"	=> "authenticators/fqdn_exists.php",
 			"auth_error"	=> ""
 		),
+		"^/room/create"	=> array(
+			"methods"	=> "post",
+			"target"	=> "modules/room/create.php",
+			"authenticator"	=> "authenticators/fqdn_exists.php",
+			"auth_error"	=> ""
+		),
 		"^/fqdn/create$"	=> array(
 			"methods"	=> "post",
 			"target"	=> "modules/fqdn/create.php"

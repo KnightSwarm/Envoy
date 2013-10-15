@@ -25,7 +25,7 @@ if(empty($_POST['fqdn']) || empty($_POST['name']) || empty($_POST['admin_usernam
 
 try
 {
-	$sExistingFqdn = User::CreateFromQuery("SELECT * FROM fqdns WHERE `Fqdn` = :Fqdn", array(
+	$sExistingFqdn = Fqdn::CreateFromQuery("SELECT * FROM fqdns WHERE `Fqdn` = :Fqdn", array(
 	                                       ":Fqdn" => $_POST['fqdn']), 0);
 	$found = true;
 }

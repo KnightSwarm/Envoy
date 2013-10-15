@@ -218,7 +218,8 @@ class EnvoyComponent(Component):
 			room_jid = "%s@conference.%s" % (row['Node'], fqdn_row['Fqdn'])
 			room = self._envoy_room_cache.get(room_jid)
 			
-			room.title = row['Description']
+			room.title = row['Name']
+			room.description = row['Description']
 			room.private = row['IsPrivate']
 			room.moderated = row['IsArchived']
 			
