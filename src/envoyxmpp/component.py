@@ -306,6 +306,9 @@ class Component(ComponentXMPP):
 		# Update presence in the user cache
 		self._envoy_user_cache.get(user.bare).add_room(room, user.resource)
 		
+		# Update participants in the room cache
+		self._envoy_room_cache.get(room).add_participant(nickname, user, "") # FIXME: We don't actually know the role here yet
+		
 		# Update affiliation in the user cache
 		affiliation = stanza['muc']['affiliation']
 		self._envoy_user_cache.get(user.bare).set_affiliation(room, affiliation)
@@ -319,8 +322,16 @@ class Component(ComponentXMPP):
 	def _envoy_handle_group_leave(self, stanza):
 		user = stanza["to"]
 		room = stanza["from"].bare
+		
+		# Update presence in user cache
 		self._envoy_user_cache.get(user.bare).remove_room(room, user.resource)
+		
+		# Update participants in the room cache
+		self._envoy_room_cache.get(room).remove_participant_by_jid(user)
+		
+		# Handle event
 		self._envoy_call_event("leave", user, JID(room))
+		
 		# We can optimize this by updating the roster once and tracking state changes from then on
 		self._envoy_update_roster(room)
 	
