@@ -142,8 +142,54 @@ class Component(ComponentXMPP):
 		
 		logging.debug("Room configuration form for %s filled in and submitted" % room.jid)
 	
+	def _envoy_purge_usercache(self, current_presences):
+		for jid, user in self._envoy_user_cache.cache.items():
+			logging.debug("Current UserCache room presence list for %s: %s" % (user.jid, user.rooms))
+			for room, resources in user.rooms.items():
+				for resource in resources:
+					try:
+						if "%s/%s" % (jid, resource) not in current_presences[room]:
+							user.remove_room(room, resource)
+					except KeyError, e:
+						user.remove_room(room, resource)
+			
+			for room, resources in user.rooms.iteritems():
+				user.rooms[room] = dedup(resources)
+		
+		logging.debug("New presence list: %s" % [(jid, user.rooms) for jid, user in self._envoy_user_cache.cache.iteritems()])
+	
+	def _envoy_purge_roomcache(self, current_presences):
+		for jid, room in self._envoy_room_cache.cache.items():
+			logging.debug("Current RoomCache user presence list for %s: %s" % (room.jid, room.participants))
+			for user_jid, user in room.participants.items():
+				try:
+					if user_jid not in current_presences[room.jid]:
+						self._envoy_room_cache.get(room.jid).remove_participant_by_jid(user_jid)
+				except KeyError, e:
+					self._envoy_room_cache.get(room.jid).remove_participant_by_jid(user_jid)
+					
+			# TODO: Is a dedup necessary here?
+		
+		logging.debug("New participant list: %s" % [(jid, room.participants) for jid, room in self._envoy_room_cache.cache.iteritems()])
+	
+	def _envoy_update_affiliations(self, room_list):
+		for room in room_list:
+			room_jid, room_node, room_name = room
+			
+			affiliations = (self['xep_0045'].get_users(room_jid, ifrom=self.boundjid, affiliation="owner")['muc_admin']['items'] +
+			                self['xep_0045'].get_users(room_jid, ifrom=self.boundjid, affiliation="admin")['muc_admin']['items'] +
+			                self['xep_0045'].get_users(room_jid, ifrom=self.boundjid, affiliation="member")['muc_admin']['items'])
+			
+			for user in affiliations:
+				cache_user = self._envoy_user_cache.get(user['jid'].bare)
+				affiliation = user['affiliation']
+				
+				if cache_user.get_affiliation(room_jid) != affiliation:
+					cache_user.set_affiliation(room_jid, affiliation)
+					
+		logging.debug("Affiliation list updated")
+	
 	def _envoy_purge_presences(self):
-		# TODO: Split this into multiple functions
 		logging.info("Purging outdated presences")
 		
 		current_presences = {}
@@ -172,52 +218,12 @@ class Component(ComponentXMPP):
 		
 		logging.debug("Current presences according to XMPP daemon: %s" % current_presences)
 		
-		for jid, user in self._envoy_user_cache.cache.items():
-			logging.debug("Current UserCache room presence list for %s: %s" % (user.jid, user.rooms))
-			for room, resources in user.rooms.items():
-				for resource in resources:
-					try:
-						if "%s/%s" % (jid, resource) not in current_presences[room]:
-							user.remove_room(room, resource)
-					except KeyError, e:
-						user.remove_room(room, resource)
-			
-			for room, resources in user.rooms.iteritems():
-				user.rooms[room] = dedup(resources)
-		
-		logging.debug("New presence list: %s" % [(jid, user.rooms) for jid, user in self._envoy_user_cache.cache.iteritems()])
-		
-		for jid, room in self._envoy_room_cache.cache.items():
-			logging.debug("Current RoomCache user presence list for %s: %s" % (room.jid, room.participants))
-			for user_jid, user in room.participants.items():
-				try:
-					if user_jid not in current_presences[room.jid]:
-						self._envoy_room_cache.get(room.jid).remove_participant_by_jid(user_jid)
-				except KeyError, e:
-					self._envoy_room_cache.get(room.jid).remove_participant_by_jid(user_jid)
-					
-			# TODO: Is a dedup necessary here?
-		
-		logging.debug("New participant list: %s" % [(jid, room.participants) for jid, room in self._envoy_room_cache.cache.iteritems()])
+		self._envoy_purge_usercache(current_presences)
+		self._envoy_purge_roomcache(current_presences)
 		
 		# Finally, we'll also want to make sure that we have up to date affiliation information
 		# for all the users.
-		
-		for room in room_list:
-			room_jid, room_node, room_name = room
-			
-			affiliations = (self['xep_0045'].get_users(room_jid, ifrom=self.boundjid, affiliation="owner")['muc_admin']['items'] +
-			                self['xep_0045'].get_users(room_jid, ifrom=self.boundjid, affiliation="admin")['muc_admin']['items'] +
-			                self['xep_0045'].get_users(room_jid, ifrom=self.boundjid, affiliation="member")['muc_admin']['items'])
-			
-			for user in affiliations:
-				cache_user = self._envoy_user_cache.get(user['jid'].bare)
-				affiliation = user['affiliation']
-				
-				if cache_user.get_affiliation(room_jid) != affiliation:
-					cache_user.set_affiliation(room_jid, affiliation)
-					
-		logging.debug("Affiliation list updated")
+		self._envoy_update_affiliations(room_list)
 		
 		self._envoy_call_event("presences_purged")
 		
