@@ -397,7 +397,7 @@ class RoomCacheItem(NodeCacheItem):
 		self.registered = False
 		self.participants = {}
 		self.members = {}
-		self.name = ""
+		self.title = ""
 		self.description = ""
 		self.private = True
 		self.moderated = True

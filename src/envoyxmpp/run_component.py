@@ -253,7 +253,7 @@ class EnvoyComponent(Component):
 			is_private = (room == "")
 			sender_name = self._envoy_user_cache.get(sender.bare).full_name
 			
-			room_name = self._envoy_room_cache.get(room).name
+			room_name = self._envoy_room_cache.get(room).title
 			if room_name.strip() == "":
 				room_name = room.node
 			
