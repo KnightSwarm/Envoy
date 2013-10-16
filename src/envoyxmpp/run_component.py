@@ -264,7 +264,6 @@ class EnvoyComponent(Component):
 				if is_private:
 					sms_prefix = "PM from %s: " % sender_name
 				else:
-					# FIXME: Use human-readable room name rather than JID
 					if highlight == "all":
 						sms_prefix = "@all in %s: [%s] " % (room_name, sender_name)
 					else:
