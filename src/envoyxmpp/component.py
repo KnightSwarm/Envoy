@@ -54,7 +54,7 @@ class Component(ComponentXMPP):
 			           + self['xep_0045'].get_users(room, ifrom=self.boundjid, affiliation="admin")['muc_admin']['items']
 			           + self['xep_0045'].get_users(room, ifrom=self.boundjid, affiliation="member")['muc_admin']['items'])
 			for item in presences:
-				self._envoy_room_cache.get(room).add_member(item['jid'], item['muc']['affiliation'])
+				self._envoy_room_cache.get(room).add_member(item['jid'], item['affiliation'])
 				# TODO: We may want to purge outdated members here?
 		except IqError, e:
 			pass  # The room doesn't exist anymore
@@ -419,9 +419,19 @@ class RoomCacheItem(NodeCacheItem):
 	def remove_participant_by_jid(self, jid):
 		try:
 			del self.participants[unicode(jid)]
-			logging.debug("Removed %s from participant list for  %s" % (jid, self.jid))
+			logging.debug("Removed %s from participant list for %s" % (jid, self.jid))
 		except KeyError, e:
 			logging.warn("Could not remove %s from participants list for %s" % (jid, self.jid))
+			
+	def add_member(self, jid, affiliation):
+		self.members[unicode(jid.bare)] = affiliation
+
+	def remove_member(self, jid):
+		try:
+			del self.members[unicode(jid.bare)]
+			logging.debug("Removed %s from member list for  %s" % (jid.bare, self.jid))
+		except KeyError, e:
+			logging.warn("Could not remove %s from member list for %s" % (jid.bare, self.jid))
 
 class UserCache(NodeCache):
 	def __init__(self, *args, **kwargs):
