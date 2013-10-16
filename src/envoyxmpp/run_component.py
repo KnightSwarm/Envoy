@@ -55,6 +55,7 @@ class EnvoyComponent(Component):
 		self.register_event("topic_change", self.on_topic_change)
 		self.register_event("group_highlight", self.on_group_highlight)
 		self.register_event("presences_purged", self.on_presences_purged)
+		self.register_event("affiliation_change", self.on_affiliation_change)
 		
 		# Hook XEP-0045 presence tracking to use the Envoy database
 		self['xep_0045'].api.register(self._envoy_is_joined_room, 'is_joined_room')
@@ -140,6 +141,9 @@ class EnvoyComponent(Component):
 	def on_group_highlight(self, sender, recipient, room, body, highlight):
 		print "%s highlighted %s in %s in a channel message: %s (highlighted content is %s)" % (sender, recipient, room, body, highlight)
 		self.notify_if_idle(sender, recipient, room, body, highlight)
+	
+	def on_affiliation_change(self, jid, room, new_affiliation):
+		print "Affiliation of %s for %s changed to %s." % (jid, room, new_affiliation)
 	
 	def on_topic_change(self, user, room, topic):
 		self._envoy_log_event(datetime.now(), user, room, self.event_types["topic"], topic)

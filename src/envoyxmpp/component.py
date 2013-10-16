@@ -348,6 +348,7 @@ class Component(ComponentXMPP):
 		if user != "":
 			# TODO: Implement event for changing affiliation?
 			self._envoy_user_cache.get(user.bare).set_affiliation(room, affiliation)
+			self._envoy_call_event("affiliation_change", user.bare, room, affiliation)
 	
 	def _envoy_call_event(self, event_name, *args, **kwargs):
 		try:
