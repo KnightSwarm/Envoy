@@ -37,7 +37,6 @@ class Component(ComponentXMPP):
 		self.registerPlugin('xep_0297') # Stanza forwarding
 		
 		self._envoy_events = {}
-		self._envoy_members = {}
 		self._envoy_user_cache = UserCache()
 		self._envoy_room_cache = RoomCache()
 		
@@ -50,15 +49,13 @@ class Component(ComponentXMPP):
 		self._envoy_purge_presences()
 	
 	def _envoy_update_roster(self, room):
-		self._envoy_members[room] = []
-		
 		try:
 			presences = (self['xep_0045'].get_users(room, ifrom=self.boundjid, affiliation="owner")['muc_admin']['items']
 			           + self['xep_0045'].get_users(room, ifrom=self.boundjid, affiliation="admin")['muc_admin']['items']
 			           + self['xep_0045'].get_users(room, ifrom=self.boundjid, affiliation="member")['muc_admin']['items'])
 			for item in presences:
-				if item['jid'] not in self._envoy_members[room]:
-					self._envoy_members[room].append(item['jid']) # TODO: Can this be replaced with RoomCache entirely?
+				self._envoy_room_cache.get(room).add_member(item['jid'], item['muc']['affiliation'])
+				# TODO: We may want to purge outdated members here?
 		except IqError, e:
 			pass  # The room doesn't exist anymore
 	
@@ -253,11 +250,6 @@ class Component(ComponentXMPP):
 			room = stanza['to'].bare
 			self._envoy_user_cache.touch(stanza["from"].bare)
 			self._envoy_call_event("group_message", stanza["from"], room, stanza["body"])
-			
-			if stanza['to'].bare not in self._envoy_members:
-				# The message was addressed at someone that, according to our internal bookkeeping, isn't in the room.
-				# Update the bookkeeping to correct this, by asking the xmppd.
-				self._envoy_update_roster(room)
 			
 			highlights = re.findall("@([a-zA-Z0-9._-]+)", stanza["body"])
 			for highlight in highlights:
