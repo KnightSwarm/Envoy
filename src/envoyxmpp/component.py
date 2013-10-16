@@ -346,7 +346,6 @@ class Component(ComponentXMPP):
 		affiliation = stanza["muc"]["affiliation"]
 		
 		if user != "":
-			# TODO: Implement event for changing affiliation?
 			self._envoy_user_cache.get(user.bare).set_affiliation(room, affiliation)
 			self._envoy_call_event("affiliation_change", user.bare, room, affiliation)
 	

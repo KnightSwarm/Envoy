@@ -253,6 +253,10 @@ class EnvoyComponent(Component):
 			is_private = (room == "")
 			sender_name = self._envoy_user_cache.get(sender.bare).full_name
 			
+			room_name = self._envoy_room_cache.get(room).name
+			if room_name.strip() == "":
+				room_name = room.node
+			
 			# We'll start out with an SMS
 			sms_recipient = self._envoy_user_cache.get(recipient).mobile_number
 			
@@ -262,9 +266,9 @@ class EnvoyComponent(Component):
 				else:
 					# FIXME: Use human-readable room name rather than JID
 					if highlight == "all":
-						sms_prefix = "@all in %s: [%s] " % (room.node, sender_name)
+						sms_prefix = "@all in %s: [%s] " % (room_name, sender_name)
 					else:
-						sms_prefix = "Highlight in %s: [%s] " % (room.node, sender_name)
+						sms_prefix = "Highlight in %s: [%s] " % (room_name, sender_name)
 				
 				# An SMS message can be at most 60 characters
 				sms_maxlen = 160 - len(sms_prefix)
@@ -312,8 +316,8 @@ class EnvoyComponent(Component):
 				template = template_file.read()
 				template_file.close()
 				
-				subject = "%s mentioned you in the room %s" % (sender_name, room.node)
-				email_body = template.format(first_name=recipient_name, sender=sender_name, room=room.node, message=body)
+				subject = "%s mentioned you in the room %s" % (sender_name,room_name)
+				email_body = template.format(first_name=recipient_name, sender=sender_name, room=room_name, message=body)
 			
 			try:
 				send_email = (configuration["mock"]["email"] == False)
