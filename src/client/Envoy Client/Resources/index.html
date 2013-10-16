@@ -43,16 +43,12 @@
 					
 					rooms = self['xep_0045'].get_rooms(ifrom=self.boundjid, jid=self.conference_host)['disco_items']['items']
 					
-					room_list = []
 					for room_jid, room_node, room_name in rooms:
-						room_list.append({
+						q.put({"type": "roomlist_add", "data": {
 							"name": room_name,
-							"roomname": room_jid,
+							"jid": room_jid,
 							"icon": "comments"
-						})
-					
-					time.sleep(5)
-					q.put({"type": "room_list", "data": room_list})
+						}})
 					
 					console.log("Room list updated...")
 				
@@ -85,21 +81,22 @@
 		<script src="script/ui.js"></script>
 		<script>
 			q.set_callback(function(item){
-				var data = item.data;
-				
-				/* TODO: Instead of replacing an entire list at once, add/remove elements as we encounter them. */
-				/* TODO: Check for queue item type, perhaps find a better syntax for this? */
 				var ui_scope = angular.element("[ng-controller=UiController]").scope()
-				ui_scope.rooms = data;
+				
+				if(item.type == "roomlist_add")
+				{
+					ui_scope.rooms.push(item.data)
+				}
+				
 				ui_scope.$apply();
 			});
 			
-			setInterval(q.check, 250);
+			setInterval(q.check, 150); /* FIXME: This is not very efficient. Surely, there's a better way to do this? */
 		</script>
 	</head>
 	<body ng-app="envoyClient" ng-controller="UiController">
 		<div id="room_list">
-			<div class="room" ng-repeat="room in rooms" ng-class="{selected : $first}" onclick="testfunc();">
+			<div class="room" ng-repeat="room in rooms" ng-class="{selected : $first}" onclick="testfunc();" data-jid="{{ room.jid}}">
 				<i class="status icon-{{room.icon}} icon-fixed-width"></i>
 				<span class="name">{{ room.name }}</span>
 			</div>

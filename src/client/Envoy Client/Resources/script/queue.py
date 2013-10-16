@@ -11,9 +11,10 @@ class PyQueue(object):
 		self.internal_queue.put(*args, **kwargs)
 		
 	def check(self):
-		try:
-			item = self.internal_queue.get(block=False)
-		except QueueEmpty:
-			return
+		while True:
+			try:
+				item = self.internal_queue.get(block=False)
+			except QueueEmpty:
+				return
 			
-		self.callback(item)
+			self.callback(item)
