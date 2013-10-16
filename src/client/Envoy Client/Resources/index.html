@@ -53,7 +53,6 @@
 					console.log("Room list updated...")
 				
 			def dom_load():
-				angular.element("[ng-controller=UiController]").scope()
 				xmpp = Client("testuser", "envoy.local", "testpass")
 				xmpp.connect()
 				xmpp.process(block=False)
