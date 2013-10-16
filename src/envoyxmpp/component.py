@@ -312,7 +312,7 @@ class Component(ComponentXMPP):
 		self._envoy_user_cache.get(user.bare).add_room(room, user.resource)
 		
 		# Update participants in the room cache
-		self._envoy_room_cache.get(room).add_participant(nickname, user, "") # FIXME: We don't actually know the role here yet
+		self._envoy_room_cache.get(room).add_participant(nickname, user, stanza['muc']['role'])
 		
 		# Update affiliation in the user cache
 		affiliation = stanza['muc']['affiliation']
