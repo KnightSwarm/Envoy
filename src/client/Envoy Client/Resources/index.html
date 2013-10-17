@@ -46,6 +46,9 @@
 					
 					console.log("CONNECTED!")
 					
+					self._update_room_list()
+					
+				def _update_room_list(self):
 					rooms = self['xep_0045'].get_rooms(ifrom=self.boundjid, jid=self.conference_host)['disco_items']['items']
 					
 					for room_jid, room_node, room_name in rooms:
@@ -54,7 +57,7 @@
 							"jid": room_jid,
 							"icon": "comments"
 						}})
-					
+						
 					console.log("Room list updated...")
 				
 			def dom_load():
