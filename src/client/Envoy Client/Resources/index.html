@@ -23,45 +23,13 @@
 		<script src="script/shim.js"></script>
 		<script src="script/client-web.js"></script>
 		<!-- Universal application code -->
-		<script>
-			var menu = new ApplicationMenu({
-				"File": {
-					"Quit": function(){ Ti.App.exit(); }
-				},
-				"Edit": {
-					"Preferences": function(){ openPreferences(); }
-				},
-				"Help": {
-					"Quickstart": function(){ openQuickstart(); },
-					"Manual": function(){ openManual(); },
-					"About": function(){ openAbout(); }
-				}
-			});
-			menu.setDefault();
-			
-			$(function(){
-				dom_load();
-			});
-		</script>
 		<script src="script/ui.js"></script>
-		<script>
-			q.set_callback(function(item){
-				var ui_scope = angular.element("[ng-controller=UiController]").scope()
-				
-				if(item.type == "roomlist_add")
-				{
-					ui_scope.rooms.push(item.data)
-				}
-				
-				ui_scope.$apply();
-			});
-			
-			setInterval(q.check, 150); /* FIXME: This is not very efficient. Surely, there's a better way to do this? */
-		</script>
+		<script src="script/client-all.js"></script>
+		<script src="script/eventloop.js"></script>
 	</head>
 	<body ng-app="envoyClient" ng-controller="UiController">
 		<div id="room_list">
-			<div class="room" ng-repeat="room in rooms" ng-class="{selected : $first}" onclick="testfunc();" data-jid="{{ room.jid}}">
+			<div class="room" ng-repeat="room in rooms" ng-class="{selected : $first}" data-jid="{{ room.jid}}">
 				<i class="status icon-{{room.icon}} icon-fixed-width"></i>
 				<span class="name">{{ room.name }}</span>
 			</div>
