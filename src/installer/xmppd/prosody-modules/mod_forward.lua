@@ -80,6 +80,7 @@ module:hook("pre-presence/full", handle_stanza, 1);
 module:hook("pre-iq/host", handle_stanza, 1);
 module:hook("pre-message/host", handle_stanza, 1);
 module:hook("pre-presence/host", handle_stanza, 1);
+module:hook("presence/full", handle_stanza, 1);
 
 -- Hook stanzas coming to the host we're loaded on
 -- (these might be from our component)

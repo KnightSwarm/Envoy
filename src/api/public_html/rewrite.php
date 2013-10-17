@@ -88,6 +88,18 @@ $router->routes = array(
 			"authenticator"	=> "authenticators/fqdn_exists.php",
 			"auth_error"	=> ""
 		),
+		"^/room/lookup$"	=> array(
+			"methods"	=> "get",
+			"target"	=> "modules/room/lookup.php",
+			"authenticator"	=> "authenticators/fqdn_exists.php",
+			"auth_error"	=> ""
+		),
+		"^/room/create"	=> array(
+			"methods"	=> "post",
+			"target"	=> "modules/room/create.php",
+			"authenticator"	=> "authenticators/fqdn_exists.php",
+			"auth_error"	=> ""
+		),
 		"^/fqdn/create$"	=> array(
 			"methods"	=> "post",
 			"target"	=> "modules/fqdn/create.php"
@@ -149,6 +161,7 @@ catch (InvalidParameterException $e)
 }
 catch (Exception $e)
 {
+	echo($e);
 	/* TODO: Log error, this should really never happen. */
 	http_status_code(500);
 	echo(json_encode(array("error" => "An unknown error occurred.")));
