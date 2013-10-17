@@ -78,7 +78,6 @@ class TideBackend(object):
 		
 def dom_load():
 	global backend
+	
+	console.log("Initialized as TideSDK client.");
 	backend = TideBackend("testuser", "envoy.local", "testpass", q)
-	#xmpp = Client("testuser", "envoy.local", "testpass", q)
-	#xmpp.connect()
-	#xmpp.process(block=False)

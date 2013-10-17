@@ -11,8 +11,27 @@ else
 	/* The TideSDK API is not available. This means that we're probably running in web client mode. */
 	has_tide = false;
 	
-	/* To make stuff not break, we'll implement a shim. For now, it doesn't actually do anything; later,
-	 * this shim will implement functionality similar to TideSDK. */
+	$(function(){
+		/* If the browser used has support for notifications... */
+		if(typeof window.webkitNotifications !== "undefined")
+		{
+			/* Request to show notifications as soon as we can. */
+			$("body").on("mousedown.notification_request", function(){
+				/* Only ask if we don't already know. */
+				if(window.webkitNotifications.checkPermission() == 1)
+				{
+					window.webkitNotifications.requestPermission();
+				}
+				
+				/* Remove the event, we don't need it anymore. */
+				$("body").off("mousedown.notification_request");
+			});
+		}
+	});
+	
+	
+	/* To make stuff not break, we'll implement a shim for the TideSDK API. For now, it doesn't 
+	 * actually do anything; later, this shim will implement functionality similar to TideSDK. */
 	var Ti = {
 		UI: {
 			createMenu: function() { return {
@@ -23,6 +42,18 @@ else
 				
 			}; },
 			setMenu: function(){}
+		},
+		/* The Notification shim *does* actually do something - but only on Webkit browsers. */
+		Notification: {
+			createNotification: function(options) {
+				/* Only attempt to show notifications if we have permission to do so. */
+				if(window.webkitNotifications.checkPermission() == 0)
+				{
+					if(typeof options.icon == "undefined") { options.icon = ""; }
+					var notification = window.webkitNotifications.createNotification(options.icon, options.title, options.message);
+					return notification;
+				}
+			}
 		}
 	}
 }
