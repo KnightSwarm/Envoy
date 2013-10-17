@@ -9,6 +9,7 @@
 		<!-- Base Javascript libraries -->
 		<script src="script/jquery-1.10.2.min.js"></script>
 		<script src="script/angular.min.js"></script>
+		<script src="script/compat.js"></script>
 		<!-- Initial configuration and Python availability detection -->
 		<script type="text/python">
 			import sys
@@ -29,7 +30,7 @@
 	</head>
 	<body ng-app="envoyClient" ng-controller="UiController">
 		<div id="room_list">
-			<div class="room" ng-repeat="room in rooms" ng-class="{selected : $first}" data-jid="{{ room.jid}}">
+			<div class="room" ng-repeat="room in rooms" ng-class="{selected : $first}" data-jid="{{ room.jid }}">
 				<i class="status icon-{{room.icon}} icon-fixed-width"></i>
 				<span class="name">{{ room.name }}</span>
 			</div>
@@ -47,6 +48,7 @@
 					<span class="body">{{ message.body }}</span>
 					<div class="clear"></div>
 				</div>
+				<button onclick="backend.update_room_list()">Update room list</button>
 			</div>
 		</div>
 	</body>

@@ -5,7 +5,7 @@ import logging
 
 logging.basicConfig(level=logging.DEBUG, format="%(asctime)s %(levelname)s %(message)s")
 
-q = PyQueue();
+q = PyQueue()
 
 class Client(ClientXMPP):
 	def __init__(self, username, fqdn, password, queue):
@@ -22,6 +22,8 @@ class Client(ClientXMPP):
 		self.registerPlugin('xep_0048') # Bookmarks
 		self.registerPlugin('xep_0199') # XMPP Ping
 		
+		self.all_rooms = {}
+		
 	def session_start(self, event):
 		self.get_roster()
 		self.send_presence()
@@ -36,13 +38,27 @@ class Client(ClientXMPP):
 	def _update_room_list(self):
 		rooms = self['xep_0045'].get_rooms(ifrom=self.boundjid, jid=self.conference_host)['disco_items']['items']
 		
+		new_rooms = []
 		for room_jid, room_node, room_name in rooms:
-			self.q.put({"type": "roomlist_add", "data": {
-				"name": room_name,
-				"jid": room_jid,
-				"icon": "comments"
-			}})
+			new_rooms.append(room_jid)
 			
+			if room_jid not in self.all_rooms:
+				# Room was created
+				self.all_rooms[room_jid] = room_name
+				self.q.put({"type": "roomlist_add", "data": [{
+					"name": room_name,
+					"jid": room_jid,
+					"icon": "comments"
+				}]})
+				
+		for room_jid in self.all_rooms.keys():
+			if room_jid not in new_rooms:
+				# Room was removed
+				del self.all_rooms[room_jid]
+				self.q.put({"type": "roomlist_remove", "data": [{
+					"jid": room_jid
+				}]})
+					
 		console.log("Room list updated...")
 	
 class TideBackend(object):
@@ -50,7 +66,7 @@ class TideBackend(object):
 		self.username = username
 		self.fqdn = fqdn
 		self.password = password
-		self.queue = queue
+		self.q = queue
 		self.client = Client(username, fqdn, password, queue)
 		self.client.connect()
 		self.client.process(block=False)
@@ -76,8 +92,9 @@ class TideBackend(object):
 	def change_topic(self, room_jid, topic):
 		pass
 		
+	def update_room_list(self):
+		self.client._update_room_list()
+		
 def dom_load():
-	global backend
-	
 	console.log("Initialized as TideSDK client.");
-	backend = TideBackend("testuser", "envoy.local", "testpass", q)
+	window.backend = TideBackend("testuser", "envoy.local", "testpass", q)
