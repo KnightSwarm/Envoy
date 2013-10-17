@@ -8,10 +8,12 @@ logging.basicConfig(level=logging.DEBUG, format="%(asctime)s %(levelname)s %(mes
 q = PyQueue();
 
 class Client(ClientXMPP):
-	def __init__(self, username, fqdn, password):
+	def __init__(self, username, fqdn, password, queue):
 		self._jid = "%s@%s" % (username, fqdn)
 		self.conference_host = "conference.%s" % fqdn
 		ClientXMPP.__init__(self, self._jid, password)
+		
+		self.q = queue
 		
 		self.add_event_handler("session_start", self.session_start)
 		self.registerPlugin('xep_0030') # Service Discovery
@@ -35,7 +37,7 @@ class Client(ClientXMPP):
 		rooms = self['xep_0045'].get_rooms(ifrom=self.boundjid, jid=self.conference_host)['disco_items']['items']
 		
 		for room_jid, room_node, room_name in rooms:
-			q.put({"type": "roomlist_add", "data": {
+			self.q.put({"type": "roomlist_add", "data": {
 				"name": room_name,
 				"jid": room_jid,
 				"icon": "comments"
@@ -43,7 +45,40 @@ class Client(ClientXMPP):
 			
 		console.log("Room list updated...")
 	
+class TideBackend(object):
+	def __init__(self, username, fqdn, password, queue):
+		self.username = username
+		self.fqdn = fqdn
+		self.password = password
+		self.queue = queue
+		self.client = Client(username, fqdn, password, queue)
+		self.client.connect()
+		self.client.process(block=False)
+		
+	def join_room(self, room_jid):
+		pass
+		
+	def leave_room(self, room_jid):
+		pass
+		
+	def get_vcard(self, jid):
+		pass
+		
+	def send_group_message(self, message, room_jid):
+		pass
+		
+	def send_private_message(self, message, recipient):
+		pass
+		
+	def change_status(self, status):
+		pass
+		
+	def change_topic(self, room_jid, topic):
+		pass
+		
 def dom_load():
-	xmpp = Client("testuser", "envoy.local", "testpass")
-	xmpp.connect()
-	xmpp.process(block=False)
+	global backend
+	backend = TideBackend("testuser", "envoy.local", "testpass", q)
+	#xmpp = Client("testuser", "envoy.local", "testpass", q)
+	#xmpp.connect()
+	#xmpp.process(block=False)
