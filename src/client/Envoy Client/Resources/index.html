@@ -1,18 +1,22 @@
 <!doctype html>
 <html>
 	<head>
+		<!-- Stylesheets -->
 		<link rel="stylesheet" href="css/pure-min.css">
 		<link rel="stylesheet" href="font-awesome/css/font-awesome.min.css">
 		<link rel="stylesheet" href="css/main.css">
 		<link rel="stylesheet" href="istok/stylesheet.css">
+		<!-- Base Javascript libraries -->
 		<script src="script/jquery-1.10.2.min.js"></script>
-		<script src="script/menu.js"></script>
 		<script src="script/angular.min.js"></script>
-		<script src="script/shim.js"></script>
+		<!-- Initial configuration and Python availability detection -->
 		<script type="text/python">
 			import sys
 			sys.path.insert(1, "/home/sven/projects/SleekXMPP/")
+			has_python = True;
 		</script>
+		<!-- Components for TideSDK client -->
+		<script src="script/menu.js"></script>
 		<script type="text/python" src="script/queue.py"></script>
 		<script type="text/python">
 			import time, sleekxmpp
@@ -58,6 +62,9 @@
 				xmpp.connect()
 				xmpp.process(block=False)
 		</script>
+		<!-- Components and shims for web client -->
+		<script src="script/shim.js"></script>
+		<!-- Universal application code -->
 		<script>
 			var menu = new ApplicationMenu({
 				"File": {
