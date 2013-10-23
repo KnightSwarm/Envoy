@@ -3,6 +3,7 @@ var envoyClient = angular.module('envoyClient', []);
 envoyClient.controller('UiController', function UiController($scope)
 {
 	$scope.rooms = [];
+	$scope.current_room = "lobby";
 	
 	$scope.users = [
 		{

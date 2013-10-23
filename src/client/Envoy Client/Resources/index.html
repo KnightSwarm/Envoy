@@ -30,11 +30,11 @@
 	</head>
 	<body ng-app="envoyClient" ng-controller="UiController">
 		<div id="room_list">
-			<div class="room selected" data-jid="lobby">
+			<div class="room" ng-class="{selected : current_room == 'lobby'}" data-jid="lobby">
 				<i class="status icon-list icon-fixed-width"></i>
 				<span class="name">Room List</span>
 			</div>
-			<div class="room" ng-repeat="room in rooms" data-jid="{{ room.jid }}">
+			<div class="room" ng-class="{selected : current_room == room.jid}" ng-repeat="room in rooms" data-jid="{{ room.jid }}">
 				<i class="status icon-{{room.icon}} icon-fixed-width"></i>
 				<span class="name">{{ room.name }}</span>
 			</div>
