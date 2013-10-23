@@ -42,4 +42,22 @@ envoyClient.controller('UiController', function UiController($scope)
 			"body": "Reply from someone else in the room"
 		}
 	];
+	
+	$scope.all_rooms = [
+		{
+			"name": "Testing room 1",
+			"description": "A testing room, number one.",
+			"icon": "comments"
+		},
+		{
+			"name": "Testing room 2",
+			"description": "A testing room, number two.",
+			"icon": "comments"
+		},
+		{
+			"name": "Testing room 3",
+			"description": "A testing room, number three.",
+			"icon": "lock"
+		}
+	];
 });

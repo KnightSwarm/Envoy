@@ -29,6 +29,17 @@ body {
       margin-right: 9px;
       font-weight: bold;
       background-color: #EEEEEE; }
+  #main .lobby {
+    padding: 12px; }
+    #main .lobby h1 {
+      font-size: 20px;
+      margin: 0px 0px 5px 0px; }
+    #main .lobby .room {
+      padding: 5px 0px 5px 0px;
+      border-top: 1px solid silver; }
+      #main .lobby .room .name {
+        font-weight: bold;
+        margin-right: 12px; }
 
 #room_list {
   background-color: #181818;
