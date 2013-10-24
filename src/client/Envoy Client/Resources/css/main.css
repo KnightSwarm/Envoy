@@ -3,6 +3,9 @@
    * apparently isn't. Is this a problem with TideSDK? */
   clear: both; }
 
+.hidden {
+  display: none; }
+
 body {
   font-family: "Istok Web", sans-serif; }
 

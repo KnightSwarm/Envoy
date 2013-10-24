@@ -30,11 +30,11 @@
 	</head>
 	<body ng-app="envoyClient" ng-controller="UiController">
 		<div id="room_list">
-			<div class="room" ng-class="{selected : current_room == 'lobby'}" data-jid="lobby">
+			<div class="room" ng-class="{selected : current_room == 'lobby'}" ng-click="current_room = 'lobby'" data-jid="lobby">
 				<i class="status icon-list icon-fixed-width"></i>
 				<span class="name">Room List</span>
 			</div>
-			<div class="room" ng-class="{selected : current_room == room.jid}" ng-repeat="room in rooms" data-jid="{{ room.jid }}">
+			<div class="room" ng-class="{selected : current_room == room.jid}" ng-repeat="room in rooms" ng-click="$parent.current_room = room.jid" data-jid="{{ room.jid }}">
 				<i class="status icon-{{room.icon}} icon-fixed-width"></i>
 				<span class="name">{{ room.name }}</span>
 			</div>
@@ -46,7 +46,7 @@
 			</div>
 		</div>
 		<div id="main">
-			<div class="lobby">
+			<div class="lobby" ng-class="{hidden : current_room != 'lobby'}">
 				<h1>Rooms</h1>
 				<div class="room" ng-repeat="room in all_rooms">
 					<i class="status icon-{{room.icon}} icon-fixed-width"></i>
@@ -54,7 +54,7 @@
 					<span class="description">{{ room.description }}</span>
 				</div>
 			</div>
-			<div class="chat" style="display: none;">
+			<div class="chat" ng-repeat="room in rooms"  data-jid="{{ room.jid }}" ng-class="{hidden : current_room != room.jid}">
 				<div class="message" ng-repeat="message in messages" ng-class="{own : message.jid == own_jid}">
 					<span class="author">{{ message.author_name }}</span>
 					<span class="body">{{ message.body }}</span>

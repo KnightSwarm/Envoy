@@ -19,6 +19,11 @@ $userlist_width: 150px;
 	clear: both;
 }
 
+.hidden
+{
+	display: none;
+}
+
 @mixin pull-left
 {
 	position: absolute;
