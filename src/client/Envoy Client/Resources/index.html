@@ -42,9 +42,11 @@
 			</div>
 		</div>
 		<div id="user_list">
-			<div class="user" ng-repeat="user in users">
-				<i class="status {{user.status}} icon-circle"></i>
-				{{ user.name }}
+			<div class="list" ng-repeat="room in rooms" ng-class="{hidden : current_room != room.jid}">
+				<div class="user" ng-repeat="user in users">
+					<i class="status {{user.status}} icon-circle"></i>
+					{{ user.name }}
+				</div>
 			</div>
 		</div>
 		<div id="main">
