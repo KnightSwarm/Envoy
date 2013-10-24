@@ -153,6 +153,7 @@ body
 		background-color: #373737;
 		padding: 8px 10px;
 		font-size: 15px;
+		cursor: default;
 		
 		&:hover
 		{
@@ -194,6 +195,7 @@ body
 		padding: 6px 8px;
 		font-size: 14px;
 		font-weight: bold;
+		cursor: default;
 		
 		&.selected
 		{

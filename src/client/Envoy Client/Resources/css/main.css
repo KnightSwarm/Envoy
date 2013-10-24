@@ -56,7 +56,8 @@ body {
     position: relative;
     background-color: #373737;
     padding: 8px 10px;
-    font-size: 15px; }
+    font-size: 15px;
+    cursor: default; }
     #room_list .room:hover {
       background-color: #303030; }
     #room_list .room.selected {
@@ -85,7 +86,8 @@ body {
     background-color: #DCDCDC;
     padding: 6px 8px;
     font-size: 14px;
-    font-weight: bold; }
+    font-weight: bold;
+    cursor: default; }
     #user_list .user.selected {
       background-color: #BFBFBF; }
     #user_list .user i.status {
