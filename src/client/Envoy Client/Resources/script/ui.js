@@ -5,6 +5,8 @@ envoyClient.controller('UiController', function UiController($scope)
 	$scope.rooms = [];
 	$scope.current_room = "lobby";
 	
+	$scope.joined_rooms = [];
+	
 	$scope.users = [
 		{
 			"name": "John Doe",
@@ -44,21 +46,16 @@ envoyClient.controller('UiController', function UiController($scope)
 		}
 	];
 	
-	$scope.all_rooms = [
+	$scope.all_rooms = [];
+	
+	$scope.join_room = function(jid)
+	{
+		if(_.contains($scope.joined_rooms, jid) == false)
 		{
-			"name": "Testing room 1",
-			"description": "A testing room, number one.",
-			"icon": "comments"
-		},
-		{
-			"name": "Testing room 2",
-			"description": "A testing room, number two.",
-			"icon": "comments"
-		},
-		{
-			"name": "Testing room 3",
-			"description": "A testing room, number three.",
-			"icon": "lock"
+			$scope.joined_rooms.push(jid);
+			backend.join_room(jid)
 		}
-	];
+		
+		$scope.current_room = jid;
+	}
 });

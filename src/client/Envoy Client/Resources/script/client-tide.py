@@ -22,6 +22,8 @@ class Client(ClientXMPP):
 		self.registerPlugin('xep_0048') # Bookmarks
 		self.registerPlugin('xep_0199') # XMPP Ping
 		
+		self.add_event_handler("groupchat_joined", self.on_groupchat_joined)
+		
 		self.all_rooms = {}
 		
 	def session_start(self, event):
@@ -46,6 +48,7 @@ class Client(ClientXMPP):
 				# Room was created
 				self.all_rooms[room_jid] = room_name
 				self.q.put({"type": "roomlist_add", "data": [{
+					"type": "room",
 					"name": room_name,
 					"jid": room_jid,
 					"icon": "comments"
@@ -61,6 +64,23 @@ class Client(ClientXMPP):
 					
 		console.log("Room list updated...")
 	
+	def on_groupchat_joined(self, stanza):
+		room_jid = stanza["from"].bare
+		
+		try:
+			room_name = self.all_rooms[room_jid]
+		except KeyError, e:
+			# We are not aware of this room yet...
+			# TODO: Fetch details
+			room_name = room_jid
+		
+		self.q.put({"type": "joinlist_add", "data": [{
+			"type": "room",
+			"name": room_name,
+			"jid": room_jid,
+			"icon": "comments"
+		}]})
+	
 class TideBackend(object):
 	def __init__(self, username, fqdn, password, queue):
 		self.username = username
@@ -72,7 +92,13 @@ class TideBackend(object):
 		self.client.process(block=False)
 		
 	def join_room(self, room_jid):
-		pass
+		self.client['xep_0045'].join(room_jid, self.username)
+		#self.q.put({"type": "roomlist_add", "data": [{
+		#	"type": "room",
+		#	"name": "Newly joined room",
+		#	"jid": room_jid,
+		#	"icon": "comments"
+		#}]})
 		
 	def leave_room(self, room_jid):
 		pass

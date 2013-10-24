@@ -17,3 +17,13 @@ AngularJS
   (c) Google Inc.
   http://angularjs.org/
   Licensed under MIT (https://github.com/angular/angular.js/blob/master/LICENSE)
+
+Underscore.js
+  (c) Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+  http://documentcloud.github.io/underscore/
+  Licensed under MIT (https://github.com/jashkenas/underscore/blob/master/LICENSE)
+
+jQuery
+  (c) jQuery Foundation and other contributors
+  http://jquery.com/
+  Licensed under MIT (https://github.com/jquery/jquery/blob/master/MIT-LICENSE.txt)

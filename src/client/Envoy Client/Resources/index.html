@@ -9,6 +9,7 @@
 		<!-- Base Javascript libraries -->
 		<script src="script/jquery-1.10.2.min.js"></script>
 		<script src="script/angular.min.js"></script>
+		<script src="script/underscore-min.js"></script>
 		<script src="script/compat.js"></script>
 		<!-- Initial configuration and Python availability detection -->
 		<script type="text/python">
@@ -52,9 +53,9 @@
 		<div id="main">
 			<div class="lobby" ng-class="{hidden : current_room != 'lobby'}">
 				<h1>Rooms</h1>
-				<div class="room" ng-repeat="room in all_rooms">
+				<div class="room" ng-repeat="room in all_rooms" data-jid="{{ room.jid }}">
 					<i class="status icon-{{room.icon}} icon-fixed-width"></i>
-					<span class="name">{{ room.name }}</span>
+					<span class="name"><a href="#" ng-click="join_room(room.jid)">{{ room.name }}</a></span>
 					<span class="description">{{ room.description }}</span>
 				</div>
 			</div>

@@ -7,10 +7,28 @@ q.set_callback(function(item){
 	{
 		$.each(item.data, function(i, element)
 		{
-			ui_scope.rooms.push(element)
+			ui_scope.all_rooms.push(element)
 		});
 	}
 	else if(item.type == "roomlist_remove")
+	{
+		var to_delete = [];
+		
+		$.each(item.data, function(i, element)
+		{
+			to_delete.push(element.jid);
+		});
+		
+		ui_scope.all_rooms = ui_scope.all_rooms.filter(function(x, i, a){ return to_delete.indexOf(x.jid) === -1 });
+	}
+	else if(item.type == "joinlist_add")
+	{
+		$.each(item.data, function(i, element)
+		{
+			ui_scope.rooms.push(element)
+		});
+	}
+	else if(item.type == "joinlist_remove")
 	{
 		var to_delete = [];
 		
