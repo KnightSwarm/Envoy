@@ -39,6 +39,21 @@ q.set_callback(function(item){
 		
 		ui_scope.rooms = ui_scope.rooms.filter(function(x, i, a){ return to_delete.indexOf(x.jid) === -1 });
 	}
+	else if(item.type == "user_status")
+	{
+		if(_.contains(ui_scope.users, item.data.jid))
+		{
+			ui_scope.users[item.data.jid].status = item.data.status;
+		}
+		else
+		{
+			ui_scope.users[item.data.jid] = {status: item.data.status};
+		}
+	}
+	else if(item.type == "user_presence")
+	{
+		//var room_scope = angular.element("*[ng-controller=UiController] *[data]").scope()
+	}
 	
 	ui_scope.$apply();
 });

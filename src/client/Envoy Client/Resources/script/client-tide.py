@@ -23,6 +23,7 @@ class Client(ClientXMPP):
 		self.registerPlugin('xep_0199') # XMPP Ping
 		
 		self.add_event_handler("groupchat_joined", self.on_groupchat_joined)
+		self.add_event_handler("groupchat_presence", self.on_groupchat_presence)
 		
 		self.all_rooms = {}
 		
@@ -79,6 +80,29 @@ class Client(ClientXMPP):
 			"name": room_name,
 			"jid": room_jid,
 			"icon": "comments"
+		}]})
+		
+	def on_groupchat_presence(self, stanza):
+		nickname = stanza["from"].resource
+		room_jid = stanza["from"].bare
+		# check for 100 (meaning non-anonymous)
+		real_jid = stanza["muc_user"]["jid"]
+		role = stanza["muc_user"]["role"]
+		affiliation = stanza["muc_user"]["affiliation"]
+		status = stanza["type"]
+		
+		self.q.put({"type": "user_status", "data": [{
+			"jid": real_jid,
+			"status": status
+		}]})
+		
+		self.q.put({"type": "user_presence", "data": [{
+			"room_jid": room_jid,
+			"jid": real_jid,
+			"nickname": nickname,
+			"status": status,
+			"role": role,
+			"affiliation": affiliation
 		}]})
 	
 class TideBackend(object):
