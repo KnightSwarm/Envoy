@@ -149,6 +149,7 @@ body
 	
 	.room
 	{
+		position: relative;
 		background-color: #373737;
 		padding: 8px 10px;
 		font-size: 15px;
@@ -161,6 +162,14 @@ body
 		&.selected
 		{
 			background-color: #454545;
+			
+			.arrow
+			{
+				@include pull-right;
+				background-color: white;
+				width: 8px;
+				border-radius: 12px 0px 0px 12px;
+			}
 		}
 		
 		i.status
