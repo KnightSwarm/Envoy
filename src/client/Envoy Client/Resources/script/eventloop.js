@@ -7,94 +7,127 @@ event_loop_processing = false;
 q.set_callback(function(item){
 	event_loop_processing = true;
 	
+	var handlers = {
+		roomlist_add: {
+			scope: ["ui"],
+			handler: function($scope, data) {
+				$.each(data, function(i, element)
+				{
+					$scope.all_rooms.push(element)
+				});
+			}
+		},
+		roomlist_remove: {
+			scope: ["ui"],
+			handler: function($scope, data) {
+				var to_delete = [];
+				
+				$.each(data, function(i, element)
+				{
+					to_delete.push(element.jid);
+				});
+				
+				$scope.all_rooms = $scope.all_rooms.filter(function(x, i, a){ return to_delete.indexOf(x.jid) === -1 });
+			}
+		},
+		joinlist_add: {
+			scope: ["ui"],
+			handler: function($scope, data) {
+				$.each(data, function(i, element)
+				{
+					$scope.rooms.push(element)
+				});
+			}
+		},
+		joinlist_remove: {
+			scope: ["ui"],
+			handler: function($scope, data) {
+				var to_delete = [];
+		
+				$.each(data, function(i, element)
+				{
+					to_delete.push(element.jid);
+				});
+				
+				$scope.rooms = $scope.rooms.filter(function(x, i, a){ return to_delete.indexOf(x.jid) === -1 });
+			}
+		},
+		user_status: {
+			scope: ["ui"],
+			handler: function($scope, data) {
+				if(_.contains($scope.users, data.jid))
+				{
+					$scope.users[data.jid].status = data.status;
+				}
+				else
+				{
+					$scope.users[data.jid] = {status: data.status};
+				}
+			}
+		},
+		user_presence: {
+			scope: ["room", item.data.room_jid],
+			handler: function($scope, data) {
+				if(typeof $scope.room.participants == "undefined")
+				{
+					$scope.room.participants = [];
+				}
+				
+				/* FIXME: Abstract this into an add-if-exists function? */
+				new_object = {
+					"nickname": data.nickname,
+					"jid": data.jid,
+					"status": data.status,
+					"role": data.role,
+					"affiliation": data.affiliation
+				}
+				
+				var existing = _.filter($scope.room.participants, function(i, idx){ i._index = idx; return i.nickname == data.nickname; });
+				
+				if(existing.length > 0)
+				{
+					$scope.room.participants[existing[0]._index] = new_object
+				}
+				else
+				{
+					$scope.room.participants.push(new_object)
+				}
+			}
+		}
+	}
+	
+	if(typeof handlers[item.type] !== "undefined")
+	{
+		var hdl = handlers[item.type];
+		var scope = undefined;
+		
+		switch(hdl.scope[0])
+		{
+			case "ui":
+				scope = angular.element("[ng-controller=UiController]").scope();
+				break;
+			case "room":
+				scope = angular.element("#main .chat[data-jid='" + hdl.scope[1] + "']").scope();
+				break;
+		}
+		
+		if(typeof scope !== undefined)
+		{
+			hdl.handler(scope, item.data);
+			scope.$apply();
+		}
+		else
+		{
+			console.log("WARNING: No suitable scope found for event of type '" + item.type + "'!");
+		}
+	}
+	
 	var ui_scope = angular.element("[ng-controller=UiController]").scope()
 	
 	console.log(item);
 	
-	/* FIXME: Abstract this into something with less boilerplate... */
 	/* FIXME: Keep a separate list of 'users to show in userlist' and 'participants',
 	 * to compensate for offline room members? */
-	
-	if(item.type == "roomlist_add")
-	{
-		$.each(item.data, function(i, element)
-		{
-			ui_scope.all_rooms.push(element)
-		});
-	}
-	else if(item.type == "roomlist_remove")
-	{
-		var to_delete = [];
-		
-		$.each(item.data, function(i, element)
-		{
-			to_delete.push(element.jid);
-		});
-		
-		ui_scope.all_rooms = ui_scope.all_rooms.filter(function(x, i, a){ return to_delete.indexOf(x.jid) === -1 });
-	}
-	else if(item.type == "joinlist_add")
-	{
-		$.each(item.data, function(i, element)
-		{
-			ui_scope.rooms.push(element)
-		});
-	}
-	else if(item.type == "joinlist_remove")
-	{
-		var to_delete = [];
-		
-		$.each(item.data, function(i, element)
-		{
-			to_delete.push(element.jid);
-		});
-		
-		ui_scope.rooms = ui_scope.rooms.filter(function(x, i, a){ return to_delete.indexOf(x.jid) === -1 });
-	}
-	else if(item.type == "user_status")
-	{
-		if(_.contains(ui_scope.users, item.data.jid))
-		{
-			ui_scope.users[item.data.jid].status = item.data.status;
-		}
-		else
-		{
-			ui_scope.users[item.data.jid] = {status: item.data.status};
-		}
-	}
-	else if(item.type == "user_presence")
-	{
-		var room_scope = angular.element("#main .chat[data-jid='" + item.data.room_jid + "']").scope();
-		
-		if(typeof room_scope.room.participants == "undefined")
-		{
-			room_scope.room.participants = [];
-		}
-		
-		/* FIXME: Abstract this into an add-if-exists function? */
-		new_object = {
-			"nickname": item.data.nickname,
-			"jid": item.data.jid,
-			"status": item.data.status,
-			"role": item.data.role,
-			"affiliation": item.data.affiliation
-		}
-		
-		var existing = _.filter(room_scope.room.participants, function(i, idx){ i._index = idx; return i.nickname == item.data.nickname; });
-		
-		if(existing.length > 0)
-		{
-			room_scope.room.participants[existing[0]._id] = new_object
-		}
-		else
-		{
-			room_scope.room.participants.push(new_object)
-		}
-		
-		room_scope.$apply();
-	}
-	
-	ui_scope.$apply();
 	
 	event_loop_processing = false;
 });
