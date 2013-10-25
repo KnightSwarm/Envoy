@@ -207,22 +207,22 @@ body
 			font-size: 13px;
 			margin-right: 4px;
 			
-			&.available
+			&.available, &.chat
 			{
 				color: #1F960E;
 			}
 			
-			&.busy
+			&.dnd
 			{
 				color: #C02413;
 			}
 			
-			&.away
+			&.away, &.xa
 			{
-				color: #898300;
+				color: #B2AC19;
 			}
 			
-			&.offline
+			&.unavailable
 			{
 				color: #848484;
 			}

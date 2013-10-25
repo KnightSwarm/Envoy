@@ -93,11 +93,11 @@ body {
     #user_list .user i.status {
       font-size: 13px;
       margin-right: 4px; }
-      #user_list .user i.status.available {
+      #user_list .user i.status.available, #user_list .user i.status.chat {
         color: #1F960E; }
-      #user_list .user i.status.busy {
+      #user_list .user i.status.dnd {
         color: #C02413; }
-      #user_list .user i.status.away {
-        color: #898300; }
-      #user_list .user i.status.offline {
+      #user_list .user i.status.away, #user_list .user i.status.xa {
+        color: #B2AC19; }
+      #user_list .user i.status.unavailable {
         color: #848484; }

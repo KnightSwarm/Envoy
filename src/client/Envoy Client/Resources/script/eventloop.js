@@ -4,101 +4,104 @@
  * previous events. */
 event_loop_processing = false;
 
-q.set_callback(function(item){
-	event_loop_processing = true;
+var event_handlers = {
+	roomlist_add: {
+		scope: ["ui"],
+		handler: function($scope, data) {
+			$.each(data, function(i, element)
+			{
+				$scope.all_rooms.push(element)
+			});
+		}
+	},
+	roomlist_remove: {
+		scope: ["ui"],
+		handler: function($scope, data) {
+			var to_delete = [];
+			
+			$.each(data, function(i, element)
+			{
+				to_delete.push(element.jid);
+			});
+			
+			$scope.all_rooms = $scope.all_rooms.filter(function(x, i, a){ return to_delete.indexOf(x.jid) === -1 });
+		}
+	},
+	joinlist_add: {
+		scope: ["ui"],
+		handler: function($scope, data) {
+			$.each(data, function(i, element)
+			{
+				$scope.rooms.push(element)
+			});
+		}
+	},
+	joinlist_remove: {
+		scope: ["ui"],
+		handler: function($scope, data) {
+			var to_delete = [];
 	
-	var handlers = {
-		roomlist_add: {
-			scope: ["ui"],
-			handler: function($scope, data) {
-				$.each(data, function(i, element)
-				{
-					$scope.all_rooms.push(element)
-				});
+			$.each(data, function(i, element)
+			{
+				to_delete.push(element.jid);
+			});
+			
+			$scope.rooms = $scope.rooms.filter(function(x, i, a){ return to_delete.indexOf(x.jid) === -1 });
+		}
+	},
+	user_status: {
+		scope: ["ui"],
+		handler: function($scope, data) {
+			if(_.contains($scope.users, data.jid))
+			{
+				$scope.users[data.jid].status = data.status;
 			}
-		},
-		roomlist_remove: {
-			scope: ["ui"],
-			handler: function($scope, data) {
-				var to_delete = [];
-				
-				$.each(data, function(i, element)
-				{
-					to_delete.push(element.jid);
-				});
-				
-				$scope.all_rooms = $scope.all_rooms.filter(function(x, i, a){ return to_delete.indexOf(x.jid) === -1 });
+			else
+			{
+				$scope.users[data.jid] = {status: data.status};
 			}
+		}
+	},
+	user_presence: {
+		scope: ["room"],
+		get_scope: function(idx, item){
+			return item.data.room_jid;
 		},
-		joinlist_add: {
-			scope: ["ui"],
-			handler: function($scope, data) {
-				$.each(data, function(i, element)
-				{
-					$scope.rooms.push(element)
-				});
+		handler: function($scope, data) {
+			if(typeof $scope.room.participants == "undefined")
+			{
+				$scope.room.participants = [];
 			}
-		},
-		joinlist_remove: {
-			scope: ["ui"],
-			handler: function($scope, data) {
-				var to_delete = [];
-		
-				$.each(data, function(i, element)
-				{
-					to_delete.push(element.jid);
-				});
-				
-				$scope.rooms = $scope.rooms.filter(function(x, i, a){ return to_delete.indexOf(x.jid) === -1 });
+			
+			/* FIXME: Abstract this into an add-if-exists function? */
+			new_object = {
+				"nickname": data.nickname,
+				"jid": data.jid,
+				"status": data.status,
+				"role": data.role,
+				"affiliation": data.affiliation
 			}
-		},
-		user_status: {
-			scope: ["ui"],
-			handler: function($scope, data) {
-				if(_.contains($scope.users, data.jid))
-				{
-					$scope.users[data.jid].status = data.status;
-				}
-				else
-				{
-					$scope.users[data.jid] = {status: data.status};
-				}
+			
+			var existing = _.filter($scope.room.participants, function(i, idx){ i._index = idx; return i.nickname == data.nickname; });
+			
+			if(existing.length > 0)
+			{
+				$scope.room.participants[existing[0]._index] = new_object
 			}
-		},
-		user_presence: {
-			scope: ["room", item.data.room_jid],
-			handler: function($scope, data) {
-				if(typeof $scope.room.participants == "undefined")
-				{
-					$scope.room.participants = [];
-				}
-				
-				/* FIXME: Abstract this into an add-if-exists function? */
-				new_object = {
-					"nickname": data.nickname,
-					"jid": data.jid,
-					"status": data.status,
-					"role": data.role,
-					"affiliation": data.affiliation
-				}
-				
-				var existing = _.filter($scope.room.participants, function(i, idx){ i._index = idx; return i.nickname == data.nickname; });
-				
-				if(existing.length > 0)
-				{
-					$scope.room.participants[existing[0]._index] = new_object
-				}
-				else
-				{
-					$scope.room.participants.push(new_object)
-				}
+			else
+			{
+				$scope.room.participants.push(new_object)
 			}
 		}
 	}
+}
+
+q.set_callback(function(item){
+	event_loop_processing = true;
 	
-	if(typeof handlers[item.type] !== "undefined")
+	if(typeof event_handlers[item.type] !== "undefined")
 	{
-		var hdl = handlers[item.type];
+		var hdl = event_handlers[item.type];
 		var scope = undefined;
 		
 		switch(hdl.scope[0])
@@ -107,7 +110,7 @@ q.set_callback(function(item){
 				scope = angular.element("[ng-controller=UiController]").scope();
 				break;
 			case "room":
-				scope = angular.element("#main .chat[data-jid='" + hdl.scope[1] + "']").scope();
+				scope = angular.element("#main .chat[data-jid='" + hdl.get_scope(0, item) + "']").scope();
 				break;
 		}
 		
