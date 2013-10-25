@@ -1,7 +1,19 @@
+/* FIXME: This is a very nasty way to force the event loop to be synchronous. It should
+ * probably be improved. Synchronous behaviour is required to prevent events from
+ * being executed in the wrong order, as some events may rely on the results of
+ * previous events. */
+event_loop_processing = false;
+
 q.set_callback(function(item){
+	event_loop_processing = true;
+	
 	var ui_scope = angular.element("[ng-controller=UiController]").scope()
 	
 	console.log(item);
+	
+	/* FIXME: Abstract this into something with less boilerplate... */
+	/* FIXME: Keep a separate list of 'users to show in userlist' and 'participants',
+	 * to compensate for offline room members? */
 	
 	if(item.type == "roomlist_add")
 	{
@@ -52,12 +64,46 @@ q.set_callback(function(item){
 	}
 	else if(item.type == "user_presence")
 	{
-		//var room_scope = angular.element("*[ng-controller=UiController] *[data]").scope()
+		var room_scope = angular.element("#main .chat[data-jid='" + item.data.room_jid + "']").scope();
+		
+		if(typeof room_scope.room.participants == "undefined")
+		{
+			room_scope.room.participants = [];
+		}
+		
+		/* FIXME: Abstract this into an add-if-exists function? */
+		new_object = {
+			"nickname": item.data.nickname,
+			"jid": item.data.jid,
+			"status": item.data.status,
+			"role": item.data.role,
+			"affiliation": item.data.affiliation
+		}
+		
+		var existing = _.filter(room_scope.room.participants, function(i, idx){ i._index = idx; return i.nickname == item.data.nickname; });
+		
+		if(existing.length > 0)
+		{
+			room_scope.room.participants[existing[0]._id] = new_object
+		}
+		else
+		{
+			room_scope.room.participants.push(new_object)
+		}
+		
+		room_scope.$apply();
 	}
 	
 	ui_scope.$apply();
+	
+	event_loop_processing = false;
 });
 
 $(function(){
-	setInterval(q.check, 150); /* FIXME: This is not very efficient. Surely, there's a better way to do this? */
+	setInterval(function(){
+		if(event_loop_processing == false)
+		{
+			q.check();
+		}
+	}, 150); /* FIXME: This is not very efficient. Surely, there's a better way to do this? */
 });

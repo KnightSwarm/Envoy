@@ -44,9 +44,9 @@
 		</div>
 		<div id="user_list">
 			<div class="list" ng-repeat="room in rooms" ng-class="{hidden : current_room != room.jid}">
-				<div class="user" ng-repeat="user in users">
+				<div class="user" ng-repeat="user in room.participants">
 					<i class="status {{user.status}} icon-circle"></i>
-					{{ user.name }}
+					{{ user.nickname }}
 				</div>
 			</div>
 		</div>
