@@ -173,19 +173,33 @@ body
 			}
 		}
 		
+		.name
+		{
+			position: absolute;
+			display: block;
+			left: 42px;
+			top: 9px;
+			width: 120px;
+			height: 26px;
+			text-overflow: ellipsis;
+			white-space: nowrap;
+			overflow: hidden;
+		}
+		
 		i.status
 		{
 			font-size: 14px;
 			margin-right: 4px;
-			width: 18px;
+			width: 15px;
 		}
 		
 		.close
 		{
-			float: right;
+			position: absolute;
+			top: 9px;
+			right: 18px;
 			color: #D4D4D4;
 			text-decoration: none;
-			margin-right: 6px;
 			
 			&:hover
 			{

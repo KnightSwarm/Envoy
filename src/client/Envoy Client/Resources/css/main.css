@@ -70,15 +70,26 @@ body {
         background-color: white;
         width: 8px;
         border-radius: 12px 0px 0px 12px; }
+    #room_list .room .name {
+      position: absolute;
+      display: block;
+      left: 42px;
+      top: 9px;
+      width: 120px;
+      height: 26px;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      overflow: hidden; }
     #room_list .room i.status {
       font-size: 14px;
       margin-right: 4px;
-      width: 18px; }
+      width: 15px; }
     #room_list .room .close {
-      float: right;
+      position: absolute;
+      top: 9px;
+      right: 18px;
       color: #D4D4D4;
-      text-decoration: none;
-      margin-right: 6px; }
+      text-decoration: none; }
       #room_list .room .close:hover {
         color: white; }
 

@@ -69,29 +69,31 @@ var event_handlers = {
 			return item.data.room_jid;
 		},
 		handler: function($scope, data) {
-			if(typeof $scope.room.participants == "undefined")
+			if(data.status == "unavailable")
 			{
-				$scope.room.participants = [];
-			}
-			
-			/* FIXME: Abstract this into an add-if-exists function? */
-			new_object = {
-				"nickname": data.nickname,
-				"jid": data.jid,
-				"status": data.status,
-				"role": data.role,
-				"affiliation": data.affiliation
-			}
-			
-			var existing = _.filter($scope.room.participants, function(i, idx){ i._index = idx; return i.nickname == data.nickname; });
-			
-			if(existing.length > 0)
-			{
-				$scope.room.participants[existing[0]._index] = new_object
+				$scope.room.participants = _.filter($scope.room.participants, function(item, idx) { return item.nickname != data.nickname; });
 			}
 			else
 			{
-				$scope.room.participants.push(new_object)
+				/* FIXME: Abstract this into an add-if-exists function? */
+				new_object = {
+					"nickname": data.nickname,
+					"jid": data.jid,
+					"status": data.status,
+					"role": data.role,
+					"affiliation": data.affiliation
+				}
+				
+				var existing = _.filter($scope.room.participants, function(item, idx){ item._index = idx; return item.nickname == data.nickname; });
+				
+				if(existing.length > 0)
+				{
+					$scope.room.participants[existing[0]._index] = new_object
+				}
+				else
+				{
+					$scope.room.participants.push(new_object)
+				}
 			}
 		}
 	}

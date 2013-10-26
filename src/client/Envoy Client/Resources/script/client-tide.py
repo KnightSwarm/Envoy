@@ -84,10 +84,12 @@ class Client(ClientXMPP):
 		# presences when the room UI isn't ready yet.
 		self.signal_join(room_jid)
 		
-		self.q.put({"type": "user_status", "data": {
-			"jid": real_jid,
-			"status": status
-		}})
+		# TODO: Also capture non-groupchat presence updates?
+		if status != "unavailable":
+			self.q.put({"type": "user_status", "data": {
+				"jid": real_jid,
+				"status": status
+			}})
 		
 		self.q.put({"type": "user_presence", "data": {
 			"room_jid": room_jid,
