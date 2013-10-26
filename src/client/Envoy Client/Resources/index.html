@@ -36,7 +36,7 @@
 				<span class="name">Room List</span>
 				<div class="arrow"></div>
 			</div>
-			<div class="room" ng-class="{selected : current_room == room.jid}" ng-repeat="room in rooms" ng-click="$parent.current_room = room.jid" data-jid="{{ room.jid }}" ng-controller="RoomController">
+			<div class="room" ng-class="{selected : current_room == room.jid}" ng-repeat="room in rooms" ng-click="$parent.$parent.current_room = room.jid" data-jid="{{ room.jid }}" ng-controller="RoomController">
 				<i class="status icon-{{room.icon}} icon-fixed-width"></i>
 				<span class="name">{{ room.name }}</span>
 				<a href="#" class="close" ng-click="leave_room(room.jid); $event.stopPropagation();"><i class="icon-remove"></i></a>
