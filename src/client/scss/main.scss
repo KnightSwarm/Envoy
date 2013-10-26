@@ -179,6 +179,19 @@ body
 			margin-right: 4px;
 			width: 18px;
 		}
+		
+		.close
+		{
+			float: right;
+			color: #D4D4D4;
+			text-decoration: none;
+			margin-right: 6px;
+			
+			&:hover
+			{
+				color: white;
+			}
+		}
 	}
 }
 

@@ -58,4 +58,11 @@ envoyClient.controller('UiController', function UiController($scope)
 		
 		$scope.current_room = jid;
 	}
+	
+	$scope.leave_room = function(jid)
+	{
+		backend.leave_room(jid);
+		/* FIXME: Switch to next closest room */
+		$scope.current_room = "lobby";
+	}
 });

@@ -47,6 +47,7 @@ var event_handlers = {
 			});
 			
 			$scope.rooms = $scope.rooms.filter(function(x, i, a){ return to_delete.indexOf(x.jid) === -1 });
+			$scope.joined_rooms = $scope.joined_rooms.filter(function(x, i, a){ return to_delete.indexOf(x) === -1 });  // ?!
 		}
 	},
 	user_status: {

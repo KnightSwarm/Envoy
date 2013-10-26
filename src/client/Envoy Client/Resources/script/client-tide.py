@@ -23,6 +23,7 @@ class Client(ClientXMPP):
 		self.registerPlugin('xep_0199') # XMPP Ping
 		
 		self.add_event_handler("groupchat_joined", self.on_groupchat_joined)
+		self.add_event_handler("groupchat_left", self.on_groupchat_left)
 		self.add_event_handler("groupchat_presence", self.on_groupchat_presence)
 		
 		self.all_rooms = {}
@@ -113,6 +114,16 @@ class Client(ClientXMPP):
 				"jid": room_jid,
 				"icon": "comments"
 			}]})
+			
+	def on_groupchat_left(self, stanza):
+		room_jid = stanza["from"].bare
+		nickname = stanza["from"].resource
+		
+		if "110" in [status["code"] for status in stanza["muc"]["statuses"]]:
+			self.joined_rooms.remove(room_jid)
+			self.q.put({"type": "joinlist_remove", "data":[{
+				"jid": room_jid
+			}]})
 	
 class TideBackend(object):
 	def __init__(self, username, fqdn, password, queue):
@@ -134,7 +145,7 @@ class TideBackend(object):
 		#}]})
 		
 	def leave_room(self, room_jid):
-		pass
+		self.client['xep_0045'].leave(room_jid)
 		
 	def get_vcard(self, jid):
 		pass

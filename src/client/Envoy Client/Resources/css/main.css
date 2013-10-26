@@ -74,6 +74,13 @@ body {
       font-size: 14px;
       margin-right: 4px;
       width: 18px; }
+    #room_list .room .close {
+      float: right;
+      color: #D4D4D4;
+      text-decoration: none;
+      margin-right: 6px; }
+      #room_list .room .close:hover {
+        color: white; }
 
 #user_list {
   background-color: #EBEBEB;
