@@ -1,0 +1,3 @@
+SleekXMPP
+passlib
+oursql
