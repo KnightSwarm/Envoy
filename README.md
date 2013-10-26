@@ -12,5 +12,8 @@ zpy2html converter, run `pip install zippydoc` or install the `zippydoc` package
 ## Development environment setup
 
 1. Install ejabberd, MySQL, Python, and a HTTPd with PHP.
-2. Install Python modules `SleekXMPP`, `passlib`, `oursql`.
+2. Install Python modules
+   
+        pip install -r requirements.txt
+
 3. Symlink `/usr/lib/python2.*/site-packages/envoyxmpp` to the `src/envoyxmpp` directory in this repository.
