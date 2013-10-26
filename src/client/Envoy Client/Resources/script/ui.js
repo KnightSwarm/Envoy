@@ -1,5 +1,15 @@
 var envoyClient = angular.module('envoyClient', []);
  
+envoyClient.controller('RoomController', function RoomController($scope){
+	$scope.room.members = [];
+	$scope.room.participants = [];
+	$scope.room.all_users = [];
+	
+	$scope.$watch(function () { return [$scope.room.participants, $scope.room.members]; }, function (val) { 
+		$scope.room.all_users = _.uniq(_.union($scope.room.participants, $scope.room.members), false, function(item){ return item.jid; });
+	}, true)
+});
+ 
 envoyClient.controller('UiController', function UiController($scope)
 {
 	$scope.rooms = [];

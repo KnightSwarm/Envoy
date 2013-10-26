@@ -93,6 +93,8 @@ var event_handlers = {
 			{
 				$scope.room.participants.push(new_object)
 			}
+			
+			$scope.room.participants = _.sortBy($scope.room.participants, "nickname");
 		}
 	}
 }

@@ -36,7 +36,7 @@
 				<span class="name">Room List</span>
 				<div class="arrow"></div>
 			</div>
-			<div class="room" ng-class="{selected : current_room == room.jid}" ng-repeat="room in rooms" ng-click="$parent.current_room = room.jid" data-jid="{{ room.jid }}">
+			<div class="room" ng-class="{selected : current_room == room.jid}" ng-repeat="room in rooms" ng-click="$parent.current_room = room.jid" data-jid="{{ room.jid }}" ng-controller="RoomController">
 				<i class="status icon-{{room.icon}} icon-fixed-width"></i>
 				<span class="name">{{ room.name }}</span>
 				<a href="#" class="close" ng-click="leave_room(room.jid); $event.stopPropagation();"><i class="icon-remove"></i></a>
@@ -44,8 +44,8 @@
 			</div>
 		</div>
 		<div id="user_list">
-			<div class="list" ng-repeat="room in rooms" ng-class="{hidden : current_room != room.jid}">
-				<div class="user" ng-repeat="user in room.participants">
+			<div class="list" ng-repeat="room in rooms" ng-class="{hidden : current_room != room.jid}" ng-controller="RoomController">
+				<div class="user" ng-repeat="user in room.all_users">
 					<i class="status {{user.status}} icon-circle"></i>
 					{{ user.nickname }}
 				</div>
@@ -60,7 +60,7 @@
 					<span class="description">{{ room.description }}</span>
 				</div>
 			</div>
-			<div class="chat" ng-repeat="room in rooms"  data-jid="{{ room.jid }}" ng-class="{hidden : current_room != room.jid}">
+			<div class="chat" ng-repeat="room in rooms"  data-jid="{{ room.jid }}" ng-class="{hidden : current_room != room.jid}" ng-controller="RoomController">
 				<div class="message" ng-repeat="message in messages" ng-class="{own : message.jid == own_jid}">
 					<span class="author">{{ message.author_name }}</span>
 					<span class="body">{{ message.body }}</span>
