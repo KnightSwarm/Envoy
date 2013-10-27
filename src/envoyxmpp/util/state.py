@@ -7,23 +7,23 @@ UNAVAILABLE = 6
 UNKNOWN = 7
 
 table = {
-	"available": AVAILABLE,
-	"away": AWAY,
-	"xa": XA,
-	"dnd": DND,
-	"chat": CHAT,
-	"unavailable": UNAVAILABLE,
-	"unknown": UNKNOWN
+        "available": AVAILABLE,
+        "away": AWAY,
+        "xa": XA,
+        "dnd": DND,
+        "chat": CHAT,
+        "unavailable": UNAVAILABLE,
+        "unknown": UNKNOWN
 }
 
 def from_string(string):
-	try:
-		return table[string]
-	except KeyError, e:
-		raise ValueException("No such presence exists.")
-		
+        try:
+                return table[string]
+        except KeyError, e:
+                raise ValueException("No such presence exists.")
+                
 def from_state(state):
-	try:
-		return [key for key, val in table.iteritems() if val == state][0]
-	except IndexError, e:
-		raise ValueException("No such state exists.")
+        try:
+                return [key for key, val in table.iteritems() if val == state][0]
+        except IndexError, e:
+                raise ValueException("No such state exists.")
