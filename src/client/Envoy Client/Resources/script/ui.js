@@ -4,10 +4,17 @@ envoyClient.controller('RoomController', function RoomController($scope){
 	$scope.room.members = [];
 	$scope.room.participants = [];
 	$scope.room.all_users = [];
+	
 	$scope.room.messages = [];
+	$scope.room.events = [];
+	$scope.room.all_messages = [];
 	
 	$scope.$watch(function () { return [$scope.room.participants, $scope.room.members]; }, function (val) {
 		$scope.room.all_users = _.sortBy(_.uniq(_.union($scope.room.participants, $scope.room.members), false, function(item){ return item.jid; }), "nickname");
+	}, true)
+	
+	$scope.$watch(function () { return [$scope.room.messages, $scope.room.events]; }, function (val) {
+		$scope.room.all_messages = _.union($scope.room.messages, $scope.room.events);
 	}, true)
 });
  

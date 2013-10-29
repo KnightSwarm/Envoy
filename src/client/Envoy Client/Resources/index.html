@@ -68,7 +68,7 @@
 			</div>
 			<!-- Actual chatroom pages -->
 			<div class="chat" ng-repeat="room in rooms"  data-jid="{{ room.jid }}" ng-class="{hidden : current_room != room.jid}" ng-controller="RoomController">
-				<div class="message" ng-repeat="message in room.messages" ng-class="{own : message.jid == own_jid}">
+				<div class="message" ng-repeat="message in room.all_messages" ng-class="{own : message.jid == own_jid}">
 					<span class="author">{{ message.fullname }}</span>
 					<span class="body">{{ message.body }}</span>
 					<div class="clear"></div>
