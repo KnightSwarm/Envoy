@@ -2,6 +2,7 @@ import time, sleekxmpp
 from sleekxmpp import ClientXMPP
 from sleekxmpp.util import Queue, QueueEmpty
 import logging
+from collections import defaultdict
 
 logging.basicConfig(level=logging.DEBUG, format="%(asctime)s %(levelname)s %(message)s")
 
@@ -25,9 +26,11 @@ class Client(ClientXMPP):
 		self.add_event_handler("groupchat_joined", self.on_groupchat_joined)
 		self.add_event_handler("groupchat_left", self.on_groupchat_left)
 		self.add_event_handler("groupchat_presence", self.on_groupchat_presence)
+		self.add_event_handler("groupchat_message", self.on_groupchat_message)
 		
 		self.all_rooms = {}
 		self.joined_rooms = []
+		self.nicknames = defaultdict(dict)
 		
 	def session_start(self, event):
 		self.get_roster()
@@ -80,6 +83,9 @@ class Client(ClientXMPP):
 		affiliation = stanza["muc"]["affiliation"]
 		status = stanza["type"]
 		
+		# Store nickname and real JID internally
+		self.nicknames[room_jid][nickname] = real_jid
+		
 		# Make sure to signal the join first, so that we don't try to process
 		# presences when the room UI isn't ready yet.
 		self.signal_join(room_jid)
@@ -95,10 +101,31 @@ class Client(ClientXMPP):
 			"room_jid": room_jid,
 			"jid": real_jid,
 			"nickname": nickname,
+			"fullname": nickname, # FIXME: vCard data!
 			"status": status,
 			"role": role,
 			"affiliation": affiliation
 		}})
+		
+	def on_groupchat_message(self, stanza):
+		room_jid = stanza["from"].bare
+		nickname = stanza["from"].resource
+		
+		try:
+			real_jid = self.nicknames[room_jid][nickname]
+		except KeyError, e:
+			logging.error("No known real JID for %s!" % stanza["from"])
+			return
+			
+		self.q.put({"type": "receive_message", "data": {
+			"room_jid": room_jid,
+			"jid": real_jid,
+			"nickname": nickname,
+			"fullname": nickname, # FIXME: vCard data!
+			"body": stanza["body"]
+		}})
+		
+		
 	
 	def signal_join(self, room_jid):
 		try:

@@ -76,8 +76,10 @@ var event_handlers = {
 			else
 			{
 				/* FIXME: Abstract this into an add-if-exists function? */
+				/* TODO: Support partial updates of presence information */
 				new_object = {
 					"nickname": data.nickname,
+					"fullname": data.fullname,
 					"jid": data.jid,
 					"status": data.status,
 					"role": data.role,
@@ -96,11 +98,22 @@ var event_handlers = {
 				}
 			}
 		}
+	},
+	receive_message: {
+		scope: ["room"],
+		get_scope: function(index, item){
+			return item.data.room_jid;
+		},
+		handler: function($scope, data) {
+			$scope.room.messages.push(data);
+		}
 	}
 }
 
 q.set_callback(function(item){
 	event_loop_processing = true;
+	
+	console.log(item);
 	
 	if(typeof event_handlers[item.type] !== "undefined")
 	{
@@ -127,10 +140,6 @@ q.set_callback(function(item){
 			console.log("WARNING: No suitable scope found for event of type '" + item.type + "'!");
 		}
 	}
-	
-	var ui_scope = angular.element("[ng-controller=UiController]").scope()
-	
-	console.log(item);
 	
 	/* FIXME: Keep a separate list of 'users to show in userlist' and 'participants',
 	 * to compensate for offline room members? */

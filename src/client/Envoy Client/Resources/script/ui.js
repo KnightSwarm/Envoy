@@ -4,6 +4,7 @@ envoyClient.controller('RoomController', function RoomController($scope){
 	$scope.room.members = [];
 	$scope.room.participants = [];
 	$scope.room.all_users = [];
+	$scope.room.messages = [];
 	
 	$scope.$watch(function () { return [$scope.room.participants, $scope.room.members]; }, function (val) {
 		$scope.room.all_users = _.sortBy(_.uniq(_.union($scope.room.participants, $scope.room.members), false, function(item){ return item.jid; }), "nickname");
@@ -38,7 +39,7 @@ envoyClient.controller('UiController', function UiController($scope)
 	
 	$scope.own_jid = "johndoe@fqdn.local";
 	
-	$scope.messages = [
+	/*$scope.messages = [
 		{
 			"author_name": "John Doe",
 			"jid": "johndoe@fqdn.local",
@@ -54,7 +55,7 @@ envoyClient.controller('UiController', function UiController($scope)
 			"jid": "janedoe@fqdn.local",
 			"body": "Reply from someone else in the room"
 		}
-	];
+	];*/
 	
 	$scope.all_rooms = [];
 	
