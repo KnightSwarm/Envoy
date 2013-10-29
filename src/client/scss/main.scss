@@ -1,4 +1,4 @@
-$roomlist_width: 200px;
+$roomlist_width: 225px;
 $userlist_width: 150px;
 
 @mixin clearfix
@@ -146,6 +146,7 @@ body
 	
 	@include pull-left;
 	width: $roomlist_width;
+	overflow: auto;
 	
 	.room
 	{
@@ -179,7 +180,7 @@ body
 			display: block;
 			left: 42px;
 			top: 9px;
-			width: 120px;
+			width: $roomlist_width - 90px;
 			height: 26px;
 			text-overflow: ellipsis;
 			white-space: nowrap;
