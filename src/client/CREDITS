@@ -27,3 +27,8 @@ jQuery
   (c) jQuery Foundation and other contributors
   http://jquery.com/
   Licensed under MIT (https://github.com/jquery/jquery/blob/master/MIT-LICENSE.txt)
+
+angularjs-scroll-glue
+  (c) Luegg
+  https://github.com/Luegg/angularjs-scroll-glue
+  Licensed under MIT (https://github.com/Luegg/angularjs-scroll-glue/blob/master/README.md)

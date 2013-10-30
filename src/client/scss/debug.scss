@@ -1,0 +1,71 @@
+body
+{
+	font-family: monospace;
+}
+
+#console
+{
+	position: absolute;
+	top: 0px;
+	bottom: 0px;
+	left: 0px;
+	width: 50%;
+	border-right: 1px solid black;
+	
+	#messages
+	{
+		position: absolute;
+		top: 0px;
+		bottom: 24px;
+		left: 0px;
+		right: 0px;
+		overflow: auto;
+	
+		.message
+		{
+			border-bottom: 1px solid silver;
+			padding: 3px 5px;
+			
+			.command
+			{
+				color: gray;
+				margin-bottom: 5px;
+			}
+			
+			.response
+			{
+				color: black;
+			}
+		}
+	}
+	
+	#form_command
+	{
+		position: absolute;
+		left: 0px;
+		right: 0px;
+		bottom: 0px;
+		
+		input
+		{
+			width: 75%;
+		}
+		
+		button
+		{
+			width: 20%;
+		}
+	}
+}
+
+#watch
+{
+	position: absolute;
+	top: 0px;
+	bottom: 0px;
+	right: 0px;
+	width: 50%;
+	padding: 6px 8px;
+	-webkit-box-sizing: border-box;
+	background-color: #EEEEEE;
+}

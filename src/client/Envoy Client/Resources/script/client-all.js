@@ -8,10 +8,20 @@ var menu = new ApplicationMenu({
 	"Help": {
 		"Quickstart": function(){ openQuickstart(); },
 		"Manual": function(){ openManual(); },
-		"About": function(){ openAbout(); }
+		"About": function(){ openAbout(); },
+		"Debugger": function(){
+			var debugwin = Ti.UI.createWindow({
+				url: "app://debug.html",
+				id: "debuggerWindow",
+				title: "Debugger",
+				visible: true
+			});
+			
+			debugwin.open();
+		}
 	}
 });
-menu.setDefault();
+menu.attachToWindow(Ti.UI.getCurrentWindow());
 
 $(function(){
 	dom_load();
