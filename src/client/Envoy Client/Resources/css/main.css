@@ -32,6 +32,10 @@ body {
       margin-right: 9px;
       font-weight: bold;
       background-color: #EEEEEE; }
+    #main .chat .message .event {
+      display: block;
+      padding: 4px 10px;
+      color: gray; }
   #main .lobby {
     padding: 12px; }
     #main .lobby h1 {

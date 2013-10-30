@@ -70,8 +70,16 @@
 			<!-- Actual chatroom pages -->
 			<div class="chat" ng-repeat="room in rooms"  data-jid="{{ room.jid }}" ng-class="{hidden : current_room != room.jid}" ng-controller="RoomController">
 				<div class="message" ng-repeat="message in room.all_messages" ng-class="{own : message.jid == own_jid}">
-					<span class="author">{{ message.fullname }}</span>
-					<span class="body">{{ message.body }}</span>
+					<span ng-show="message.type == 'message'">
+						<span class="author">{{ message.fullname }}</span>
+						<span class="body">{{ message.body }}</span>
+					</span>
+					<span class="event" ng-show="message.type == 'event' && message.event == 'join'">
+						{{ message.fullname }} joined the room.
+					</span>
+					<span class="event" ng-show="message.type == 'event' && message.event == 'leave'">
+						{{ message.fullname }} left the room.
+					</span>
 					<div class="clear"></div>
 				</div>
 			</div>

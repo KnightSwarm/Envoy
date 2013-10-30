@@ -32,7 +32,7 @@ var event_handlers = {
 		handler: function($scope, data) {
 			$.each(data, function(i, element)
 			{
-				$scope.rooms.push(element)
+				$scope.rooms.push(element);
 			});
 		}
 	},
@@ -47,7 +47,7 @@ var event_handlers = {
 			});
 			
 			$scope.rooms = $scope.rooms.filter(function(x, i, a){ return to_delete.indexOf(x.jid) === -1 });
-			$scope.joined_rooms = $scope.joined_rooms.filter(function(x, i, a){ return to_delete.indexOf(x) === -1 });  // ?!
+			$scope.joined_rooms = $scope.joined_rooms.filter(function(x, i, a){ return to_delete.indexOf(x) === -1 });  // FIXME: ?!
 		}
 	},
 	user_status: {
@@ -71,6 +71,15 @@ var event_handlers = {
 		handler: function($scope, data) {
 			if(data.status == "unavailable")
 			{
+				$scope.room.events.push({
+					"type": "event",
+					"jid": data.jid,
+					"nickname": data.nickname,
+					"fullname": data.fullname,
+					"event": "leave",
+					"timestamp": new Date()
+				});
+				
 				$scope.room.participants = _.filter($scope.room.participants, function(item, idx) { return item.nickname != data.nickname; });
 			}
 			else
@@ -94,7 +103,26 @@ var event_handlers = {
 				}
 				else
 				{
+					if($scope.room.finished_join)
+					{
+						/* Only push event if our initial join has finished; we don't want to know about existing users here */
+						$scope.room.events.push({
+							"type": "event",
+							"jid": data.jid,
+							"nickname": data.nickname,
+							"fullname": data.fullname,
+							"event": "join",
+							"timestamp": new Date()
+						});
+					}
+					
 					$scope.room.participants.push(new_object)
+				}
+				
+				if(new JID(data.jid).bare == $scope.own_jid)
+				{
+					/* Mark the join as finished; from this point on, joins will be displayed in the client. */
+					$scope.room.finished_join = true;
 				}
 			}
 		}
@@ -105,6 +133,8 @@ var event_handlers = {
 			return item.data.room_jid;
 		},
 		handler: function($scope, data) {
+			data["type"] = "message";
+			data["timestamp"] = new Date();
 			$scope.room.messages.push(data);
 		}
 	}

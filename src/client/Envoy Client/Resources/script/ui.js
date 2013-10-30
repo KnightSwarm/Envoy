@@ -14,7 +14,7 @@ envoyClient.controller('RoomController', function RoomController($scope){
 	}, true)
 	
 	$scope.$watch(function () { return [$scope.room.messages, $scope.room.events]; }, function (val) {
-		$scope.room.all_messages = _.union($scope.room.messages, $scope.room.events);
+		$scope.room.all_messages = _.sortBy(_.union($scope.room.messages, $scope.room.events), function(item){ return item.timestamp.getTime(); });
 	}, true)
 });
  
@@ -44,25 +44,7 @@ envoyClient.controller('UiController', function UiController($scope)
 		}
 	];
 	
-	$scope.own_jid = "johndoe@fqdn.local";
-	
-	/*$scope.messages = [
-		{
-			"author_name": "John Doe",
-			"jid": "johndoe@fqdn.local",
-			"body": "Hi, testing"
-		},
-		{
-			"author_name": "John Doe",
-			"jid": "johndoe@fqdn.local",
-			"body": "Testing more..."
-		},
-		{
-			"author_name": "Jane Doe",
-			"jid": "janedoe@fqdn.local",
-			"body": "Reply from someone else in the room"
-		}
-	];*/
+	$scope.own_jid = "testuser@envoy.local"; /* FIXME: Set to actual own JID upon connecting */
 	
 	$scope.all_rooms = [];
 	
@@ -70,7 +52,7 @@ envoyClient.controller('UiController', function UiController($scope)
 	{
 		if(_.contains($scope.joined_rooms, jid) == false)
 		{
-			$scope.joined_rooms.push(jid);
+			$scope.joined_rooms.push(jid); /* FIXME: Is this really necessary? */
 			backend.join_room(jid)
 		}
 		
