@@ -95,7 +95,8 @@ class Client(ClientXMPP):
 		if status != "unavailable":
 			self.q.put({"type": "user_status", "data": {
 				"jid": real_jid,
-				"status": status
+				"status": status,
+				"timestamp": time.time()
 			}})
 		
 		self.q.put({"type": "user_presence", "data": {
@@ -105,7 +106,8 @@ class Client(ClientXMPP):
 			"fullname": nickname, # FIXME: vCard data!
 			"status": status,
 			"role": role,
-			"affiliation": affiliation
+			"affiliation": affiliation,
+			"timestamp": time.time()
 		}})
 		
 	def on_groupchat_message(self, stanza):
