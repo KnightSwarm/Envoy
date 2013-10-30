@@ -113,28 +113,37 @@ class Client(ClientXMPP):
 	def on_groupchat_message(self, stanza):
 		room_jid = stanza["from"].bare
 		nickname = stanza["from"].resource
-		
-		try:
-			real_jid = self.nicknames[room_jid][nickname]
-		except KeyError, e:
-			logging.error("No known real JID for %s!" % stanza["from"])
-			return
 			
 		'''  FIXME: This is currently broken due to a bug in the XEP-0203 plugin. As a temporary workaround,
 		     we will just check if the timestamp falls within the first 2 days of epoch; if so, replace with current time.
 		try:
 			timestamp = int(time.mktime(stanza["delay"]["stamp"].timetuple()))
+			delayed = True
 		except KeyError, e:
 			# This wasn't a delayed message
 			timestamp = int(time.time())
+			delayed = False
 		'''
 		
 		## START HACK
 		timestamp = int(calendar.timegm(stanza["delay"]["stamp"].timetuple()))
+		delayed = True
 		
 		if timestamp < (60 * 60 * 24 * 2):
 			timestamp = int(time.time())
+			delayed = False
 		## END HACK
+		
+		try:
+			real_jid = self.nicknames[room_jid][nickname]
+		except KeyError, e:
+			# This is only a problem if the message is real-time; the user should really be in the room then.
+			if delayed == True:
+				logging.debug("Delayed message from %s, could not associate real JID." % stanza["from"])
+				real_jid = ""
+			else:
+				logging.error("No known real JID for %s!" % stanza["from"])
+				return
 			
 		self.q.put({"type": "receive_message", "data": {
 			"room_jid": room_jid,
