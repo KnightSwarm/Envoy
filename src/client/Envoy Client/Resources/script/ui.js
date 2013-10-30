@@ -14,7 +14,7 @@ envoyClient.controller('RoomController', function RoomController($scope){
 	}, true)
 	
 	$scope.$watch(function () { return [$scope.room.messages, $scope.room.events]; }, function (val) {
-		$scope.room.all_messages = _.sortBy(_.union($scope.room.messages, $scope.room.events), function(item){ return item.timestamp.getTime(); });
+		$scope.room.all_messages = _.sortBy(_.union($scope.room.messages, $scope.room.events), function(item){ return item.timestamp; });
 	}, true)
 });
  
@@ -64,5 +64,19 @@ envoyClient.controller('UiController', function UiController($scope)
 		backend.leave_room(jid);
 		/* FIXME: Switch to next closest room */
 		$scope.current_room = "lobby";
+	}
+	
+	$scope.format_time = function(time)
+	{
+		if(moment().isSame(moment.unix(time), "day"))
+		{
+			/* Today */
+			return moment.unix(time).format("HH:mm");
+		}
+		else
+		{
+			/* Past */
+			return moment.unix(time).format("D MMM, HH:mm");
+		}
 	}
 });

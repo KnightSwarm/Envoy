@@ -77,7 +77,7 @@ var event_handlers = {
 					"nickname": data.nickname,
 					"fullname": data.fullname,
 					"event": "leave",
-					"timestamp": new Date()
+					"timestamp": data.timestamp
 				});
 				
 				$scope.room.participants = _.filter($scope.room.participants, function(item, idx) { return item.nickname != data.nickname; });
@@ -112,7 +112,7 @@ var event_handlers = {
 							"nickname": data.nickname,
 							"fullname": data.fullname,
 							"event": "join",
-							"timestamp": new Date()
+							"timestamp": data.timestamp
 						});
 					}
 					
@@ -134,7 +134,6 @@ var event_handlers = {
 		},
 		handler: function($scope, data) {
 			data["type"] = "message";
-			data["timestamp"] = new Date();
 			$scope.room.messages.push(data);
 		}
 	}

@@ -1,7 +1,7 @@
 import time, sleekxmpp
 from sleekxmpp import ClientXMPP
 from sleekxmpp.util import Queue, QueueEmpty
-import logging
+import logging, time, calendar
 from collections import defaultdict
 
 logging.basicConfig(level=logging.DEBUG, format="%(asctime)s %(levelname)s %(message)s")
@@ -22,6 +22,7 @@ class Client(ClientXMPP):
 		self.registerPlugin('xep_0045') # MUC
 		self.registerPlugin('xep_0048') # Bookmarks
 		self.registerPlugin('xep_0199') # XMPP Ping
+		self.registerPlugin('xep_0203') # Delayed delivery
 		
 		self.add_event_handler("groupchat_joined", self.on_groupchat_joined)
 		self.add_event_handler("groupchat_left", self.on_groupchat_left)
@@ -117,16 +118,31 @@ class Client(ClientXMPP):
 			logging.error("No known real JID for %s!" % stanza["from"])
 			return
 			
+		'''  FIXME: This is currently broken due to a bug in the XEP-0203 plugin. As a temporary workaround,
+		     we will just check if the timestamp falls within the first 2 days of epoch; if so, replace with current time.
+		try:
+			timestamp = int(time.mktime(stanza["delay"]["stamp"].timetuple()))
+		except KeyError, e:
+			# This wasn't a delayed message
+			timestamp = int(time.time())
+		'''
+		
+		## START HACK
+		timestamp = int(calendar.timegm(stanza["delay"]["stamp"].timetuple()))
+		
+		if timestamp < (60 * 60 * 24 * 2):
+			timestamp = int(time.time())
+		## END HACK
+			
 		self.q.put({"type": "receive_message", "data": {
 			"room_jid": room_jid,
 			"jid": real_jid,
 			"nickname": nickname,
 			"fullname": nickname, # FIXME: vCard data!
-			"body": stanza["body"]
+			"body": stanza["body"],
+			"timestamp": timestamp
 		}})
 		
-		
-	
 	def signal_join(self, room_jid):
 		try:
 			room_name = self.all_rooms[room_jid]

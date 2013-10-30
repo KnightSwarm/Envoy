@@ -11,6 +11,7 @@
 		<script src="script/angular.min.js"></script>
 		<script src="script/angular-scrollglue.js"></script>
 		<script src="script/underscore-min.js"></script>
+		<script src="script/moment-with-langs.min.js"></script>
 		<script src="script/compat.js"></script>
 		<!-- Initial configuration and Python availability detection -->
 		<script type="text/python">
@@ -73,6 +74,7 @@
 					<span ng-show="message.type == 'message'">
 						<span class="author">{{ message.fullname }}</span>
 						<span class="body">{{ message.body }}</span>
+						<span class="timestamp">{{ format_time(message.timestamp) }}</span>
 					</span>
 					<span class="event" ng-show="message.type == 'event' && message.event == 'join'">
 						{{ message.fullname }} joined the room.

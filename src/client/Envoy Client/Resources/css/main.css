@@ -32,6 +32,12 @@ body {
       margin-right: 9px;
       font-weight: bold;
       background-color: #EEEEEE; }
+    #main .chat .message .timestamp {
+      float: right;
+      font-size: 11px;
+      color: #939393;
+      margin-right: 10px;
+      margin-top: 4px; }
     #main .chat .message .event {
       display: block;
       padding: 4px 10px;
