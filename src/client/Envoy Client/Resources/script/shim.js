@@ -117,3 +117,9 @@ Function.prototype.bind = Function.prototype.bind || function(to){
 	bound.prototype = fn.prototype;
 	return bound;
 };
+
+/* We need this to make stuff not break with a "$digest already in progress" error. 
+ * Source: http://stackoverflow.com/a/17114810/1332715 */
+function safeApply(scope, fn) {
+	(scope.$$phase || scope.$root.$$phase) ? fn() : scope.$apply(fn);
+}

@@ -35,7 +35,7 @@
 				});
 
 				$el.bind('scroll', function(){
-					scope.$apply(ngModel.$setViewValue.bind(ngModel, shouldActivateAutoScroll()));
+					safeApply(scope, ngModel.$setViewValue.bind(ngModel, shouldActivateAutoScroll()));
 				});
 			}
 		};
