@@ -80,6 +80,8 @@ body
 	left: $roomlist_width;
 	right: $userlist_width;
 	
+	overflow: auto;
+	
 	.chat
 	{
 		.message

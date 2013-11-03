@@ -1,4 +1,4 @@
-var envoyClient = angular.module('envoyClient', []);
+var envoyClient = angular.module('envoyClient', ["luegg.directives"]);
  
 envoyClient.controller('RoomController', function RoomController($scope){
 	$scope.room.members = [];

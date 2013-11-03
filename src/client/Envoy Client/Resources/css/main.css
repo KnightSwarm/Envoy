@@ -15,7 +15,8 @@ body {
   top: 0px;
   bottom: 0px;
   left: 225px;
-  right: 150px; }
+  right: 150px;
+  overflow: auto; }
   #main .chat .message {
     border-bottom: 1px solid #d0d0d0;
     font-size: 14px; }
