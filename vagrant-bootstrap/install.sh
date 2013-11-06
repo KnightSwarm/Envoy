@@ -1,0 +1,87 @@
+#!/bin/bash
+
+# Exit if we encounter any errors
+set -e
+
+err_report() {
+	echo "=============================================="
+	echo "PROBLEM ENCOUNTERED on line $1:"
+	echo -n "$ "
+	head -n $1 install.sh | tail -n 1 # Print errored line
+	echo "Exiting..."
+	echo "=============================================="
+}
+
+trap 'err_report $LINENO' ERR
+
+# Make sure we are up to date
+echo "Updating packages..."
+apt-get update >/dev/null
+apt-get upgrade -y >/dev/null
+
+# Get htop and such
+echo "Installing tools..."
+apt-get install -y htop iftop iotop > /dev/null
+
+# Get Python and pip
+echo "Installing Python..."
+apt-get install -y python python-pip python-dev >/dev/null
+
+# Get MySQL
+echo "Installing MySQL..."
+#-- This is to prevent it from hanging on a password prompt; the default root password will be 'vagrant'
+sudo debconf-set-selections <<< 'mysql-server-5.5 mysql-server/root_password password vagrant'
+sudo debconf-set-selections <<< 'mysql-server-5.5 mysql-server/root_password_again password vagrant'
+apt-get install -y mysql-server mysql-client libmysql++-dev >mysql-log
+
+# Install Python dependencies
+echo "Installing Python dependencies..."
+pip install -r requirements.txt >/dev/null
+pip install virtualenv
+
+# Set up Prosody repository
+echo "Setting up Prosody repository..."
+DIST="$(lsb_release -sc)"
+echo "deb http://packages.prosody.im/debian $DIST main" > /etc/apt/sources.list.d/prosody.repo
+wget https://prosody.im/files/prosody-debian-packages.key -O- 2>/dev/null | sudo apt-key add - >/dev/null
+apt-get update >/dev/null
+
+# Install Prosody
+echo "Installing Prosody and dependencies..."
+apt-get install -y prosody >/dev/null
+
+# Set up the Envoy user
+echo "Setting up users and groups..."
+adduser --system --group --disabled-password --shell "/bin/sh" --home "/home/envoy" envoy >/dev/null
+
+# Add the Prosody user to the Envoy group
+usermod -a -G envoy prosody >/dev/null
+
+# Create directory structures
+mkdir -p /etc/envoy/prosody >/dev/null
+
+# Copy configuration
+echo "Configuring..."
+cp template.cfg.lua /etc/prosody/prosody.cfg.lua >/dev/null
+cp -r prosody-modules /etc/envoy/prosody/modules >/dev/null
+
+# Fix permissions and ownership
+echo "Setting ownership and permissions..."
+#-- Directory ownership
+chown -R envoy:envoy /etc/envoy >/dev/null
+chown -R prosody:envoy /etc/envoy/prosody >/dev/null
+#-- Directory permissions 
+chmod -R ug=rwx /etc/envoy >/dev/null
+chmod -R o=rx /etc/envoy >/dev/null
+#-- Hide configuration from others
+chmod o-rwx /etc/prosody/prosody.cfg.lua >/dev/null
+
+# Set /etc/hosts
+echo "Configuring /etc/hosts..."
+echo "127.0.0.1 envoy.local" >> /etc/hosts
+echo "127.0.0.1 api.envoy.local" >> /etc/hosts
+
+# TEMPORARY: Clone SleekXMPP and switch to new_muc branch
+
+
+echo "Done!"

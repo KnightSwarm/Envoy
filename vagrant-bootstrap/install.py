@@ -10,24 +10,17 @@ package_list_64 = [
 	"prosody_0.8.2-1_amd64.deb"
 ]
 
-package_list_32 = [
-	"liblua5.1-sec0_0.3.2-2prosody1_i386.deb",
-	"prosody_0.8.2-1_i386.deb"
-]
-
 proc = subprocess.Popen(["dpkg", "--print-architecture"], stdout=subprocess.PIPE)
 (stdout, _) = proc.communicate()
 architecture = stdout.strip()
 
-if architecture not in ["i386", "i686", "x86_64", "amd64"]:
-	sys.stderr.write("This installer only works on i386/i686/x86_64 architectures. If you believe\n")
+if architecture not in ["x86_64", "amd64"]:
+	sys.stderr.write("This installer only works on x86_64 architectures. If you believe\n")
 	sys.stderr.write("this is in error, please file a bug report with the output of uname -m.\n")
 	exit(1)
 
-if architecture in ["i386", "i686"]:
-	package_list = package_list_32
-elif architecture in ["x86_64", "amd64"]:
-	package_list = package_list_64
+# This Vagrant installer really only needs to support 64-bits
+package_list = package_list_64
 
 sys.stdout.write("Installing packages...\n")
 
@@ -63,10 +56,13 @@ group.close()
 setuplib.create_directory("/etc/envoy", False, uid, gid, "u+rwx g+rwx o+rx")
 setuplib.create_directory("/etc/envoy/prosody", False, uid, gid, "u+rwx g+rwx o+rx")
 
+envoy_uid, envoy_gid = setuplib.add_user("envoy", extra_group_users=["prosody"])
+prosody_uid, prosody_gid = (uid, gid)
+
 sys.stdout.write("Directory structures created.\n")
 
-setuplib.copy_file("template.cfg.lua", "/etc/prosody/prosody.cfg.lua", True, uid, gid, "u+rwx g+rwx")
+setuplib.copy_file("template.cfg.lua", "/etc/prosody/prosody.cfg.lua", True, prosody_uid, envoy_gid, "u+rwx g+rwx")
 
 sys.stdout.write("Configuration template copied.\n")
 
-setuplib.copy_directory("prosody-modules", "/etc/envoy/prosody-modules", True, uid, gid, "u+rwx g+rx o+rx")
+setuplib.copy_directory("prosody-modules", "/etc/envoy/prosody/modules", True, prosody_uid, prosody_gid, "u+rwx g+rx o+rx")
