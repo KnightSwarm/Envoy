@@ -80,6 +80,12 @@ echo "Configuring /etc/hosts..."
 echo "127.0.0.1 envoy.local" >> /etc/hosts
 echo "127.0.0.1 api.envoy.local" >> /etc/hosts
 
+# Create database, import database dump
+echo "Setting up database..."
+mysql --user=root --password=vagrant -e "CREATE DATABASE envoy;"
+mysql --user=root --password=vagrant -D envoy < structure.sql
+mysql --user=root --password=vagrant -D envoy < data.sql
+
 # TEMPORARY: Install SleekXMPP new_muc branch from git
 echo "Installing SleekXMPP new_muc..."
 cd /etc/envoy
