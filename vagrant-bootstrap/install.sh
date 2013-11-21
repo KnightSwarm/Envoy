@@ -58,11 +58,21 @@ usermod -a -G envoy prosody >/dev/null
 
 # Create directory structures
 mkdir -p /etc/envoy/prosody >/dev/null
+mkdir -p /etc/envoy/extauth >/dev/null
+mkdir -p /etc/envoy/certs >/dev/null
 
 # Copy configuration
 echo "Configuring..."
-cp template.cfg.lua /etc/prosody/prosody.cfg.lua >/dev/null
-cp -r prosody-modules /etc/envoy/prosody/modules >/dev/null
+#cp template.cfg.lua /etc/prosody/prosody.cfg.lua >/dev/null
+#cp -r prosody-modules /etc/envoy/prosody/modules >/dev/null
+rm /etc/prosody/prosody.cfg.lua >/dev/null
+ln -s /vagrant/vagrant-bootstrap/template.cfg.lua /etc/prosody/prosody.cfg.lua >/dev/null
+ln -s /vagrant/vagrant-bootstrap/prosody-modules /etc/envoy/prosody/modules >/dev/null
+ln -s /vagrant/src/auth/auth.py /etc/envoy/extauth/auth.py >/dev/null
+ln -s /vagrant/vagrant-bootstrap/config.json /etc/envoy/config.json >/dev/null
+touch /etc/envoy/extauth/extauth.log >/dev/null
+touch /etc/envoy/extauth/extauth_err.log >/dev/null
+tar -xzf certs.tar.gz -C /etc/envoy/certs >/dev/null
 
 # Fix permissions and ownership
 echo "Setting ownership and permissions..."
