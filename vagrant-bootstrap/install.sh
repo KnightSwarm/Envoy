@@ -21,7 +21,7 @@ apt-get upgrade -y >/dev/null
 
 # Get htop and such
 echo "Installing tools..."
-apt-get install -y htop iftop iotop > /dev/null
+apt-get install -y htop iftop iotop git > /dev/null
 
 # Get Python and pip
 echo "Installing Python..."
@@ -37,12 +37,11 @@ apt-get install -y mysql-server mysql-client libmysql++-dev >mysql-log
 # Install Python dependencies
 echo "Installing Python dependencies..."
 pip install -r requirements.txt >/dev/null
-pip install virtualenv
 
 # Set up Prosody repository
 echo "Setting up Prosody repository..."
 DIST="$(lsb_release -sc)"
-echo "deb http://packages.prosody.im/debian $DIST main" > /etc/apt/sources.list.d/prosody.repo
+echo "deb http://packages.prosody.im/debian $DIST main" > /etc/apt/sources.list.d/prosody.list
 wget https://prosody.im/files/prosody-debian-packages.key -O- 2>/dev/null | sudo apt-key add - >/dev/null
 apt-get update >/dev/null
 
@@ -52,7 +51,7 @@ apt-get install -y prosody >/dev/null
 
 # Set up the Envoy user
 echo "Setting up users and groups..."
-adduser --system --group --disabled-password --shell "/bin/sh" --home "/home/envoy" envoy >/dev/null
+adduser --system --group --disabled-password --shell "/bin/bash" --home "/home/envoy" envoy >/dev/null
 
 # Add the Prosody user to the Envoy group
 usermod -a -G envoy prosody >/dev/null
@@ -81,7 +80,9 @@ echo "Configuring /etc/hosts..."
 echo "127.0.0.1 envoy.local" >> /etc/hosts
 echo "127.0.0.1 api.envoy.local" >> /etc/hosts
 
-# TEMPORARY: Clone SleekXMPP and switch to new_muc branch
-
+# TEMPORARY: Install SleekXMPP new_muc branch from git
+echo "Installing SleekXMPP new_muc..."
+cd /etc/envoy
+pip install -e 'git://github.com/fritzy/SleekXMPP.git@new_muc#egg=sleekxmpp' >/dev/null
 
 echo "Done!"
