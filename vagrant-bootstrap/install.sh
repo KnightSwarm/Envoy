@@ -47,7 +47,8 @@ apt-get update >/dev/null
 
 # Install Prosody
 echo "Installing Prosody and dependencies..."
-apt-get install -y prosody >/dev/null
+apt-get install -y prosody luarocks >/dev/null
+luarocks install lpc >/dev/null
 
 # Set up the Envoy user
 echo "Setting up users and groups..."
@@ -60,13 +61,11 @@ usermod -a -G envoy prosody >/dev/null
 mkdir -p /etc/envoy/prosody >/dev/null
 mkdir -p /etc/envoy/extauth >/dev/null
 mkdir -p /etc/envoy/certs >/dev/null
+mkdir /etc/prosody/conf.d >/dev/null
 
 # Copy configuration
 echo "Configuring..."
-#cp template.cfg.lua /etc/prosody/prosody.cfg.lua >/dev/null
-#cp -r prosody-modules /etc/envoy/prosody/modules >/dev/null
-rm /etc/prosody/prosody.cfg.lua >/dev/null
-ln -s /vagrant/vagrant-bootstrap/template.cfg.lua /etc/prosody/prosody.cfg.lua >/dev/null
+cp template.cfg.lua /etc/prosody/prosody.cfg.lua
 ln -s /vagrant/vagrant-bootstrap/prosody-modules /etc/envoy/prosody/modules >/dev/null
 ln -s /vagrant/src/auth/auth.py /etc/envoy/extauth/auth.py >/dev/null
 ln -s /vagrant/vagrant-bootstrap/config.json /etc/envoy/config.json >/dev/null
@@ -79,6 +78,8 @@ echo "Setting ownership and permissions..."
 #-- Directory ownership
 chown -R envoy:envoy /etc/envoy >/dev/null
 chown -R prosody:envoy /etc/envoy/prosody >/dev/null
+chown prosody:prosody /etc/prosody/prosody.cfg.lua >/dev/null
+chown prosody:prosody /etc/prosody/conf.d >/dev/null
 #-- Directory permissions 
 chmod -R ug=rwx /etc/envoy >/dev/null
 chmod -R o=rx /etc/envoy >/dev/null
