@@ -126,10 +126,6 @@ class Component(ComponentXMPP):
 	def _envoy_handle_stanza(self, wrapper):
 		stanza = wrapper['forwarded']['stanza']
 		
-		outfile = open("raw.log", "a+")
-		outfile.write("%s - %s\n" % (datetime.now().isoformat(), stanza))
-		outfile.close()
-		
 		if isinstance(stanza, Iq):
 			self._envoy_handle_iq(wrapper, stanza)
 		elif isinstance(stanza, Message):

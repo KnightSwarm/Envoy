@@ -68,10 +68,11 @@ echo "Configuring..."
 cp template.cfg.lua /etc/prosody/prosody.cfg.lua
 ln -s /vagrant/vagrant-bootstrap/prosody-modules /etc/envoy/prosody/modules >/dev/null
 ln -s /vagrant/src/auth/auth.py /etc/envoy/extauth/auth.py >/dev/null
-ln -s /vagrant/vagrant-bootstrap/config.json /etc/envoy/config.json >/dev/null
+cp /vagrant/vagrant-bootstrap/config.json /etc/envoy/config.json >/dev/null
 touch /etc/envoy/extauth/extauth.log >/dev/null
 touch /etc/envoy/extauth/extauth_err.log >/dev/null
 tar -xzf certs.tar.gz -C /etc/envoy/certs >/dev/null
+ln -s /vagrant/src/envoyxmpp /usr/lib/python2.7/envoyxmpp
 
 # Fix permissions and ownership
 echo "Setting ownership and permissions..."
