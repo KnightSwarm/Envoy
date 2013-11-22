@@ -75,6 +75,7 @@ VirtualHost "envoy.local"
 Component "conference.envoy.local" "muc"
 	name = "Rooms for envoy.local"
 	restrict_room_creation = true
+        admins = { "component.envoy.local" }
 
 -- The external Envoy component
 Component "component.envoy.local"
