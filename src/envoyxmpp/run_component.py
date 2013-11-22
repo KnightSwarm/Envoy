@@ -475,7 +475,7 @@ class EnvoyComponent(Component):
 			database['log_events'].append(row)
 			
 
-logging.basicConfig(level=logging.DEBUG, format='%(levelname)-8s %(message)s')
+logging.basicConfig(filename="/etc/envoy/envoy.log", level=logging.DEBUG, format='%(levelname)-8s %(message)s')
 
 configuration = json.load(open("/etc/envoy/config.json", "r"))
 
