@@ -1,3 +1,3 @@
 #!/bin/sh
 cd /vagrant/vagrant-bootstrap
-sudo ./install.sh
+sudo /vagrant/vagrant-bootstrap/install.sh
