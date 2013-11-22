@@ -1,0 +1,50 @@
+{
+	"database": {
+		"driver": "mysql",
+		"hostname": "localhost",
+		"username": "root",
+		"password": "vagrant",
+		"database": "envoy"
+	},
+	"locale": {
+		"path": 		"locales",
+		"extension":		"lng",
+		"default_locale": 	"english",
+		"default_timezone": 	"Europe/Amsterdam"
+	},
+	"memcache": {
+		"enabled": 	true,
+		"compressed": 	true,
+		"hostname": 	"localhost",
+		"port": 	11211
+	},
+	"class_map": {
+		"user": "User",
+		"fqdn": "Fqdn",
+		"apikey": "ApiKey",
+		"apipermission": "ApiPermission"
+	},
+	"components": [
+		"router",
+		"errorhandler"
+	],
+	"twilio": {
+		"sid": "",
+		"token": "",
+		"sender": "+15005550006"
+	},
+	"smtp": {
+		"hostname": "smtp.gmail.com",
+		"port": 587,
+		"tls": "required",
+		"username": "your@email.com",
+		"password": "sekrit",
+		"sender": "notifications@your.service"
+	},
+	"mock": {
+		"sms": true,
+		"email": true
+	},
+	"development_mode": true
+}
+

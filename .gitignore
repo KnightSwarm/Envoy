@@ -2,3 +2,4 @@ src/config.json
 *.pyc
 src/api/test/testconfig.json
 src/envoyxmpp/raw.log
+.vagrant

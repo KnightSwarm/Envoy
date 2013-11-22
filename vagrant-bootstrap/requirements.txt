@@ -1,0 +1,5 @@
+SleekXMPP
+passlib
+oursql
+marrow.mailer
+twilio
