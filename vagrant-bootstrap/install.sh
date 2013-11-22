@@ -46,7 +46,7 @@ apt-get install -y mysql-server mysql-client libmysql++-dev >mysql-log 2>&1
 
 # Install Python dependencies
 echo "Installing Python dependencies..."
-pip install -r requirements.txt >/dev/null
+pip install -r requirements.txt -q >&2
 
 # Set up Prosody repository
 echo "Setting up Prosody repository..."
