@@ -155,6 +155,57 @@ def install_rpm(path):
 def install_remote_rpm(name, mirrors):
 	download_file(name, mirrors)
 	install_rpm(name)
+	
+def add_user(new_username, group=True, extra_group_users=[]):
+	open("/etc/passwd.lock", "w").close()
+	open("/etc/group.lock", "w").close()
+	
+	# Find highest non-reserved UID in the user list
+	passwd = open("/etc/passwd", "r+")
+	highest_uid = 1000
+
+	for line in passwd:
+		username, password, uid, gid, name, homedir, shell = line.split(":")
+		
+		if username == new_username:
+			raise Exception("User already exists")
+		
+		if int(uid) < 32000 and int(uid) > highest_uid:
+			highest_uid = int(uid)
+			
+	new_uid = highest_uid + 1
+	
+	if group == True:
+		# Find highest non-reserved GID in the user list
+		grp = open("/etc/group", "r+")
+		highest_gid = 1000
+
+		for line in grp:
+			groupname, password, gid, users = line.split(":")
+			
+			if groupname == new_username:
+				raise Exception("Group already exists")
+			
+			if int(gid) < 32000 and int(gid) > highest_gid:
+				highest_gid = int(gid)
+				
+		new_gid = highest_gid + 1
+		grp.seek(0, 2)
+		grp.write("%s::%d:%s\n" % (new_username, new_gid, ",".join(extra_group_users)))
+		grp.close()
+	else:
+		new_gid = -1
+		
+	create_directory("/home/%s" % new_username, True, new_uid, new_gid, "u+rwx g+rx")
+	
+	passwd.seek(0, 2)
+	passwd.write("%s::%d:%d::/home/%s:/bin/bash\n" % (new_username, new_uid, new_gid, new_username))
+	passwd.close()
+	
+	os.remove("/etc/passwd.lock")
+	os.remove("/etc/group.lock")
+	
+	return (new_uid, new_gid)
 
 def rindex(lst, item):
 	# http://stackoverflow.com/a/6892096/1332715

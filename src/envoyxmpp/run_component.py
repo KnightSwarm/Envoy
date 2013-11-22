@@ -12,6 +12,16 @@ from core import db
 from sleekxmpp.exceptions import IqError
 from sleekxmpp.jid import JID
 
+import signal
+
+def handle_exit(signal, frame):
+	try:
+		xmpp.disconnect(wait=True)
+	except NameError, e:
+		pass # We don't have an XMPP client yet...
+	exit(0)
+signal.signal(signal.SIGTERM, handle_exit)
+
 def get_relative_path(path):
 	my_path = os.path.dirname(os.path.abspath(__file__))
 	return os.path.normpath(os.path.join(my_path, path))
@@ -467,7 +477,7 @@ class EnvoyComponent(Component):
 
 logging.basicConfig(level=logging.DEBUG, format='%(levelname)-8s %(message)s')
 
-configuration = json.load(open(get_relative_path("../config.json"), "r"))
+configuration = json.load(open("/etc/envoy/config.json", "r"))
 
 #db = oursql.connect(host=configuration['database']['hostname'], user=configuration['database']['username'], 
 #                    passwd=configuration['database']['password'], db=configuration['database']['database'],
