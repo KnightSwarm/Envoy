@@ -4,15 +4,25 @@
 set -e
 
 err_report() {
-	echo "=============================================="
-	echo "PROBLEM ENCOUNTERED on line $1:"
-	echo -n "$ "
-	head -n $1 install.sh | tail -n 1 # Print errored line
-	echo "Exiting..."
-	echo "=============================================="
+	echo "==============================================" >&2
+	echo "PROBLEM ENCOUNTERED on line $1:" >&2
+	echo -n "$ " >&2
+	head -n $1 $0 | tail -n 1 >&2 # Print errored line
+	echo "Exiting..." >&2
+	echo "==============================================" >&2
 }
 
 trap 'err_report $LINENO' ERR
+
+# Let's make sure we won't get bothered by errors that aren't actually errors ("unable to re-open stdin" and such)
+# Source: http://serverfault.com/a/500778/117738
+echo "Configuring locale..."
+export LANGUAGE=en_US.UTF-8
+export LANG=en_US.UTF-8
+export LC_ALL=en_US.UTF-8
+export DEBIAN_FRONTEND=noninteractive
+locale-gen en_US.UTF-8 >/dev/null
+dpkg-reconfigure locales >/dev/null 2>/dev/null
 
 # Make sure we are up to date
 echo "Updating packages..."
@@ -32,7 +42,7 @@ echo "Installing MySQL..."
 #-- This is to prevent it from hanging on a password prompt; the default root password will be 'vagrant'
 sudo debconf-set-selections <<< 'mysql-server-5.5 mysql-server/root_password password vagrant'
 sudo debconf-set-selections <<< 'mysql-server-5.5 mysql-server/root_password_again password vagrant'
-apt-get install -y mysql-server mysql-client libmysql++-dev >mysql-log
+apt-get install -y mysql-server mysql-client libmysql++-dev >mysql-log 2>&1
 
 # Install Python dependencies
 echo "Installing Python dependencies..."
@@ -49,6 +59,9 @@ apt-get update >/dev/null
 echo "Installing Prosody and dependencies..."
 apt-get install -y prosody luarocks >/dev/null
 luarocks install lpc >/dev/null
+
+# We don't want Prosody to start automatically, so let's get rid of it again
+pkill -f '^[^ ]*lua5\.1.*bin/prosody'
 
 # Set up the Envoy user
 echo "Setting up users and groups..."
@@ -102,5 +115,8 @@ mysql --user=root --password=vagrant -D envoy < data.sql
 echo "Installing SleekXMPP new_muc..."
 cd /etc/envoy
 pip install -e 'git://github.com/fritzy/SleekXMPP.git@new_muc#egg=sleekxmpp' >/dev/null
+
+echo "Starting services..."
+/vagrant/vagrant-bootstrap/init.sh
 
 echo "Done!"
