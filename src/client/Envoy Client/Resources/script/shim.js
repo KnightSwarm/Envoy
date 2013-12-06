@@ -39,9 +39,11 @@ else
 			}; },
 			createMenuItem: function(){ return {
 				setSubmenu: function(){},
-				
 			}; },
-			setMenu: function(){}
+			setMenu: function(){},
+			getCurrentWindow: function(){ return {
+				setMenu: function(){},
+			}; }
 		},
 		/* The Notification shim *does* actually do something - but only on Webkit browsers. */
 		Notification: {
