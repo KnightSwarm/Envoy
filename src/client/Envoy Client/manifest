@@ -1,0 +1,21 @@
+#appname:Envoy Client
+#appid:com.knightswarm.envoyclient
+#publisher:KnightSwarm
+#image:default_app_logo.png
+#url:http://knightswarm.com/
+#guid:a0cae03c-3873-484d-9541-3913472c4782
+#desc:No description provided
+#type:desktop
+runtime:1.3.1-beta
+media:1.3.1-beta
+worker:1.3.1-beta
+platform:1.3.1-beta
+ui:1.3.1-beta
+database:1.3.1-beta
+codec:1.3.1-beta
+python:1.3.1-beta
+process:1.3.1-beta
+filesystem:1.3.1-beta
+network:1.3.1-beta
+app:1.3.1-beta
+monkey:1.3.1-beta

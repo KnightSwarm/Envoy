@@ -160,3 +160,31 @@
 		
 	topic::
 		The new topic that was set.
+
+^ affiliation_change (`user`, `room`, `new_affiliation`)
+
+	Signifies that the affiliation of a user to a room has changed.
+	
+	user::
+		The bare JID of the user whose affiliation has changed.
+		
+	room::
+		The room that the affiliation change relates to.
+		
+	new_affiliation::
+		A string indicating the new affiliation.
+		
+		owner::
+			This user owns the room.
+			
+		admin::
+			This user is an administrator in the room.
+			
+		member::
+			This user is a registered member of the room. This
+			is the affiliation that a user would have if they were
+			allowed entry into a private room, but do not have a
+			special status.
+			
+		outcast::
+			This user is banned from the room.

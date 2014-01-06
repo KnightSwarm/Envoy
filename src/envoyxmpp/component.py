@@ -27,7 +27,7 @@ class Component(ComponentXMPP):
 		self.add_event_handler("groupchat_joined", self._envoy_handle_group_join)
 		self.add_event_handler("groupchat_left", self._envoy_handle_group_leave)
 		self.add_event_handler("groupchat_presence", self._envoy_handle_group_presence)
-		self.add_event_handler("session_start", self._envoy_start)
+		self.add_event_handler("session_start", self._envoy_start, threaded=True)
 		
 		self.registerPlugin('xep_0030') # Service Discovery
 		self.registerPlugin('xep_0004') # Data Forms
@@ -37,8 +37,8 @@ class Component(ComponentXMPP):
 		self.registerPlugin('xep_0297') # Stanza forwarding
 		
 		self._envoy_events = {}
-		self._envoy_members = {}
 		self._envoy_user_cache = UserCache()
+		self._envoy_room_cache = RoomCache()
 		
 		# We can't check all the presences straight away, because the component hasn't connected yet - it
 		# will hang while waiting for an <iq /> response that never comes. We'll therefore do the first
@@ -49,44 +49,97 @@ class Component(ComponentXMPP):
 		self._envoy_purge_presences()
 	
 	def _envoy_update_roster(self, room):
-		self._envoy_members[room] = []
-		
-		# TODO: Also add admins to this list
 		try:
-			for item in self['xep_0045'].get_users(room, ifrom=self.boundjid, affiliation="member")['muc_admin']['items']:
-				if item['jid'] not in self._envoy_members[room]:
-					self._envoy_members[room].append(item['jid'])
+			presences = (self['xep_0045'].get_users(room, ifrom=self.boundjid, affiliation="owner")['muc_admin']['items']
+			           + self['xep_0045'].get_users(room, ifrom=self.boundjid, affiliation="admin")['muc_admin']['items']
+			           + self['xep_0045'].get_users(room, ifrom=self.boundjid, affiliation="member")['muc_admin']['items'])
+			for item in presences:
+				self._envoy_room_cache.get(room).add_member(item['jid'], item['affiliation'])
+				# TODO: We may want to purge outdated members here?
 		except IqError, e:
 			pass  # The room doesn't exist anymore
 	
-	def _envoy_purge_presences(self):
-		logging.info("Purging outdated presences")
+	def _envoy_update_roominfo(self, room_jid):
+		room = self._envoy_room_cache.get(room_jid)
 		
-		current_presences = {}
+		try:
+			info = self['xep_0030'].get_info(jid=room_jid, ifrom=self.boundjid)
+			room.registered = True
+		except IqError, e:
+			room.registered = False
+			return
 		
-		room_list = self['xep_0045'].get_rooms(ifrom=self.boundjid, jid=self.conference_host)['disco_items']['items']
+		needs_reconfiguration = False
 		
-		for room in room_list:
-			# TODO: Keep a room cache?
-			room_jid, room_node, room_name = room
+		# Check if the title is set correctly
+		
+		titles = []
+		
+		for identity in info['disco_info']['identities']:
+			category, type_, lang, name = identity
 			
-			# We will do a two pass here. On the first pass, all missing rooms are added. On the second pass, all
-			# outdated presences are removed. This way, there won't be any chance of race conditions, as there would
-			# be when clearing the cache first and then re-filling it.
-			presences = (self['xep_0045'].get_users(room_jid, ifrom=self.boundjid, role="visitor")['muc_admin']['items'] +
-			             self['xep_0045'].get_users(room_jid, ifrom=self.boundjid, role="participant")['muc_admin']['items'] +
-			             self['xep_0045'].get_users(room_jid, ifrom=self.boundjid, role="moderator")['muc_admin']['items'])
-			
-			for user in presences:
-				cache_user = self._envoy_user_cache.get(user['jid'].bare)
+			if category == "conference" and type_ == "text":
+				titles.append(name)
 				
-				if not cache_user.in_room(room_jid):
-					cache_user.add_room(room_jid, user['jid'].resource)
-				
-			current_presences[room_jid] = [unicode(user['jid']) for user in presences]
+		if room.title not in titles:
+			logging.debug("Mismatch for 'title' setting for room %s: %s not in %s" % (room.jid, room.title, repr(titles)))
+			needs_reconfiguration = True
 		
-		logging.debug("Current presences according to XMPP daemon: %s" % current_presences)
+		# Check if features are set correctly
 		
+		for feature in info['disco_info']['features']:
+			if feature == "muc_membersonly" and room.private != True:
+				logging.debug("Mismatch for 'private' setting for room %s: %s vs. %s" % (room.jid, True, room.private))
+				needs_reconfiguration = True
+			elif feature == "muc_open" and room.private != False:
+				logging.debug("Mismatch for 'private' setting for room %s: %s vs. %s" % (room.jid, False, room.private))
+				needs_reconfiguration = True
+			elif feature == "muc_moderated" and room.moderated != True:
+				logging.debug("Mismatch for 'moderated' setting for room %s: %s vs. %s" % (room.jid, True, room.moderated))
+				needs_reconfiguration = True
+			elif feature == "muc_unmoderated" and room.moderated != False:
+				logging.debug("Mismatch for 'moderated' setting for room %s: %s vs. %s" % (room.jid, False, room.moderated))
+				needs_reconfiguration = True
+		
+		if needs_reconfiguration:
+			logging.debug("Room configuration for %s incorrect; attempting reconfiguration" % room_jid)
+			self._envoy_configure_room(room)
+	
+	def _envoy_register_room(self, room_jid):
+		self._envoy_update_roominfo(room_jid)
+		
+		if self._envoy_room_cache.get(room_jid).registered == False:
+			self['xep_0045'].join(room_jid, "Envoy_Component")
+			logging.debug("Room %s created." % room_jid)
+			self._envoy_configure_room(self._envoy_room_cache.get(room_jid))
+		
+	def _envoy_configure_room(self, room):
+		iq = self['xep_0045'].get_room_config(room.jid, ifrom=self.boundjid)
+		logging.debug("Received room configuration form for %s" % room.jid)
+		form = iq['muc_owner']['form']
+		
+		configuration = {
+			"muc#roomconfig_roomname": room.title,
+			"muc#roomconfig_roomdesc": "",
+			"muc#roomconfig_persistentroom": True,
+			"muc#roomconfig_publicroom": bool(not room.private), # Whether room is public/private
+			"muc#roomconfig_changesubject": False, # Whether to allow occupants to change subject
+			"muc#roomconfig_whois": "anyone", # Turn off semi-anonymous
+			"muc#roomconfig_moderatedroom": bool(room.moderated), # Whether moderated/archived
+			"muc#roomconfig_membersonly": bool(room.private), # Whether members-only
+			"muc#roomconfig_historylength": "20",
+			"FORM_TYPE": "http://jabber.org/protocol/muc#roomconfig"
+		}
+		
+		form['fields'] = [(item_var, {'value': item_value}) for item_var, item_value in configuration.iteritems()]
+		form['type'] = "submit"
+		
+		new_iq = self.make_iq_set(ifrom=self.boundjid, ito=room.jid, iq=iq)
+		new_iq.send()
+		
+		logging.debug("Room configuration form for %s filled in and submitted" % room.jid)
+	
+	def _envoy_purge_usercache(self, current_presences):
 		for jid, user in self._envoy_user_cache.cache.items():
 			logging.debug("Current UserCache room presence list for %s: %s" % (user.jid, user.rooms))
 			for room, resources in user.rooms.items():
@@ -101,10 +154,20 @@ class Component(ComponentXMPP):
 				user.rooms[room] = dedup(resources)
 		
 		logging.debug("New presence list: %s" % [(jid, user.rooms) for jid, user in self._envoy_user_cache.cache.iteritems()])
+	
+	def _envoy_purge_roomcache(self, current_presences):
+		for jid, room in self._envoy_room_cache.cache.items():
+			logging.debug("Current RoomCache user presence list for %s: %s" % (room.jid, room.participants))
+			for user_jid, user in room.participants.items():
+				try:
+					if user_jid not in current_presences[room.jid]:
+						self._envoy_room_cache.get(room.jid).remove_participant_by_jid(user_jid)
+				except KeyError, e:
+					self._envoy_room_cache.get(room.jid).remove_participant_by_jid(user_jid)
 		
-		# Finally, we'll also want to make sure that we have up to date affiliation information
-		# for all the users.
-		
+		logging.debug("New participant list: %s" % [(jid, room.participants) for jid, room in self._envoy_room_cache.cache.iteritems()])
+	
+	def _envoy_update_affiliations(self, room_list):
 		for room in room_list:
 			room_jid, room_node, room_name = room
 			
@@ -120,6 +183,42 @@ class Component(ComponentXMPP):
 					cache_user.set_affiliation(room_jid, affiliation)
 					
 		logging.debug("Affiliation list updated")
+	
+	def _envoy_purge_presences(self):
+		logging.info("Purging outdated presences")
+		
+		current_presences = {}
+		
+		room_list = self['xep_0045'].get_rooms(ifrom=self.boundjid, jid=self.conference_host)['disco_items']['items']
+		
+		for room in room_list:
+			room_jid, room_node, room_name = room
+			
+			# We will do a two pass here. On the first pass, all missing rooms are added. On the second pass, all
+			# outdated presences are removed. This way, there won't be any chance of race conditions, as there would
+			# be when clearing the cache first and then re-filling it.
+			presences = (self['xep_0045'].get_users(room_jid, ifrom=self.boundjid, role="visitor")['muc_admin']['items'] +
+			             self['xep_0045'].get_users(room_jid, ifrom=self.boundjid, role="participant")['muc_admin']['items'] +
+			             self['xep_0045'].get_users(room_jid, ifrom=self.boundjid, role="moderator")['muc_admin']['items'])
+			
+			for user in presences:
+				cache_user = self._envoy_user_cache.get(user['jid'].bare)
+				
+				if not cache_user.in_room(room_jid):
+					cache_user.add_room(room_jid, user['jid'].resource)
+					
+				self._envoy_room_cache.get(room_jid).add_participant(user['nick'], user['jid'], user['role'])
+				
+			current_presences[room_jid] = [unicode(user['jid']) for user in presences]
+		
+		logging.debug("Current presences according to XMPP daemon: %s" % current_presences)
+		
+		self._envoy_purge_usercache(current_presences)
+		self._envoy_purge_roomcache(current_presences)
+		
+		# Finally, we'll also want to make sure that we have up to date affiliation information
+		# for all the users.
+		self._envoy_update_affiliations(room_list)
 		
 		self._envoy_call_event("presences_purged")
 		
@@ -147,11 +246,6 @@ class Component(ComponentXMPP):
 			room = stanza['to'].bare
 			self._envoy_user_cache.touch(stanza["from"].bare)
 			self._envoy_call_event("group_message", stanza["from"], room, stanza["body"])
-			
-			if stanza['to'].bare not in self._envoy_members:
-				# The message was addressed at someone that, according to our internal bookkeeping, isn't in the room.
-				# Update the bookkeeping to correct this, by asking the xmppd.
-				self._envoy_update_roster(room)
 			
 			highlights = re.findall("@([a-zA-Z0-9._-]+)", stanza["body"])
 			for highlight in highlights:
@@ -205,6 +299,9 @@ class Component(ComponentXMPP):
 		# Update presence in the user cache
 		self._envoy_user_cache.get(user.bare).add_room(room, user.resource)
 		
+		# Update participants in the room cache
+		self._envoy_room_cache.get(room).add_participant(nickname, user, stanza['muc']['role'])
+		
 		# Update affiliation in the user cache
 		affiliation = stanza['muc']['affiliation']
 		self._envoy_user_cache.get(user.bare).set_affiliation(room, affiliation)
@@ -218,8 +315,16 @@ class Component(ComponentXMPP):
 	def _envoy_handle_group_leave(self, stanza):
 		user = stanza["to"]
 		room = stanza["from"].bare
+		
+		# Update presence in user cache
 		self._envoy_user_cache.get(user.bare).remove_room(room, user.resource)
+		
+		# Update participants in the room cache
+		self._envoy_room_cache.get(room).remove_participant_by_jid(user)
+		
+		# Handle event
 		self._envoy_call_event("leave", user, JID(room))
+		
 		# We can optimize this by updating the roster once and tracking state changes from then on
 		self._envoy_update_roster(room)
 	
@@ -237,8 +342,11 @@ class Component(ComponentXMPP):
 		affiliation = stanza["muc"]["affiliation"]
 		
 		if user != "":
-			# TODO: Implement event for changing affiliation?
+			old_affiliation = self._envoy_user_cache.get(user.bare).get_affiliation(room)
 			self._envoy_user_cache.get(user.bare).set_affiliation(room, affiliation)
+			
+			if old_affiliation != affiliation:
+				self._envoy_call_event("affiliation_change", user.bare, room, affiliation)
 	
 	def _envoy_call_event(self, event_name, *args, **kwargs):
 		try:
@@ -250,14 +358,14 @@ class Component(ComponentXMPP):
 	def register_event(self, event_name, func):
 		self._envoy_events[event_name] = func
 
-class UserCache(object):
+class NodeCache(object):
 	def __init__(self):
 		self.cache = {}
 		
 	def touch(self, jid):
 		if jid not in self.cache:
-			logging.debug("Created UserCache item %s" % jid)
-			self.cache[jid] = UserCacheItem(jid)
+			logging.debug("Created %s item %s" % (self.__class__, jid))
+			self.cache[jid] = self.item_factory(jid)
 		
 	def get(self, jid):
 		try:
@@ -265,6 +373,69 @@ class UserCache(object):
 		except KeyError, e:
 			self.touch(jid)
 			return self.cache[jid]
+
+class NodeCacheItem(object):
+	def __init__(self, jid):
+		self.jid = jid
+	
+	def __eq__(self, other):
+		return (str(self.jid) == str(other.jid))
+		
+	def __hash__(self):
+		return hash(("jid", str(self.jid)))
+
+class RoomCache(NodeCache):
+	def __init__(self, *args, **kwargs):
+		NodeCache.__init__(self, *args, **kwargs)
+		self.item_factory = RoomCacheItem
+
+class RoomCacheItem(NodeCacheItem):
+	def __init__(self, jid):
+		NodeCacheItem.__init__(self, jid)
+		self.registered = False
+		self.participants = {}
+		self.members = {}
+		self.title = ""
+		self.description = ""
+		self.private = True
+		self.moderated = True
+		self.owner = ""
+		
+	def is_registered(self):
+		pass
+		
+	def register(self):
+		pass
+		
+	def add_participant(self, nickname, jid, role):
+		self.participants[unicode(jid)] = {"nick": nickname, "role": role}
+		
+	def remove_participant(self, nickname):
+		for jid, participant in self.participants.items():
+			if participant['nick'] == nickname:
+				del self.participants[jid]
+				
+	def remove_participant_by_jid(self, jid):
+		try:
+			del self.participants[unicode(jid)]
+			logging.debug("Removed %s from participant list for %s" % (jid, self.jid))
+		except KeyError, e:
+			logging.warn("Could not remove %s from participants list for %s" % (jid, self.jid))
+			
+	def add_member(self, jid, affiliation):
+		self.members[unicode(jid.bare)] = affiliation
+
+	def remove_member(self, jid):
+		try:
+			del self.members[unicode(jid.bare)]
+			logging.debug("Removed %s from member list for  %s" % (jid.bare, self.jid))
+		except KeyError, e:
+			logging.warn("Could not remove %s from member list for %s" % (jid.bare, self.jid))
+
+class UserCache(NodeCache):
+	def __init__(self, *args, **kwargs):
+		NodeCache.__init__(self, *args, **kwargs)
+		self.item_factory = UserCacheItem
 			
 	def find_nickname(self, nickname):
 		return [user for jid, user in self.cache.iteritems() if user.nickname == nickname][:1]
@@ -308,9 +479,9 @@ class UserCache(object):
 			
 		return output
 			
-class UserCacheItem(object):
+class UserCacheItem(NodeCacheItem):
 	def __init__(self, jid):
-		self.jid = jid
+		NodeCacheItem.__init__(self, jid)
 		self.presence = state.UNKNOWN
 		self.rooms = {}
 		self.affiliations = {}
@@ -321,12 +492,6 @@ class UserCacheItem(object):
 		self.email_address = ""
 		self.nickname = ""
 		self.mobile_number = ""
-	
-	def __eq__(self, other):
-		return (str(self.jid) == str(other.jid))
-		
-	def __hash__(self):
-		return hash(("jid", str(self.jid)))
 	
 	def update_presence(self, presence):
 		logging.debug("Changing presence for user %s to %s" % (self.jid, state.from_state(presence)))

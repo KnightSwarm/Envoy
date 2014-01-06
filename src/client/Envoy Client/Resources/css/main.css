@@ -1,0 +1,133 @@
+.clear {
+  /* This should be possible using the clearfix mixin, but 
+   * apparently isn't. Is this a problem with TideSDK? */
+  clear: both; }
+
+.hidden {
+  display: none; }
+
+body {
+  font-family: "Istok Web", sans-serif; }
+
+#main {
+  background-color: white;
+  position: absolute;
+  top: 0px;
+  bottom: 0px;
+  left: 225px;
+  right: 150px;
+  overflow: auto; }
+  #main .chat .message {
+    border-bottom: 1px solid #d0d0d0;
+    font-size: 14px; }
+    #main .chat .message.own {
+      background-color: #DFE5FF; }
+      #main .chat .message.own .author {
+        background-color: #D0D5EE; }
+    #main .chat .message .author, #main .chat .message .body {
+      padding: 4px 10px;
+      display: block;
+      float: left; }
+    #main .chat .message .author {
+      width: 110px;
+      margin-right: 9px;
+      font-weight: bold;
+      background-color: #EEEEEE; }
+    #main .chat .message .timestamp {
+      float: right;
+      font-size: 11px;
+      color: #939393;
+      margin-right: 10px;
+      margin-top: 4px; }
+    #main .chat .message .event {
+      display: block;
+      padding: 4px 10px;
+      color: gray; }
+  #main .lobby {
+    padding: 12px; }
+    #main .lobby h1 {
+      font-size: 20px;
+      margin: 0px 0px 5px 0px; }
+    #main .lobby .room {
+      padding: 5px 0px 5px 0px;
+      border-top: 1px solid silver; }
+      #main .lobby .room .name {
+        font-weight: bold;
+        margin-right: 12px; }
+
+#room_list {
+  background-color: #181818;
+  color: #DEDEDE;
+  position: absolute;
+  top: 0px;
+  bottom: 0px;
+  left: 0px;
+  width: 225px;
+  overflow: auto; }
+  #room_list .room {
+    position: relative;
+    background-color: #373737;
+    padding: 8px 10px;
+    font-size: 15px;
+    cursor: default; }
+    #room_list .room:hover {
+      background-color: #303030; }
+    #room_list .room.selected {
+      background-color: #454545; }
+      #room_list .room.selected .arrow {
+        position: absolute;
+        top: 0px;
+        bottom: 0px;
+        right: 0px;
+        background-color: white;
+        width: 8px;
+        border-radius: 12px 0px 0px 12px; }
+    #room_list .room .name {
+      position: absolute;
+      display: block;
+      left: 42px;
+      top: 9px;
+      width: 135px;
+      height: 26px;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      overflow: hidden; }
+    #room_list .room i.status {
+      font-size: 14px;
+      margin-right: 4px;
+      width: 15px; }
+    #room_list .room .close {
+      position: absolute;
+      top: 9px;
+      right: 18px;
+      color: #D4D4D4;
+      text-decoration: none; }
+      #room_list .room .close:hover {
+        color: white; }
+
+#user_list {
+  background-color: #EBEBEB;
+  position: absolute;
+  top: 0px;
+  bottom: 0px;
+  right: 0px;
+  width: 150px; }
+  #user_list .user {
+    background-color: #DCDCDC;
+    padding: 6px 8px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: default; }
+    #user_list .user.selected {
+      background-color: #BFBFBF; }
+    #user_list .user i.status {
+      font-size: 13px;
+      margin-right: 4px; }
+      #user_list .user i.status.available, #user_list .user i.status.chat {
+        color: #1F960E; }
+      #user_list .user i.status.dnd {
+        color: #C02413; }
+      #user_list .user i.status.away, #user_list .user i.status.xa {
+        color: #B2AC19; }
+      #user_list .user i.status.unavailable {
+        color: #848484; }

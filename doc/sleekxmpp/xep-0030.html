@@ -1,0 +1,161 @@
+<!doctype html>
+<html>
+	<head>
+		<style>
+			body {
+				background-color: #F5F5F5;
+				font-family: sans-serif;
+				margin-right: 40px;
+			}
+
+			h2, h3, h4, h5, h6, h7
+			{
+				margin-top: 16px;
+				margin-bottom: 4px;
+			}
+
+			.children { padding-left: 40px; }
+
+			.definition
+			{
+				font-weight: bold;
+				margin-bottom: 32px;
+			}
+
+			.example 
+			{ 
+				padding: 5px 6px;
+				font-weight: bold;
+				font-size: 15px;
+				background-color: #E6E6E6; 
+				margin-top: 11px;
+			}
+
+			.example > .children
+			{
+				padding-top: 11px;
+				padding-left: 10px;
+			}
+
+			.example > .children > h7
+			{
+				font-size: 13px;
+			}
+
+			h7
+			{
+				font-size: 14px;
+				font-weight: bold;
+				margin-bottom: 2px;
+			}
+
+			pre
+			{
+				margin-top: 0px;
+				padding: 6px 7px;
+				background-color: #D9D9D9;
+				font-weight: normal;
+				font-size: 13px;
+			}
+
+			dl
+			{
+				margin: 5px 0px;
+			}
+
+			dt
+			{
+				font-weight: bold;
+			}
+
+			dd
+			{
+				font-size: 14px;
+				font-weight: normal;
+				margin-left: 8px;
+			}
+			
+			dd > .children
+			{
+				font-size: 95%;
+			}
+			
+			dd > .children > dl > dd
+			{
+				margin-left: 13px;
+			}
+
+			.exclamation
+			{
+				padding: 7px 8px;
+				margin: 11px 0px;
+				background-color: #FFE9AA;
+				border: 1px solid yellow;
+				font-size: 15px;
+				font-weight: normal;
+			}
+
+			.text
+			{
+				font-size: 15px;
+				font-weight: normal;
+				margin-bottom: 14px;
+				margin-top: 10px;
+			}
+
+			.toc
+			{
+				border: 1px solid gray;
+				background-color: #E6E6E6;
+				padding: 8px 9px;
+				font-size: 15px;
+				margin-bottom: 12px;
+			}
+
+			.toc h2
+			{
+				margin: 0px 0px 3px 0px;
+				font-size: 19px;
+			}
+
+			.toc ul
+			{
+				margin-top: 0px;
+				margin-bottom: 0px;
+				padding-left: 25px;
+			}
+
+			.toc li
+			{
+				margin-bottom: 2px;
+			}
+
+			.toc .alternatives
+			{
+				font-size: 12px;
+			}
+
+			.toc a
+			{
+				color: #292722;
+			}
+
+			.toc a:hover
+			{
+				color: black;
+			}
+			
+			.fixed
+			{
+				font-family: monospace;
+				background-color: white;
+				padding: 1px 4px;
+				border: 1px solid silver;
+				border-radius: 4px;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="children"><h1>XEP-0030 Plugin: Service Discovery</h1><div class="exclamation"><strong>Important:</strong> This is partial documentation. <div class="children"></div></div><h2>Plugin methods</h2><div class="definition"><a name="xmppxep_0030_get_infojidnodelocalcached">xmpp['xep_0030'].get_info(<span class="fixed">jid=</span>, <span class="fixed">node=</span>, <span class="fixed">local=</span>, <span class="fixed">cached=</span>) <div class="children"><div class="text">Retrieves information for a given JID. Returns a DiscoInfo stanza.</div><dl><dt>jid</dt><dd>The JID to request information for.<div class="children"></div></dd></dl><dl><dt>ifrom</dt><dd>The sender JID. Should normally be set to  <span class="fixed">self.boundjid</span> for a component.<div class="children"></div></dd></dl><dl><dt>node</dt><dd><em>Optional.</em> The node to query. Defaults to the node for the specified <span class="fixed">jid</span>.<div class="children"></div></dd></dl><dl><dt>local</dt><dd><em>Optional.</em> Whether this query is intended for this SleekXMPP instance itself - this would mean that no actual request is sent, and it is simply looked up in the local instance. Defaults to <span class="fixed">False</span>.<div class="children"></div></dd></dl><dl><dt>cached</dt><dd><em>Optional.</em> Consult the local cache before sending off a query. Only useful when <span class="fixed">self.use_cache</span> is set to <span class="fixed">True</span>. Defaults to <span class="fixed">False</span>.<div class="children"></div></dd></dl><dl><dt>block</dt><dd><em>Optional.</em> Block and wait for a reply. Defaults to <span class="fixed">True</span>.<div class="children"></div></dd></dl><dl><dt>timeout</dt><dd><em>Optional.</em> How many seconds to wait for a reply at most. Only useful when <span class="fixed">block</span> is set to <span class="fixed">True</span>. Defaults to the standard response timeout.<div class="children"></div></dd></dl><dl><dt>callback</dt><dd><em>Optional.</em> The callback to execute when a reply is received in non-blocking mode.<div class="children"></div></dd></dl></div></a></div><h2>Plugin stanzas</h2><div class="definition"><a name="DiscoInfo_node">DiscoInfo.node <div class="children"><div class="text">The name of the node whose information is queried or returned.</div></div></a></div><div class="definition"><a name="DiscoInfo_identities">DiscoInfo.identities <div class="children"><div class="text">A tuple with 4 elements; <span class="fixed">category</span>, <span class="fixed">type</span>, <span class="fixed">xml:lang</span> and  <span class="fixed">name</span> in that order.</div></div></a></div><div class="definition"><a name="DiscoInfo_features">DiscoInfo.features <div class="children"><div class="text">A list of feature namespaces and/or settings. The list will contain the values for the <span class="fixed">var</span> attribute.</div></div></a></div></div>
+	</body>
+</html>

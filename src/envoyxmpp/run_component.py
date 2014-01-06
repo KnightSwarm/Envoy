@@ -1,4 +1,4 @@
-import logging, json, oursql, os, copy, time
+import logging, json, oursql, os, copy, time, traceback
 from datetime import datetime
 from marrow.mailer import Message, Mailer
 
@@ -65,6 +65,7 @@ class EnvoyComponent(Component):
 		self.register_event("topic_change", self.on_topic_change)
 		self.register_event("group_highlight", self.on_group_highlight)
 		self.register_event("presences_purged", self.on_presences_purged)
+		self.register_event("affiliation_change", self.on_affiliation_change)
 		
 		# Hook XEP-0045 presence tracking to use the Envoy database
 		self['xep_0045'].api.register(self._envoy_is_joined_room, 'is_joined_room')
@@ -92,8 +93,14 @@ class EnvoyComponent(Component):
 		cursor = database.query("SELECT * FROM presences")
 		
 		for row in cursor:
-			# FIXME: Use SleekXMPPs JID parsing
-			bare_jid, resource = row['UserJid'].split("/", 1)
+			try:
+				jid = JID(row['UserJid'])
+				bare_jid = jid.bare
+				resource = jid.resource
+			except ValueError, e:
+				bare_jid = user
+				resource = ""
+				
 			self._envoy_user_cache.get(bare_jid).add_room(row['RoomJid'], resource)
 			
 		for jid, user in self._envoy_user_cache.cache.iteritems():
@@ -145,6 +152,9 @@ class EnvoyComponent(Component):
 		print "%s highlighted %s in %s in a channel message: %s (highlighted content is %s)" % (sender, recipient, room, body, highlight)
 		self.notify_if_idle(sender, recipient, room, body, highlight)
 	
+	def on_affiliation_change(self, jid, room, new_affiliation):
+		print "Affiliation of %s for %s changed to %s." % (jid, room, new_affiliation)
+	
 	def on_topic_change(self, user, room, topic):
 		self._envoy_log_event(datetime.now(), user, room, self.event_types["topic"], topic)
 		print "%s changed topic for %s to '%s'" % (user, room, topic)
@@ -169,8 +179,12 @@ class EnvoyComponent(Component):
 		
 		for row in cursor:
 			room_jid = row['RoomJid']
-			# FIXME: Use SleekXMPP's JID parsing
-			user_bare, user_resource = row['UserJid'].split("/")
+
+			try:
+				user_bare, user_resource = row['UserJid'].split("/")
+			except ValueError, e:
+				user_bare = user
+				user_resource = ""
 			
 			try:
 				if user_resource in all_presences[user_bare][room_jid]:
@@ -209,6 +223,24 @@ class EnvoyComponent(Component):
 			logging.debug("Room presence list AFTER database sync for user %s: %s" % (jid, user.rooms))
 		
 		logging.info("Synchronized database with UserCache.")
+		
+		cursor = database.query("SELECT * FROM rooms")
+		
+		for row in cursor:
+			fqdn_cursor = database.query("SELECT * FROM fqdns WHERE `Id` = ?", (row['FqdnId'],))
+			fqdn_row = fqdn_cursor.fetchone()
+			
+			room_jid = "%s@conference.%s" % (row['Node'], fqdn_row['Fqdn'])
+			room = self._envoy_room_cache.get(room_jid)
+			
+			room.title = row['Name']
+			room.description = row['Description']
+			room.private = row['IsPrivate']
+			room.moderated = row['IsArchived']
+			
+			self._envoy_register_room(room_jid)
+			
+		logging.info("Synchronized RoomCache with database.")
 	
 	def notify_if_idle(self, sender, recipient, room, body, highlight):
 		# We should only send a notification if we can reasonable assume that the user is not paying
@@ -231,6 +263,10 @@ class EnvoyComponent(Component):
 			is_private = (room == "")
 			sender_name = self._envoy_user_cache.get(sender.bare).full_name
 			
+			room_name = self._envoy_room_cache.get(room).title
+			if room_name.strip() == "":
+				room_name = room.node
+			
 			# We'll start out with an SMS
 			sms_recipient = self._envoy_user_cache.get(recipient).mobile_number
 			
@@ -238,11 +274,10 @@ class EnvoyComponent(Component):
 				if is_private:
 					sms_prefix = "PM from %s: " % sender_name
 				else:
-					# FIXME: Use human-readable room name rather than JID
 					if highlight == "all":
-						sms_prefix = "@all in %s: [%s] " % (room.node, sender_name)
+						sms_prefix = "@all in %s: [%s] " % (room_name, sender_name)
 					else:
-						sms_prefix = "Highlight in %s: [%s] " % (room.node, sender_name)
+						sms_prefix = "Highlight in %s: [%s] " % (room_name, sender_name)
 				
 				# An SMS message can be at most 60 characters
 				sms_maxlen = 160 - len(sms_prefix)
@@ -290,8 +325,8 @@ class EnvoyComponent(Component):
 				template = template_file.read()
 				template_file.close()
 				
-				subject = "%s mentioned you in the room %s" % (sender_name, room.node)
-				email_body = template.format(first_name=recipient_name, sender=sender_name, room=room.node, message=body)
+				subject = "%s mentioned you in the room %s" % (sender_name,room_name)
+				email_body = template.format(first_name=recipient_name, sender=sender_name, room=room_name, message=body)
 			
 			try:
 				send_email = (configuration["mock"]["email"] == False)
@@ -336,10 +371,15 @@ class EnvoyComponent(Component):
 	def handle_development_command(self, sender, recipient, body):
 		if body.startswith("$"):
 			try:
-				output = eval(body[1:].strip(), {"self": self})
+				scope = {"self": self}
+				scope.update(globals())
+				output = eval(body[1:].strip(), scope)
 				self.send_message(mto=sender, mbody=unicode(output))
 			except IqError, e:
+				self.send_message(mto=sender, mbody=unicode("IqError encountered\n%s" % traceback.format_exc()))
 				logging.error("IqError: %s" % e.iq)
+			except:
+				self.send_message(mto=sender, mbody=unicode("Uncaught exception encountered:\n%s" % traceback.format_exc()))
 		elif body == "purge":
 			self._envoy_purge_presences()
 		elif body == "debugtree":
@@ -393,7 +433,8 @@ class EnvoyComponent(Component):
 		# Override for the _is_joined_room method.
 		# Checks whether a JID was already present in a room.
 		cursor = database.query("SELECT COUNT(*) FROM presences WHERE `UserJid` = ? AND `RoomJid` = ?", (str(jid), str(node)))
-		return (cursor.fetchone()['COUNT(*)'] > 0)
+		row = cursor.fetchone()
+		return (row['COUNT(*)'] > 0)
 	
 	def _envoy_get_joined_rooms(self, jid, node, ifrom, data):
 		# Override for the _get_joined_rooms method.
@@ -412,8 +453,6 @@ class EnvoyComponent(Component):
 		database.query("DELETE FROM presences WHERE `UserJid` = ? AND `RoomJid` = ?", (str(jid), str(node)))
 		
 	def _envoy_log_event(self, timestamp, sender, recipient, event_type, payload, extra=None):
-		cursor = db.cursor()
-		
 		if event_type == 1 or event_type == 2 or event_type == 5:  # Message
 			row = db.Row()
 			row['Date'] = timestamp

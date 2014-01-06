@@ -1,0 +1,32 @@
+<!doctype html>
+<html>
+	<head>
+		<script src="script/jquery-1.10.2.min.js"></script>
+		<script src="script/angular.min.js"></script>
+		<script src="script/angular-scrollglue.js"></script>
+		<script src="script/underscore-min.js"></script>
+		<script src="script/debug.js"></script>
+		<link rel="stylesheet" href="css/debug.css">
+	</head>
+	<body ng-app="envoyDebug">
+		<div id="watch">
+			No watches.
+		</div>
+		<div id="console">
+			<div id="messages" ng-controller="DebugConsoleController" scroll-glue>
+				<div class="message" ng-repeat="message in messages">
+					<div class="command">
+						{{ message.command }}
+					</div>
+					<div class="response">
+						{{ message.body }}
+					</div>
+				</div>
+			</div>
+			<form id="form_command">
+				<input type="text" id="command">
+				<button type="submit">Evaluate</button>
+			</form>
+		</div>
+	</body>
+</html>

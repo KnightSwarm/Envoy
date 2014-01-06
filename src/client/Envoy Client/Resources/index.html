@@ -1,0 +1,90 @@
+<!doctype html>
+<html>
+	<head>
+		<!-- Stylesheets -->
+		<link rel="stylesheet" href="css/pure-min.css">
+		<link rel="stylesheet" href="font-awesome/css/font-awesome.min.css">
+		<link rel="stylesheet" href="css/main.css">
+		<link rel="stylesheet" href="istok/stylesheet.css">
+		<!-- Base Javascript libraries -->
+		<script src="script/jquery-1.10.2.min.js"></script>
+		<script src="script/angular.min.js"></script>
+		<script src="script/angular-scrollglue.js"></script>
+		<script src="script/underscore-min.js"></script>
+		<script src="script/moment-with-langs.min.js"></script>
+		<script src="script/compat.js"></script>
+		<!-- Initial configuration and Python availability detection -->
+		<script type="text/python">
+			import sys
+			sys.path.insert(1, "/home/sven/projects/SleekXMPP/")
+			has_python = True;
+		</script>
+		<!-- Components for TideSDK client -->
+		<script type="text/python" src="script/queue.py"></script>
+		<script type="text/python" src="script/client-tide.py"></script>
+		<!-- Components and shims for web client -->
+		<script src="script/shim.js"></script>
+		<script src="script/client-web.js"></script>
+		<!-- Universal application code -->
+		<script src="script/menu.js"></script>
+		<script src="script/ui.js"></script>
+		<script src="script/client-all.js"></script>
+		<script src="script/eventloop.js"></script>
+	</head>
+	<body ng-app="envoyClient" ng-controller="UiController">
+		<!-- Left-hand "joined rooms" list -->
+		<div id="room_list">
+			<!-- Lobby -->
+			<div class="room" ng-class="{selected : current_room == 'lobby'}" ng-click="current_room = 'lobby'" data-jid="lobby">
+				<i class="status icon-list icon-fixed-width"></i>
+				<span class="name">Room List</span>
+				<div class="arrow"></div>
+			</div>
+			<!-- Actual rooms -->
+			<div class="room" ng-class="{selected : current_room == room.jid}" ng-repeat="room in rooms" ng-click="$parent.$parent.current_room = room.jid" data-jid="{{ room.jid }}" ng-controller="RoomController">
+				<i class="status icon-{{room.icon}} icon-fixed-width"></i>
+				<span class="name">{{ room.name }}</span>
+				<a href="#" class="close" ng-click="leave_room(room.jid); $event.stopPropagation();"><i class="icon-remove"></i></a>
+				<div class="arrow"></div>
+			</div>
+		</div>
+		<!-- Per-room user list -->
+		<div id="user_list">
+			<div class="list" ng-repeat="room in rooms" ng-class="{hidden : current_room != room.jid}" ng-controller="RoomController">
+				<div class="user" ng-repeat="user in room.all_users">
+					<i class="status {{user.status}} icon-circle"></i>
+					{{ user.fullname }}
+				</div>
+			</div>
+		</div>
+		<!-- Chat message area -->
+		<div id="main" scroll-glue>
+			<!-- Lobby overview page -->
+			<div class="lobby" ng-class="{hidden : current_room != 'lobby'}">
+				<h1>Rooms</h1>
+				<div class="room" ng-repeat="room in all_rooms" data-jid="{{ room.jid }}">
+					<i class="status icon-{{room.icon}} icon-fixed-width"></i>
+					<span class="name"><a href="#" ng-click="join_room(room.jid)">{{ room.name }}</a></span>
+					<span class="description">{{ room.description }}</span>
+				</div>
+			</div>
+			<!-- Actual chatroom pages -->
+			<div class="chat" ng-repeat="room in rooms"  data-jid="{{ room.jid }}" ng-class="{hidden : current_room != room.jid}" ng-controller="RoomController">
+				<div class="message" ng-repeat="message in room.all_messages" ng-class="{own : message.jid == own_jid}">
+					<span class="timestamp">{{ format_time(message.timestamp) }}</span>
+					<span ng-show="message.type == 'message'">
+						<span class="author">{{ message.fullname }}</span>
+						<span class="body">{{ message.body }}</span>
+					</span>
+					<span class="event" ng-show="message.type == 'event' && message.event == 'join'">
+						{{ message.fullname }} joined the room.
+					</span>
+					<span class="event" ng-show="message.type == 'event' && message.event == 'leave'">
+						{{ message.fullname }} left the room.
+					</span>
+					<div class="clear"></div>
+				</div>
+			</div>
+		</div>
+	</body>
+</html>
