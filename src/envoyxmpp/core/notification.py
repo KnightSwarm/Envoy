@@ -138,7 +138,10 @@ class SmsSender(LocalSingletonBase):
 	def __init__(self, singleton_identifier=None):
 		self.identifier = singleton_identifier
 		
-		self.client = TwilioRestClient(configuration.twilio_sid, configuration.twilio_token)
+		configuration = ConfigurationProvider.Instance(self.identifier)
+			
+		if configuration.mock_sms == False:
+			self.client = TwilioRestClient(configuration.twilio_sid, configuration.twilio_token)
 	
 	def send(self, recipient, body):
 		configuration = ConfigurationProvider.Instance(self.identifier)

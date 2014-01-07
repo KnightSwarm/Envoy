@@ -1,7 +1,12 @@
 import oursql
 
-class Database(object):
-	def __init__(self, host, user, passwd, db):
+from .util import Singleton, LocalSingleton, LocalSingletonBase
+
+@LocalSingleton
+class Database(LocalSingletonBase):
+	def __init__(self, host, user, passwd, db, singleton_identifier=None):
+		self.identifier = singleton_identifier
+		
 		self.conn = oursql.connect(host=host, user=user, passwd=passwd, db=db, autoreconnect=True)
 		self.row_factory = Row
 		self.tables = {}
