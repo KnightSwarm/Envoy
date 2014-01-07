@@ -96,8 +96,15 @@ class User(object):
 		if "phone_number" in data:
 			self.row["MobileNumber"] = data["phone_number"]
 			
-		self.row.commit()
-		self.load_row(self.row)
+		self.commit_row()
+		
+	def get_affiliations(self, room=None):
+		affiliation_provider = AffiliationProvider.Instance(self.identifier)
+		return affiliation_provider.get_user(self, room=room)
+	
+	def get_presences(self, room=None):
+		presence_provider = PresenceProvider.Instance(self.identifier)
+		return presence_provider.get_user(self, room=room)
 	
 @LocalSingleton
 class RoomProvider(LocalSingletonBase):
@@ -144,6 +151,10 @@ class Room(object):
 		self.row = row
 		self.load_row(self.row)
 		
+	def commit_row(self):
+		self.row.commit()
+		self.load_row(self.row)
+		
 	def load_row(self, row):
 		fqdn_provider = FqdnProvider.Instance(self.identifier)
 		user_provider = UserProvider.Instance(self.identifier)
@@ -161,11 +172,11 @@ class Room(object):
 		
 	def increment_usercount(self, amount=1):
 		self.row["LastUserCount"] = row["LastUserCount"] + amount
-		self.row.commit()
+		self.commit_row()
 		
 	def decrement_usercount(self, amount=1):
 		self.row["LastUserCount"] = row["LastUserCount"] + amount
-		self.row.commit()
+		self.commit_row()
 		
 	def update_metadata(self, data):
 		if "name" in data:
@@ -174,11 +185,21 @@ class Room(object):
 		if "description" in data:
 			self.row["Description"] = data["description"]
 			
+		self.commit_row()
+			
 	def change_owner(self, user):
 		user_provider = UserProvider.Instance(self.identifier)
-		
 		self.row["OwnerId"] = user_provider.normalize_user(user).id
+		self.commit_row()
 	
+	def get_affiliations(self, user=None):
+		affiliation_provider = AffiliationProvider.Instance(self.identifier)
+		return affiliation_provider.get_room(self, user=user)
+	
+	def get_presences(self, user=None):
+		presence_provider = PresenceProvider.Instance(self.identifier)
+		return presence_provider.get_room(self, user=user)
+		
 @LocalSingleton
 class AffiliationProvider(LocalSingletonBase):
 	pass
