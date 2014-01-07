@@ -7,7 +7,7 @@ class Database(object):
 		self.tables = {}
 	
 	def _get_cursor(self):
-		return CursorWrapper(self.conn.cursor(), self.row_factory)
+		return CursorWrapper(self.conn.cursor(), self.row_factory, self)
 		
 	def _get_table(self, name, in_memory=False, forced=False):
 		if in_memory == True:
@@ -49,10 +49,11 @@ class Database(object):
 	def log_query(self, query, params):
 		pass
 	
-	def query(self, query, params = [], commit=False):
+	def query(self, query, params = [], commit=False, table=None):
 		self.log_query(query, params)
 		
 		cur = self._get_cursor()
+		cur.table = table
 		cur.execute(query, params)
 		
 		if commit == True:
@@ -61,9 +62,11 @@ class Database(object):
 		return cur
 
 class CursorWrapper(object):
-	def __init__(self, cursor, row_factory):
+	def __init__(self, cursor, row_factory, db):
 		self.cursor = cursor
 		self.row_factory = row_factory
+		self.db = db
+		self.table = None
 		
 	def __getattr__(self, name):
 		return getattr(self.cursor, name)
@@ -75,7 +78,7 @@ class CursorWrapper(object):
 		if row is None:
 			return None
 		else:
-			return self.row_factory(self.cursor, row)
+			return self.row_factory(self.cursor, row, self.db, self.table)
 		
 	def next(self):  # Iterable implementation
 		row = self.fetchone()
@@ -98,7 +101,7 @@ class CursorWrapper(object):
 		return [self._wrap_row(row) for row in self.cursor.fetchall()]
 	
 class Row(object):
-	def __init__(self, cursor=None, row=None):
+	def __init__(self, cursor=None, row=None, db=None, table=None):
 		self._commit_buffer = {}
 		self._data = {}
 		
@@ -109,6 +112,9 @@ class Row(object):
 			
 			for index, column in enumerate(cursor.description):
 				self._data[column[0]] = row[index]
+				
+		self._db = db
+		self._table = table
 	
 	def __getitem__(self, key):
 		return self._data[key]
@@ -123,8 +129,8 @@ class Row(object):
 		# Commit to database
 		if len(self._commit_buffer) > 0:
 			statement_list = ", ".join("`%s` = ?" % key for key in self._commit_buffer.keys())
-			query = "UPDATE %s SET %s WHERE `id` = %s" % (self._nexus_table, statement_list, self['Id'])  # Not SQLi-safe!
-			self._nexus_db.query(query, params=self._commit_buffer.values(), commit=True)
+			query = "UPDATE %s SET %s WHERE `id` = '%s'" % (self._table, statement_list, self['Id'])  # Not SQLi-safe!
+			self._db.query(query, params=self._commit_buffer.values(), commit=True)
 			
 			# Update locally
 			for key, value in self._commit_buffer.iteritems():
@@ -210,9 +216,9 @@ class DatabaseTable(Table):
 				raise KeyError("No row with that ID was found in the table.")
 			else:
 				row = result.fetchone()
-				row._nexus_db = self.db
-				row._nexus_table = self.table
-				row._nexus_type = "database"
+				row._db = self.db
+				row._table = self.table
+				row._type = "database"
 				self._cache[key] = row
 				return row
 				
@@ -233,17 +239,17 @@ class MemoryTable(Table):
 		self._set_column_names([x[0] for x in result.description])
 		
 		for row in result:
-			row._nexus_db = self.db
-			row._nexus_table = self.table
-			row._nexus_type = "memory"
+			row._db = self.db
+			row._table = self.table
+			row._type = "memory"
 			self.data[row['Id']] = row
 			
 	def _process_insert(self, value, key=None):
 		rowid = Table._process_insert(self, value, key)
 		self.data[rowid] = value
-		self.data[rowid]._nexus_db = self.db
-		self.data[rowid]._nexus_table = self.table
-		self.data[rowid]._nexus_type = "memory"
+		self.data[rowid]._db = self.db
+		self.data[rowid]._table = self.table
+		self.data[rowid]._type = "memory"
 		return rowid
 			
 	def __getitem__(self, key):
