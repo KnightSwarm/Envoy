@@ -122,6 +122,7 @@ class EmailSender(LocalSingletonBase):
 		})
 		
 	def send(self, recipient, subject, body):
+		# FIXME: Mock config!
 		self.mailer.start()
 		
 		try:

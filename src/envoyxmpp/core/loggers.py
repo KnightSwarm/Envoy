@@ -2,6 +2,7 @@ from .util import Singleton, LocalSingleton, LocalSingletonBase
 from .db import Row
 
 from datetime import datetime
+import logging
 
 @LocalSingleton
 class EventLogger(LocalSingletonBase):
@@ -17,7 +18,7 @@ class EventLogger(LocalSingletonBase):
 		row["Message"] = body
 		database["log_messages"].append(row)
 		
-	def log_event(self, sender, recipient, type_, event, extra):
+	def log_event(self, sender, recipient, type_, event, extra=None):
 		database = Database.Instance(self.identifier)
 		user_provider = UserProvider.Instance(self.identifier)
 		
@@ -29,3 +30,25 @@ class EventLogger(LocalSingletonBase):
 		row["Event"] = event
 		row["Extra"] = extra
 		database["log_events"].append(row)
+
+@LocalSingleton
+class ApplicationLogger(LocalSingletonBase):
+	def __init__(self, singleton_identifier=None):
+		self.identifier = singleton_identifier
+		logging.basicConfig(filename="/etc/envoy/envoy.log", level=logging.DEBUG, format='%(levelname)-8s %(message)s')
+		
+	def debug(message, *args, **kwargs):
+		logging.debug(message, *args, **kwargs)
+		
+	def info(message, *args, **kwargs):
+		logging.info(message, *args, **kwargs)
+		
+	def warning(message, *args, **kwargs):
+		logging.warning(message, *args, **kwargs)
+		
+	def error(message, *args, **kwargs):
+		logging.error(message, *args, **kwargs)
+		
+	def critical(message, *args, **kwargs):
+		logging.critical(message, *args, **kwargs)
+		

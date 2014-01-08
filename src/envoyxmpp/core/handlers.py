@@ -27,28 +27,47 @@ class MessageHandler(LocalSingletonBase):
 			self.private_message(stanza)
 	
 	def group_message(self, stanza):
-		room = stanza['to'].bare
+		room = stanza["to"].bare
 		user = stanza["from"].bare
+		body = stanza["body"]
 		
-		UserCache.Instance(self.identifier).touch(user)
+		UserCache.Instance(self.identifier).touch(user) # FIXME: Remove
 		HighlightChecker.Instance(self.identifier).check(stanza)
+		EventLogger.Instance(self.identifier).log_message(user, room, "message", body)
 		
 	def private_message(self, stanza):
 		sender = stanza["from"].bare
 		recipient = stanza["to"].bare
+		body = stanza["body"]
 		
-		UserCache.Instance(self.identifier).touch(sender)
-		UserCache.Instance(self.identifier).touch(recipient)
+		UserCache.Instance(self.identifier).touch(sender) # FIXME: Remove
+		UserCache.Instance(self.identifier).touch(recipient) # FIXME: Remove
+		EventLogger.Instance(self.identifier).log_message(sender, recipient, "pm", body)
 	
 	def topic_change(self, stanza):
 		room = stanza['to'].bare
 		user = stanza["from"].bare
+		topic = stanza["subject"]
 		
-		UserCache.Instance(self.identifier).touch(user)
+		UserCache.Instance(self.identifier).touch(user) # FIXME: Remove
+		EventLogger.Instance(self.identifier).log_event(user, room, "topic"
+	
+@LocalSingleton	
+class IqHandler(LocalSingletonBase):
+	def process(self, stanza):
+		logger = EventLogger.Instance(self.identifier)
+		
+		# In case it's necessary, the XPath for a ping is {jabber:client}iq/{urn:xmpp:ping}ping
+		if MatchXPath("{jabber:client}iq/{urn:ietf:params:xml:ns:xmpp-session}session").match(stanza):
+			# User logged in
+			user = stanza["from"]
+			
+			logger.log_event(user, None, "presence", "login")
 
 @LocalSingleton
 class DevelopmentCommandHandler(LocalSingletonBase):
 	def process(self, stanza):
+		# FIXME: Check dev mode!
 		message_sender = MessageSender.Instance(self.identifier)
 		
 		sender = stanza["from"]
