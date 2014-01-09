@@ -138,6 +138,22 @@ class Fqdn(object):
 		
 @LocalSingleton
 class UserProvider(LocalSingletonBase):
+	presences = {
+		"login": 1,
+		"disconnect": 2,
+		"join": 3,
+		"leave": 4
+	}
+	
+	statuses = {
+		"available": 1,
+		"away": 2,
+		"xa": 3,
+		"dnd": 4,
+		"chat": 5,
+		"offline": 6
+	}
+	
 	def __init__(self, singleton_identifier=None):
 		self.identifier = singleton_identifier
 		self.cache = {}
@@ -201,6 +217,20 @@ class UserProvider(LocalSingletonBase):
 		fqdn_provider = FqdnProvider.Instance(self.identifier)
 		fqdn_id = fqdn_provider.normalize_fqdn(fqdn).id
 		return self.get_from_query("SELECT * FROM users WHERE `FqdnId` = ?", (fqdn_id,))
+		
+	def status_string(self, value):
+		reversed_statuses = dict(zip(self.statuses.values(), self.statuses.keys()))
+		return reversed_statuses[value]
+		
+	def presence_string(self, value):
+		reversed_presences = dict(zip(self.presences.values(), self.presences.keys()))
+		return reversed_presences[value]
+		
+	def status_number(self, value):
+		return self.statuses[value]
+		
+	def presence_number(self, value):
+		return self.presences[value]
 	
 class User(object):
 	def __init__(self, identifier, row):
@@ -213,6 +243,8 @@ class User(object):
 		self.load_row(self.row)
 		
 	def load_row(self, row):
+		user_provider = UserProvider.Instance(self.identifier)
+		
 		self.id = row["Id"]
 		self.jid = "%s@%s" % (row["Username"], row["Fqdn"])
 		self.first_name = row["FirstName"]
@@ -223,6 +255,8 @@ class User(object):
 		self.nickname = row["Nickname"]
 		self.job_title = row["JobTitle"]
 		self.active = bool(row["Active"])
+		self.status = user_provider.status_string(row["Status"])
+		self.status_message = row["StatusMessage"]
 		
 	def update_vcard(self, data):
 		if "first_name" in data:
@@ -252,6 +286,17 @@ class User(object):
 	def get_presences(self, room=None):
 		presence_provider = PresenceProvider.Instance(self.identifier)
 		return presence_provider.get_user(self, room=room)
+		
+	def set_status(self, status):
+		user_provider = UserProvider.Instance(self.identifier)
+		self.row["Status"] = user_provider.status_number(status)
+		self.commit()
+		
+	def set_presence(self, presence):
+		user_provider = UserProvider.Instance(self.identifier)
+		
+		if presence == "disconnect":
+			self.set_status("offline")
 	
 @LocalSingleton
 class RoomProvider(LocalSingletonBase):

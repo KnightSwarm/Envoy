@@ -63,7 +63,31 @@ class IqHandler(LocalSingletonBase):
 			user = stanza["from"]
 			
 			logger.log_event(user, None, "presence", "login")
-
+		
+@LocalSingleton	
+class PresenceHandler(LocalSingletonBase):
+	def process(self, stanza):
+		component = Component.Instance(self.identifier)
+		user_provider = UserProvider.Instance(self.identifier)
+		logger = EventLogger.Instance(self.identifier)
+		
+		if stanza.match("presence/muc"):
+			# MUC presence
+			component['xep_0045']._handle_presence(stanza)
+		else:
+			sender = stanza["from"]
+			recipient = stanza["to"]
+			type_ = stanza["type"]
+			message = stanza["status"]
+			
+			if recipient == "": # Ignore propagated presences
+				user_provider.get(sender).set_status(type_)
+				 
+				if type_ == "available" or type_ in Presence.showtypes:
+					logger.log_event(sender, "", "status", type_, message)
+				elif type_ == "unavailable":
+					logger.log_event(sender, "", "presence", "disconnect", message)
+					
 @LocalSingleton
 class DevelopmentCommandHandler(LocalSingletonBase):
 	def process(self, stanza):

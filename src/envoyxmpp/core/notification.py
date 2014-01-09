@@ -45,6 +45,7 @@ class Notifier(LocalSingletonBase):
 			user.update_presence()
 		
 	def notify(self, sender, recipient, room, body, highlight):
+		# FIXME: Check DND!
 		if room == "":
 			self.notify_private_message(sender, recipient, body)
 		else:
