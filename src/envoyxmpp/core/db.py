@@ -134,7 +134,7 @@ class Row(object):
 		# Commit to database
 		if len(self._commit_buffer) > 0:
 			statement_list = ", ".join("`%s` = ?" % key for key in self._commit_buffer.keys())
-			query = "UPDATE %s SET %s WHERE `id` = '%s'" % (self._table, statement_list, self['Id'])  # Not SQLi-safe!
+			query = "UPDATE %s SET %s WHERE `Id` = '%s'" % (self._table, statement_list, self['Id'])  # Not SQLi-safe!
 			self._db.query(query, params=self._commit_buffer.values(), commit=True)
 			
 			# Update locally
@@ -146,6 +146,9 @@ class Row(object):
 		
 	def rollback(self):
 		self._clear_buffer()
+		
+	def delete(self):
+		self._db.query("DELETE FROM %s WHERE `Id` = ?" % self._table, (self["Id"],))
 
 class Table(object):
 	def __init__(self, database, table_name):
@@ -198,6 +201,7 @@ class Table(object):
 			raise AttributeError("No such attribute exists")
 	
 	def append(self, value):
+		value._table = self.table
 		return self._process_insert(value)
 		
 class DatabaseTable(Table):

@@ -297,6 +297,14 @@ class User(object):
 		
 		if presence == "disconnect":
 			self.set_status("offline")
+			
+	def register_join(self, room, nickname, role):
+		presence_provider = PresenceProvider.Instance(self.identifier)
+		return presence_provider.register_join(self, room, nickname, role)
+			
+	def register_leave(self, room):
+		presence_provider = PresenceProvider.Instance(self.identifier)
+		return presence_provider.register_leave(self, room)
 	
 @LocalSingleton
 class RoomProvider(LocalSingletonBase):
@@ -402,17 +410,40 @@ class Room(object):
 	
 	def get_affiliations(self, user=None):
 		affiliation_provider = AffiliationProvider.Instance(self.identifier)
-		return affiliation_provider.get_room(self, user=user)
+		return affiliation_provider.find_by_room(self, user=user)
 	
 	def get_presences(self, user=None):
 		presence_provider = PresenceProvider.Instance(self.identifier)
-		return presence_provider.get_room(self, user=user)
+		return presence_provider.find_by_room(self, user=user)
+	
+	def register_join(self, user, nickname, role):
+		presence_provider = PresenceProvider.Instance(self.identifier)
+		return presence_provider.register_join(user, self, nickname, role)
+		
+	def register_leave(self, user):
+		presence_provider = PresenceProvider.Instance(self.identifier)
+		return presence_provider.register_leave(user, self)
 		
 @LocalSingleton
 class AffiliationProvider(LocalSingletonBase):
+	affiliations = {
+		"owner": 1,
+		"admin": 2,
+		"member": 3,
+		"outcast": 4,
+		"none": 5
+	}
+	
 	def __init__(self, singleton_identifier=None):
 		self.identifier = singleton_identifier
 		self.cache = {}
+		
+	def affiliation_string(self, value):
+		reversed_affiliations = dict(zip(self.affiliations.values(), self.affiliations.keys()))
+		return reversed_affiliations[value]
+		
+	def affiliation_number(self, value):
+		return self.affiliations[value]
 	
 	def normalize_affiliation(self, affiliation):
 		if isinstance(affiliation, Affiliation):
@@ -452,7 +483,7 @@ class AffiliationProvider(LocalSingletonBase):
 		user = user_provider.normalize_user(user)
 		
 		if room is None:
-			return self.get_from_query("SELECT * FROM affiliations WHERE `UserId` = ?", (room.id,))[0]
+			return self.get_from_query("SELECT * FROM affiliations WHERE `UserId` = ?", (user.id,))[0]
 		else:
 			return self.find_by_room_user(room, user)
 		
@@ -478,12 +509,193 @@ class AffiliationProvider(LocalSingletonBase):
 		fqdn_id = fqdn_provider.normalize_fqdn(fqdn).id
 		return self.get_from_query("SELECT * FROM affiliations WHERE `FqdnId` = ?", (fqdn_id,))
 	
+	def delete_from_cache(self, id_):
+		del self.cache[id_]
+	
 class Affiliation(object):
-	pass
+	def __init__(self, identifier, row):
+		self.identifier = identifier
+		self.row = row
+		self.load_row(self.row)
+		
+	def commit(self):
+		self.row.commit()
+		self.load_row(self.row)
+		
+	def load_row(self, row):
+		room_provider = RoomProvider.Instance(self.identifier)
+		user_provider = UserProvider.Instance(self.identifier)
+		affiliation_provider = AffiliationProvider.Instance(self.identifier)
+		
+		self.id = row["Id"]
+		self.user = user_provider.find_by_id(row["UserId"])
+		self.room = room_provider.find_by_id(row["RoomId"])
+		self.affiliation = affiliation_provider.affiliation_string(row["Affiliation"])
+		
+	def change(self, affiliation):
+		affiliation_provider = AffiliationProvider.Instance(self.identifier)
+		self.row["Affiliation"] = affiliation_provider.affiliation_number(affiliation)
+		self.commit()
+		
+	def delete(self):
+		affiliation_provider = AffiliationProvider.Instance(self.identifier)
+		affiliation_provider.delete_from_cache(self.id)
+		self.row.delete()
 		
 @LocalSingleton
 class PresenceProvider(LocalSingletonBase):
-	pass
+	roles = {
+		"moderator": 1,
+		"none": 2,
+		"participant": 3,
+		"visitor": 4
+	}
+	
+	def __init__(self, singleton_identifier=None):
+		self.identifier = singleton_identifier
+		self.cache = {}
+		
+	def role_string(self, value):
+		reversed_roles = dict(zip(self.roles.values(), self.roles.keys()))
+		return reversed_roles[value]
+		
+	def role_number(self, value):
+		return self.roles[value]
+	
+	def normalize_presence(self, presence):
+		if isinstance(presence, Presence):
+			return presence
+		else:
+			return self.get(presence)
+		
+	def wrap(self, row):
+		item = Presence(self.identifier, row)
+		self.cache[row["Id"]] = item
+		return item
+		
+	def get_from_query(self, query, params):
+		database = Database.Instance(self.identifier)
+		
+		result = database.query(query, params, table="presences")
+		items = result.fetchall()
+		
+		if result is None:
+			raise NotFoundException("No such presence(s) exist.")
+		
+		return [self.wrap(item) for item in items]
+		
+	def find_by_room(self, room, user=None):
+		room_provider = RoomProvider.Instance(self.identifier)
+		
+		room = room_provider.normalize_room(room)
+		
+		if user is None:
+			return self.get_from_query("SELECT * FROM presences WHERE `RoomId` = ?", (room.id,))[0]
+		else:
+			return self.find_by_room_user(room, user)
+		
+	def find_by_user(self, user, room=None):
+		user_provider = UserProvider.Instance(self.identifier)
+		
+		user = user_provider.normalize_user(user)
+		
+		if room is None:
+			return self.get_from_query("SELECT * FROM presences WHERE `UserId` = ?", (user.id,))[0]
+		else:
+			return self.find_by_room_user(room, user)
+		
+	def find_by_session(self, jid, room=None):
+		user_provider = UserProvider.Instance(self.identifier)
+		
+		jid = JID(user_provider.normalize_jid(jid, keep_resource=True))
+		user = user_provider.normalize_user(user)
+		
+		if room is None:
+			return self.get_from_query("SELECT * FROM presences WHERE `UserId` = ? AND `Resource` = ?", (user.id, jid.resource))[0]
+		else:
+			return self.find_by_room_user(room, user)
+		
+	def find_by_room_user(self, room, user):
+		room_provider = RoomProvider.Instance(self.identifier)
+		user_provider = UserProvider.Instance(self.identifier)
+		
+		room = room_provider.normalize_room(room)
+		user_jid = JID(user_provider.normalize_jid(jid, keep_resource=True))
+		user = user_provider.normalize_user(user)
+		
+		return self.get_from_query("SELECT * FROM presences WHERE `RoomId` = ? AND `UserId` = ? AND `Resource` = ?", (room.id, user.id, user_jid.resource))[0]
+		
+	def find_by_id(self, id_):
+		component = Component.Instance(self.identifier)
+		
+		if id_ not in self.cache:
+			self.cache[id_] = self.get_from_query("SELECT * FROM presences WHERE `Id` = ? AND `FqdnId` = ?", (id_, component.get_fqdn().id))[0]
+		
+		return self.cache[id_]
+		
+	def find_by_fqdn(self, fqdn):
+		fqdn_provider = FqdnProvider.Instance(self.identifier)
+		fqdn_id = fqdn_provider.normalize_fqdn(fqdn).id
+		return self.get_from_query("SELECT * FROM presences WHERE `FqdnId` = ?", (fqdn_id,))
+		
+	def delete_from_cache(self, id_):
+		del self.cache[id_]
+		
+	def register_join(self, user, room, nickname, role):
+		user_provider = UserProvider.Instance(self.identifier)
+		room_provider = RoomProvider.Instance(self.identifier)
+		database = Database.Instance(self.identifier)
+		
+		user_jid = JID(user_provider.normalize_jid(user, keep_resource=True))
+		bare_jid = user_provider.normalize_jid(user_jid)
+		resource = user_jid.resource
+		
+		user_id = UserProvider.normalize_user(bare_jid).id
+		room_id = RoomProvider.normalize_room(room).id
+		
+		row = Row()
+		row["UserId"] = user_id
+		row["RoomId"] = room_id
+		row["Nickname"] = nickname
+		row["Role"] = self.role_number(role)
+		row["Resource"] = resource
+		database["presences"].append(row)
+		
+		return self.wrap(row)
+		
+	def register_leave(self, user, room):
+		presence = self.find_by_room_user(room, user)
+		presence.delete()
 	
 class Presence(object):
-	pass
+	def __init__(self, identifier, row):
+		self.identifier = identifier
+		self.row = row
+		self.load_row(self.row)
+		
+	def commit(self):
+		self.row.commit()
+		self.load_row(self.row)
+		
+	def load_row(self, row):
+		room_provider = RoomProvider.Instance(self.identifier)
+		user_provider = UserProvider.Instance(self.identifier)
+		presence_provider = PresenceProvider.Instance(self.identifier)
+		
+		self.id = row["Id"]
+		self.user = user_provider.find_by_id(row["UserId"])
+		self.room = room_provider.find_by_id(row["RoomId"])
+		self.resource = row["Resource"]
+		self.nickname = row["Nickname"]
+		self.role = presence_provider.role_string(row["Role"])
+		
+	def change_role(self, role):
+		presence_provider = PresenceProvider.Instance(self.identifier)
+		self.row["Role"] = presence_provider.role_number(affiliation)
+		self.commit()
+		
+	def delete(self):
+		presence_provider = PresenceProvider.Instance(self.identifier)
+		presence_provider.delete_from_cache(self.id)
+		self.row.delete()
+		

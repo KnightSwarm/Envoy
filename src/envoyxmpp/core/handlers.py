@@ -87,7 +87,51 @@ class PresenceHandler(LocalSingletonBase):
 					logger.log_event(sender, "", "status", type_, message)
 				elif type_ == "unavailable":
 					logger.log_event(sender, "", "presence", "disconnect", message)
-					
+				
+@LocalSingleton
+class MucHandler(LocalSingletonBase):
+	def process_join(self, stanza):
+		presence_provider = PresenceProvider.Instance()
+		
+		user = stanza["to"]
+		room = stanza["from"].bare
+		nickname = stanza["from"].resource
+		role = stanza["muc"]["role"]
+		
+		presence_provider.register_join(user, room, nickname, role)
+		
+	def process_leave(self, stanza):
+		presence_provider = PresenceProvider.Instance()
+		
+		user = stanza["to"]
+		room = stanza["from"].bare
+		
+		presence_provider.register_leave(user, room)
+		
+	def process_presence(self, stanza):
+		affiliation_provider = AffiliationProvider.Instance(self.identifier)
+		presence_provider = PresenceProvider.Instance(self.identifier)
+		
+		room = stanza["from"].bare
+		user = stanza["muc"]["jid"]
+		affiliation = stanza["muc"]["affiliation"]
+		role = stanza["muc"]["role"]
+		
+		if str(user) != "": # This might now throw a KeyError instead, since SleekXMPP changes
+			affiliation_object = affiliation_provider.find_by_room_user(room, user)
+			
+			if affiliation_object.affiliation != affiliation:
+				# EVENT: Affiliation change
+				affiliation_object.change(affiliation)
+			
+			presence_object = presence_provider.find_by_room_user(room, user)
+			
+			if presence_object.role != role:
+				# EVENT: Role change
+				presence_object.change_role(role)
+		else:
+			pass # FIXME: Log warning, no valid JID found
+
 @LocalSingleton
 class DevelopmentCommandHandler(LocalSingletonBase):
 	def process(self, stanza):
