@@ -1,5 +1,9 @@
 from .util import Singleton, LocalSingleton, LocalSingletonBase
+
 from .exceptions import NotFoundException, ConfigurationException
+from .loggers import ApplicationLogger
+from .db import Database, Row
+from .component import Component
 
 import json
 from sleekxmpp.jid import JID
@@ -87,11 +91,11 @@ class FqdnProvider(LocalSingletonBase):
 		return [self.wrap(item) for item in items]
 		
 	def get(self, host):
-		return self.get_from_query("SELECT * FROM fqdns WHERE `Fqdn` = ?", (host,))[0]
+		return self.get_from_query("SELECT * FROM fqdns WHERE `Fqdn` = ? LIMIT 1", (host,))[0]
 		
 	def find_by_id(self, id_):
 		if id_ not in self.cache:
-			self.cache[id_] = self.get_from_query("SELECT * FROM fqdns WHERE `Id` = ?", (id_,))[0]
+			self.cache[id_] = self.get_from_query("SELECT * FROM fqdns WHERE `Id` = ? LIMIT 1", (id_,))[0]
 		
 		return self.cache[id_]
 	
@@ -203,13 +207,13 @@ class UserProvider(LocalSingletonBase):
 		
 	def find_by_nickname(self, nickname):
 		component = Component.Instance(self.identifier)
-		return self.get_from_query("SELECT * FROM users WHERE `Nickname` = ? AND `FqdnId` = ?", (nickname, component.get_fqdn().id))[0]
+		return self.get_from_query("SELECT * FROM users WHERE `Nickname` = ? AND `FqdnId` = ? LIMIT 1", (nickname, component.get_fqdn().id))[0]
 		
 	def find_by_id(self, id_):
 		component = Component.Instance(self.identifier)
 		
 		if id_ not in self.cache:
-			self.cache[id_] = self.get_from_query("SELECT * FROM users WHERE `Id` = ? AND `FqdnId` = ?", (id_, component.get_fqdn().id))[0]
+			self.cache[id_] = self.get_from_query("SELECT * FROM users WHERE `Id` = ? AND `FqdnId` = ? LIMIT 1", (id_, component.get_fqdn().id))[0]
 		
 		return self.cache[id_]
 		
@@ -352,7 +356,7 @@ class RoomProvider(LocalSingletonBase):
 		component = Component.Instance(self.identifier)
 		
 		if id_ not in self.cache:
-			self.cache[id_] = self.get_from_query("SELECT * FROM rooms WHERE `Id` = ? AND `FqdnId` = ?", (id_, component.get_fqdn().id))[0]
+			self.cache[id_] = self.get_from_query("SELECT * FROM rooms WHERE `Id` = ? AND `FqdnId` = ? LIMIT 1", (id_, component.get_fqdn().id))[0]
 		
 		return self.cache[id_]
 		
@@ -449,7 +453,7 @@ class AffiliationProvider(LocalSingletonBase):
 		if isinstance(affiliation, Affiliation):
 			return affiliation
 		else:
-			return self.get(affiliation)
+			return self.find_by_id(affiliation)
 		
 	def wrap(self, row):
 		item = Affiliation(self.identifier, row)
@@ -467,13 +471,16 @@ class AffiliationProvider(LocalSingletonBase):
 		
 		return [self.wrap(item) for item in items]
 		
+	def get(self, room, user):
+		return self.find_by_room_user(room, user)
+		
 	def find_by_room(self, room, user=None):
 		room_provider = RoomProvider.Instance(self.identifier)
 		
 		room = room_provider.normalize_room(room)
 		
 		if user is None:
-			return self.get_from_query("SELECT * FROM affiliations WHERE `RoomId` = ?", (room.id,))[0]
+			return self.get_from_query("SELECT * FROM affiliations WHERE `RoomId` = ?", (room.id,))
 		else:
 			return self.find_by_room_user(room, user)
 		
@@ -483,7 +490,7 @@ class AffiliationProvider(LocalSingletonBase):
 		user = user_provider.normalize_user(user)
 		
 		if room is None:
-			return self.get_from_query("SELECT * FROM affiliations WHERE `UserId` = ?", (user.id,))[0]
+			return self.get_from_query("SELECT * FROM affiliations WHERE `UserId` = ?", (user.id,))
 		else:
 			return self.find_by_room_user(room, user)
 		
@@ -494,13 +501,13 @@ class AffiliationProvider(LocalSingletonBase):
 		room = room_provider.normalize_room(room)
 		user = user_provider.normalize_user(user)
 		
-		return self.get_from_query("SELECT * FROM affiliations WHERE `RoomId` = ? AND `UserId` = ?", (room.id, user.id))[0]
+		return self.get_from_query("SELECT * FROM affiliations WHERE `RoomId` = ? AND `UserId` = ? LIMIT 1", (room.id, user.id))[0]
 		
 	def find_by_id(self, id_):
 		component = Component.Instance(self.identifier)
 		
 		if id_ not in self.cache:
-			self.cache[id_] = self.get_from_query("SELECT * FROM affiliations WHERE `Id` = ? AND `FqdnId` = ?", (id_, component.get_fqdn().id))[0]
+			self.cache[id_] = self.get_from_query("SELECT * FROM affiliations WHERE `Id` = ? AND `FqdnId` = ? LIMIT 1", (id_, component.get_fqdn().id))[0]
 		
 		return self.cache[id_]
 		
@@ -566,7 +573,7 @@ class PresenceProvider(LocalSingletonBase):
 		if isinstance(presence, Presence):
 			return presence
 		else:
-			return self.get(presence)
+			return self.find_by_id(presence)
 		
 	def wrap(self, row):
 		item = Presence(self.identifier, row)
@@ -584,13 +591,18 @@ class PresenceProvider(LocalSingletonBase):
 		
 		return [self.wrap(item) for item in items]
 		
+	def get(self, room, nickname):
+		room_provider = RoomProvider.Instance(self.identifier)
+		room = room_provider.normalize_room(room)
+		return self.get_from_query("SELECT * FROM presences WHERE `RoomId` = ? AND `Nickname` = ?", (room.id, nickname))
+		
 	def find_by_room(self, room, user=None):
 		room_provider = RoomProvider.Instance(self.identifier)
 		
 		room = room_provider.normalize_room(room)
 		
 		if user is None:
-			return self.get_from_query("SELECT * FROM presences WHERE `RoomId` = ?", (room.id,))[0]
+			return self.get_from_query("SELECT * FROM presences WHERE `RoomId` = ?", (room.id,))
 		else:
 			return self.find_by_room_user(room, user)
 		
@@ -600,7 +612,7 @@ class PresenceProvider(LocalSingletonBase):
 		user = user_provider.normalize_user(user)
 		
 		if room is None:
-			return self.get_from_query("SELECT * FROM presences WHERE `UserId` = ?", (user.id,))[0]
+			return self.get_from_query("SELECT * FROM presences WHERE `UserId` = ?", (user.id,))
 		else:
 			return self.find_by_room_user(room, user)
 		
@@ -611,7 +623,7 @@ class PresenceProvider(LocalSingletonBase):
 		user = user_provider.normalize_user(user)
 		
 		if room is None:
-			return self.get_from_query("SELECT * FROM presences WHERE `UserId` = ? AND `Resource` = ?", (user.id, jid.resource))[0]
+			return self.get_from_query("SELECT * FROM presences WHERE `UserId` = ? AND `Resource` = ?", (user.id, jid.resource))
 		else:
 			return self.find_by_room_user(room, user)
 		
@@ -623,21 +635,21 @@ class PresenceProvider(LocalSingletonBase):
 		user_jid = JID(user_provider.normalize_jid(jid, keep_resource=True))
 		user = user_provider.normalize_user(user)
 		
-		return self.get_from_query("SELECT * FROM presences WHERE `RoomId` = ? AND `UserId` = ? AND `Resource` = ?", (room.id, user.id, user_jid.resource))[0]
-		
-	def find_by_id(self, id_):
-		component = Component.Instance(self.identifier)
-		
-		if id_ not in self.cache:
-			self.cache[id_] = self.get_from_query("SELECT * FROM presences WHERE `Id` = ? AND `FqdnId` = ?", (id_, component.get_fqdn().id))[0]
-		
-		return self.cache[id_]
+		return self.get_from_query("SELECT * FROM presences WHERE `RoomId` = ? AND `UserId` = ? AND `Resource` = ?", (room.id, user.id, user_jid.resource))
 		
 	def find_by_fqdn(self, fqdn):
 		fqdn_provider = FqdnProvider.Instance(self.identifier)
 		fqdn_id = fqdn_provider.normalize_fqdn(fqdn).id
 		return self.get_from_query("SELECT * FROM presences WHERE `FqdnId` = ?", (fqdn_id,))
+	
+	def find_by_id(self, id_):
+		component = Component.Instance(self.identifier)
 		
+		if id_ not in self.cache:
+			self.cache[id_] = self.get_from_query("SELECT * FROM presences WHERE `Id` = ? AND `FqdnId` = ? LIMIT 1", (id_, component.get_fqdn().id))[0]
+		
+		return self.cache[id_]
+				
 	def delete_from_cache(self, id_):
 		del self.cache[id_]
 		
@@ -699,3 +711,169 @@ class Presence(object):
 		presence_provider.delete_from_cache(self.id)
 		self.row.delete()
 		
+@LocalSingleton
+class UserSettingProvider(LocalSingletonBase):
+	def __init__(self, singleton_identifier=None):
+		self.identifier = singleton_identifier
+		self.cache = {}
+		
+	def normalize_setting(self, setting):
+		if isinstance(setting, UserSetting):
+			return setting
+		else:
+			return self.find_by_id(setting)
+		
+	def wrap(self, row):
+		item = UserSetting(self.identifier, row)
+		self.cache[row["Id"]] = item
+		return item
+		
+	def get_from_query(self, query, params):
+		database = Database.Instance(self.identifier)
+		
+		result = database.query(query, params, table="user_settings")
+		items = result.fetchall()
+		
+		if result is None:
+			raise NotFoundException("No such setting(s) exist.")
+		
+		return [self.wrap(item) for item in items]
+		
+	def get(self, user, key):
+		user_provider = UserProvider.Instance(self.identifier)
+		user = user_provider.normalize_user(user)
+		return self.get_from_query("SELECT * FROM user_settings WHERE `UserId` = ? AND `Key` = ? LIMIT 1", (user.id, key))[0]
+		
+	def find_by_user(self, user):
+		user_provider = UserProvider.Instance(self.identifier)
+		user = user_provider.normalize_user(user)
+		return self.get_from_query("SELECT * FROM user_settings WHERE `UserId` = ?", (user.id,))
+		
+	def find_by_key(self, key):
+		return self.get_from_query("SELECT * FROM user_settings WHERE `Key` = ?", (key,))
+		
+	def find_by_id(self, id_):
+		component = Component.Instance(self.identifier)
+		
+		if id_ not in self.cache:
+			self.cache[id_] = self.get_from_query("SELECT * FROM user_settings WHERE `Id` = ? LIMIT 1", (id_))[0]
+		
+		return self.cache[id_]
+		
+	def delete_from_cache(self, id_):
+		del self.cache[id_]
+		
+class UserSetting(object):
+	def __init__(self, identifier, row):
+		self.identifier = identifier
+		self.row = row
+		self.load_row(self.row)
+		
+	def commit(self):
+		self.row.commit()
+		self.load_row(self.row)
+		
+	def load_row(self, row):
+		user_provider = UserProvider.Instance(self.identifier)
+		
+		self.id = row["Id"]
+		self.user = user_provider.find_by_id(row["UserId"])
+		self.key = row["Key"]
+		self.value = row["Value"]
+		self.modified = row["LastModified"]
+		
+	def change(self, value):
+		self.row["Value"] = value
+		self.commit()
+		
+	def delete(self):
+		usersetting_provider = UserSettingProvider.Instance(self.identifier)
+		usersetting_provider.delete_from_cache(self.id)
+		self.row.delete()
+		
+@LocalSingleton
+class FqdnSettingProvider(LocalSingletonBase):
+	def __init__(self, singleton_identifier=None):
+		self.identifier = singleton_identifier
+		self.cache = {}
+		
+	def normalize_setting(self, setting):
+		if isinstance(setting, FqdnSetting):
+			return setting
+		else:
+			return self.find_by_id(setting)
+		
+	def wrap(self, row):
+		item = FqdnSetting(self.identifier, row)
+		self.cache[row["Id"]] = item
+		return item
+		
+	def get_from_query(self, query, params):
+		database = Database.Instance(self.identifier)
+		
+		result = database.query(query, params, table="fqdn_settings")
+		items = result.fetchall()
+		
+		if result is None:
+			raise NotFoundException("No such setting(s) exist.")
+		
+		return [self.wrap(item) for item in items]
+		
+	def get(self, key):
+		component = Component.Instance(self.identifier)
+		return self.find_by_key(key, fqdn=component.get_fqdn().id)[0]
+		
+	def find_by_fqdn(self, fqdn):
+		fqdn_provider = FqdnProvider.Instance(self.identifier)
+		
+		fqdn = fqdn_provider.normalize_fqdn(fqdn)
+		
+		return self.get_from_query("SELECT * FROM fqdn_settings WHERE `FqdnId` = ? LIMIT 1", (fqdn.id,))[0]
+		
+	def find_by_key(self, key, fqdn=None):
+		fqdn_provider = FqdnProvider.Instance(self.identifier)
+		
+		if fqdn is None:
+			return self.get_from_query("SELECT * FROM fqdn_settings WHERE `Key` = ?", (key,))
+		else:
+			fqdn = fqdn_provider.normalize_fqdn(fqdn)
+			return self.get_from_query("SELECT * FROM fqdn_settings WHERE `FqdnId` = ? AND `Key` = ?", (fqdn.id, key))
+		
+	def find_by_id(self, id_):
+		component = Component.Instance(self.identifier)
+		
+		if id_ not in self.cache:
+			self.cache[id_] = self.get_from_query("SELECT * FROM fqdn_settings WHERE `Id` = ? LIMIT 1", (id_))[0]
+		
+		return self.cache[id_]
+		
+	def delete_from_cache(self, id_):
+		del self.cache[id_]
+		
+class FqdnSetting(object):
+	def __init__(self, identifier, row):
+		self.identifier = identifier
+		self.row = row
+		self.load_row(self.row)
+		
+	def commit(self):
+		self.row.commit()
+		self.load_row(self.row)
+		
+	def load_row(self, row):
+		user_provider = UserProvider.Instance(self.identifier)
+		
+		self.id = row["Id"]
+		self.fqdn = user_provider.find_by_id(row["FqdnId"])
+		self.key = row["Key"]
+		self.value = row["Value"]
+		self.modified = row["LastModified"]
+		
+	def change(self, value):
+		self.row["Value"] = value
+		self.commit()
+		
+	def delete(self):
+		usersetting_provider = UserSettingProvider.Instance(self.identifier)
+		usersetting_provider.delete_from_cache(self.id)
+		self.row.delete()

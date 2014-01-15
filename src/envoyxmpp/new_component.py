@@ -1,6 +1,8 @@
 # Local imports
 from util.singleton import Singleton, LocalSingleton
-from core import handlers
+
+from .handlers import StanzaHandler, MucHandler
+from .providers import FqdnProvider
 
 # SleekXMPP
 from sleekxmpp.componentxmpp import ComponentXMPP

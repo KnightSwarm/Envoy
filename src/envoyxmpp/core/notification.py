@@ -1,15 +1,16 @@
-from .util import Singleton, LocalSingleton, LocalSingletonBase
+from .util import LocalSingleton, LocalSingletonBase
 
-from .providers.configuration import ConfigurationProvider
-from .cache import UserCache, RoomCache
+from .providers import ConfigurationProvider, UserProvider, RoomProvider
+from .notify import SmsSender, EmailSender
 
 from sleekxmpp.jid import JID
 
 @LocalSingleton
 class HighlightChecker(LocalSingletonBase):
 	def check(self, stanza):
+		# FIXME: find_by methods need changing and error handling
 		notifier = Notifier.Instance(self.identifier)
-		cache = UserCache.Instance(self.identifier)
+		user_provider = UserProvider.Instance(self.identifier)
 		
 		room = stanza['to'].bare
 		sender = stanza["from"].bare
@@ -19,14 +20,14 @@ class HighlightChecker(LocalSingletonBase):
 		for highlight in highlights:
 			if highlight == "all":
 				# Highlight everyone in the room
-				affected = set(cache.find_by_room_presence(room) + cache.find_by_room_membership(room))
+				affected = set(user_provider.find_by_room_presence(room) + user_provider.find_by_room_membership(room))
 				
 				for user in affected:
 					if str(user.jid) != str(sender):
 						notifier.notify_if_idle(sender, JID(user.jid), JID(room), body, highlight)
 			else:
 				# Highlight one particular nickname
-				affected = set(cache.find_nickname(highlight))
+				affected = set(user_provider.find_by_nickname(highlight))
 				
 				for user in affected:
 					if user.in_room(room):
@@ -35,7 +36,7 @@ class HighlightChecker(LocalSingletonBase):
 @LocalSingleton
 class Notifier(LocalSingletonBase):
 	def notify_if_idle(self, sender, recipient, room, body, highlight):
-		cache = UserCache.Instance(self.identifier)
+		cache = UserProvider.Instance(self.identifier)
 		user = cache.get(recipient)
 		
 		if user.presence in (state.AWAY, state.XA, state.UNAVAILABLE, state.DND):
@@ -54,12 +55,12 @@ class Notifier(LocalSingletonBase):
 	def notify_highlight(self, sender, recipient, room, body, highlight):
 		sms_sender = SmsSender.Instance(self.identifier)
 		email_sender = EmailSender.Instance(self.identifier)
-		usercache = UserCache.Instance(self.identifier)
-		roomcache = RoomCache.Instance(self.identifier)
+		user_provider = UserProvider.Instance(self.identifier)
+		room_provider = RoomProvider.Instance(self.identifier)
 		
-		sending_user = usercache.get(sender)
-		receiving_user = usercache.get(recipient)
-		room_data = roomcache.get(room)
+		sending_user = user_provider.get(sender)
+		receiving_user = user_provider.get(recipient)
+		room_data = room_provider.get(room)
 		
 		if receiving_user.phone_number != "":
 			if highlight == "all":
@@ -81,10 +82,10 @@ class Notifier(LocalSingletonBase):
 	def notify_private_message(self, sender, recipient, body):
 		sms_sender = SmsSender.Instance(self.identifier)
 		email_sender = EmailSender.Instance(self.identifier)
-		usercache = UserCache.Instance(self.identifier)
+		user_provider = UserProvider.Instance(self.identifier)
 		
-		sending_user = usercache.get(sender)
-		receiving_user = usercache.get(recipient)
+		sending_user = user_provider.get(sender)
+		receiving_user = user_provider.get(recipient)
 		
 		if receiving_user.phone_number != "":
 			if highlight == "all":

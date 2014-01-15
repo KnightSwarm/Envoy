@@ -1,5 +1,7 @@
 from .util import Singleton, LocalSingleton, LocalSingletonBase
-from .db import Row
+
+from .db import Database, Row
+from .providers import UserProvider
 
 from datetime import datetime
 import logging

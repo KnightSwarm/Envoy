@@ -1,6 +1,12 @@
 from .util import Singleton, LocalSingleton, LocalSingletonBase
+
 from .notification import HighlightChecker
-from .cache import UserCache
+from .providers import UserProvider, PresenceProvider, AffiliationProvider
+from .loggers import EventLogger
+from .component import Component
+from .senders import MessageSender
+
+from sleekxmpp.stanza import Presence
 
 @LocalSingleton
 class StanzaHandler(LocalSingletonBase):	
@@ -27,29 +33,32 @@ class MessageHandler(LocalSingletonBase):
 			self.private_message(stanza)
 	
 	def group_message(self, stanza):
+		# EVENT: Group/room message received
 		room = stanza["to"].bare
 		user = stanza["from"].bare
 		body = stanza["body"]
 		
-		UserCache.Instance(self.identifier).touch(user) # FIXME: Remove
+		UserProvider.Instance(self.identifier).touch(user) # FIXME: Remove
 		HighlightChecker.Instance(self.identifier).check(stanza)
 		EventLogger.Instance(self.identifier).log_message(user, room, "message", body)
 		
 	def private_message(self, stanza):
+		# EVENT: Private message received
 		sender = stanza["from"].bare
 		recipient = stanza["to"].bare
 		body = stanza["body"]
 		
-		UserCache.Instance(self.identifier).touch(sender) # FIXME: Remove
-		UserCache.Instance(self.identifier).touch(recipient) # FIXME: Remove
+		UserProvider.Instance(self.identifier).touch(sender) # FIXME: Remove
+		UserProvider.Instance(self.identifier).touch(recipient) # FIXME: Remove
 		EventLogger.Instance(self.identifier).log_message(sender, recipient, "pm", body)
 	
 	def topic_change(self, stanza):
+		# EVENT: Topic changed
 		room = stanza['to'].bare
 		user = stanza["from"].bare
 		topic = stanza["subject"]
 		
-		UserCache.Instance(self.identifier).touch(user) # FIXME: Remove
+		UserProvider.Instance(self.identifier).touch(user) # FIXME: Remove
 		EventLogger.Instance(self.identifier).log_event(user, room, "topic"
 	
 @LocalSingleton	
@@ -59,7 +68,7 @@ class IqHandler(LocalSingletonBase):
 		
 		# In case it's necessary, the XPath for a ping is {jabber:client}iq/{urn:xmpp:ping}ping
 		if MatchXPath("{jabber:client}iq/{urn:ietf:params:xml:ns:xmpp-session}session").match(stanza):
-			# User logged in
+			# EVENT: User logged in
 			user = stanza["from"]
 			
 			logger.log_event(user, None, "presence", "login")
@@ -72,7 +81,7 @@ class PresenceHandler(LocalSingletonBase):
 		logger = EventLogger.Instance(self.identifier)
 		
 		if stanza.match("presence/muc"):
-			# MUC presence
+			# EVENT: MUC presence
 			component['xep_0045']._handle_presence(stanza)
 		else:
 			sender = stanza["from"]
@@ -84,13 +93,16 @@ class PresenceHandler(LocalSingletonBase):
 				user_provider.get(sender).set_status(type_)
 				 
 				if type_ == "available" or type_ in Presence.showtypes:
+					# EVENT: User status changed
 					logger.log_event(sender, "", "status", type_, message)
 				elif type_ == "unavailable":
+					# EVENT: User logged out
 					logger.log_event(sender, "", "presence", "disconnect", message)
 				
 @LocalSingleton
 class MucHandler(LocalSingletonBase):
 	def process_join(self, stanza):
+		# EVENT: User joined room
 		presence_provider = PresenceProvider.Instance()
 		
 		user = stanza["to"]
@@ -98,15 +110,16 @@ class MucHandler(LocalSingletonBase):
 		nickname = stanza["from"].resource
 		role = stanza["muc"]["role"]
 		
-		presence_provider.register_join(user, room, nickname, role)
+		presence_provider.register_join(user, room, nickname, role) # TODO: This might be better in a separate handler
 		
 	def process_leave(self, stanza):
+		# EVENT: User left room
 		presence_provider = PresenceProvider.Instance()
 		
 		user = stanza["to"]
 		room = stanza["from"].bare
 		
-		presence_provider.register_leave(user, room)
+		presence_provider.register_leave(user, room) # TODO: This might be better in a separate handler
 		
 	def process_presence(self, stanza):
 		affiliation_provider = AffiliationProvider.Instance(self.identifier)
@@ -146,14 +159,18 @@ class DevelopmentCommandHandler(LocalSingletonBase):
 			handler = EvalHandler.Instance(self.identifier)
 			handler.process(stanza)
 		elif body == "purge":
+			# EVENT: (Dev) purge command
 			pass # FIXME: We might not need this anymore.
 		elif body == "debugtree":
-			builder = DebugTreeBuilder.Instance(self.identifier)
-			message_sender.send(recipient=sender, body=builder.build())
+			# EVENT: (Dev) print debug tree
+			# FIXME: Implement this!
+			#builder = DebugTreeBuilder.Instance(self.identifier)
+			#message_sender.send(recipient=sender, body=builder.build())
 			
 @LocalSingleton
 class EvalHandler(LocalSingletonBase):
 	def process(self, stanza):
+		# EVENT: (Dev) eval command
 		message_sender = MessageSender.Instance(self.identifier)
 		
 		sender = stanza["from"]
