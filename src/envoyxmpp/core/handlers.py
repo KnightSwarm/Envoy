@@ -38,7 +38,6 @@ class MessageHandler(LocalSingletonBase):
 		user = stanza["from"].bare
 		body = stanza["body"]
 		
-		UserProvider.Instance(self.identifier).touch(user) # FIXME: Remove
 		HighlightChecker.Instance(self.identifier).check(stanza)
 		EventLogger.Instance(self.identifier).log_message(user, room, "message", body)
 		
@@ -48,8 +47,6 @@ class MessageHandler(LocalSingletonBase):
 		recipient = stanza["to"].bare
 		body = stanza["body"]
 		
-		UserProvider.Instance(self.identifier).touch(sender) # FIXME: Remove
-		UserProvider.Instance(self.identifier).touch(recipient) # FIXME: Remove
 		EventLogger.Instance(self.identifier).log_message(sender, recipient, "pm", body)
 	
 	def topic_change(self, stanza):
@@ -58,7 +55,6 @@ class MessageHandler(LocalSingletonBase):
 		user = stanza["from"].bare
 		topic = stanza["subject"]
 		
-		UserProvider.Instance(self.identifier).touch(user) # FIXME: Remove
 		EventLogger.Instance(self.identifier).log_event(user, room, "topic"
 	
 @LocalSingleton	
@@ -126,11 +122,15 @@ class MucHandler(LocalSingletonBase):
 		presence_provider = PresenceProvider.Instance(self.identifier)
 		
 		room = stanza["from"].bare
-		user = stanza["muc"]["jid"]
 		affiliation = stanza["muc"]["affiliation"]
 		role = stanza["muc"]["role"]
 		
-		if str(user) != "": # This might now throw a KeyError instead, since SleekXMPP changes
+		try:
+			user = stanza["muc"]["jid"]
+		except KeyError, e:
+			return # No JID present
+				
+		if str(user) != "":
 			affiliation_object = affiliation_provider.find_by_room_user(room, user)
 			
 			if affiliation_object.affiliation != affiliation:
@@ -143,29 +143,39 @@ class MucHandler(LocalSingletonBase):
 				# EVENT: Role change
 				presence_object.change_role(role)
 		else:
-			pass # FIXME: Log warning, no valid JID found
+			logger = ApplicationLogger.Instance(self.identifier)
+			logger.warning("No valid JID found in presence stanza! Stanza was %s" % stanza)
 
 @LocalSingleton
 class DevelopmentCommandHandler(LocalSingletonBase):
+	# TODO: Make code actually use this...
+	
 	def process(self, stanza):
-		# FIXME: Check dev mode!
-		message_sender = MessageSender.Instance(self.identifier)
+		configuration = ConfigurationProvider.Instance(self.identifier)
+		#message_sender = MessageSender.Instance(self.identifier)
 		
-		sender = stanza["from"]
-		recipient = stanza["to"]
-		body = stanza["body"]
-		
-		if body.startswith("$"):
-			handler = EvalHandler.Instance(self.identifier)
-			handler.process(stanza)
-		elif body == "purge":
-			# EVENT: (Dev) purge command
-			pass # FIXME: We might not need this anymore.
-		elif body == "debugtree":
-			# EVENT: (Dev) print debug tree
-			# FIXME: Implement this!
-			#builder = DebugTreeBuilder.Instance(self.identifier)
-			#message_sender.send(recipient=sender, body=builder.build())
+		if configuration.development_mode == True:
+			sender = stanza["from"]
+			recipient = stanza["to"]
+			body = stanza["body"]
+			
+			if body.startswith("$"):
+				handler = EvalHandler.Instance(self.identifier)
+				handler.process(stanza)
+			elif body == "sync":
+				# EVENT: (Dev) sync command
+				affiliation_syncer = AffiliationSyncer.Instance(self.identifier)
+				presence_syncer = PresenceSyncer.Instance(self.identifier)
+				room_syncer = RoomSyncer.Instance(self.identifier)
+				
+				affiliation_syncer.sync()
+				presence_syncer.sync()
+				room_syncer.sync()
+			elif body == "debugtree":
+				# EVENT: (Dev) print debug tree
+				# TODO: Implement this! Not very urgent anymore, since UserCache/RoomCache have been removed.
+				#builder = DebugTreeBuilder.Instance(self.identifier)
+				#message_sender.send(recipient=sender, body=builder.build())
 			
 @LocalSingleton
 class EvalHandler(LocalSingletonBase):

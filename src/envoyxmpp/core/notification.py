@@ -2,15 +2,17 @@ from .util import LocalSingleton, LocalSingletonBase
 
 from .providers import ConfigurationProvider, UserProvider, RoomProvider
 from .notify import SmsSender, EmailSender
+from .exceptions import NotFoundException
 
 from sleekxmpp.jid import JID
 
 @LocalSingleton
 class HighlightChecker(LocalSingletonBase):
 	def check(self, stanza):
-		# FIXME: find_by methods need changing and error handling
 		notifier = Notifier.Instance(self.identifier)
 		user_provider = UserProvider.Instance(self.identifier)
+		presence_provider = PresenceProvider.Instance(self.identifier)
+		affiliation_provider = AffiliationProvider.Instance(self.identifier)
 		
 		room = stanza['to'].bare
 		sender = stanza["from"].bare
@@ -20,24 +22,52 @@ class HighlightChecker(LocalSingletonBase):
 		for highlight in highlights:
 			if highlight == "all":
 				# Highlight everyone in the room
-				affected = set(user_provider.find_by_room_presence(room) + user_provider.find_by_room_membership(room))
+				affected = []
+				
+				try:
+					affected += presence_provider.find_by_room(room)
+				except NotFoundException, e:
+					pass # Ignore
+				
+				try:
+					affected += affiliation_provider.find_by_room(room)
+				except NotFoundException, e:
+					pass # Ignore
+					
+				affected = set(affected)
 				
 				for user in affected:
 					if str(user.jid) != str(sender):
 						notifier.notify_if_idle(sender, JID(user.jid), JID(room), body, highlight)
 			else:
 				# Highlight one particular nickname
-				affected = set(user_provider.find_by_nickname(highlight))
+				try:
+					affected_user = set(user_provider.find_by_nickname(highlight))
+				except NotFoundException, e:
+					continue
 				
-				for user in affected:
-					if user.in_room(room):
-						notifier.notify_if_idle(sender, JID(user.jid), JID(room), body, highlight)
+				try:
+					presence_provider.find_by_room_user(room, affected_user)
+					found_presence = True
+				except NotFoundException, e:
+					found_presence = False
+				
+				try:
+					affiliation = affiliation_provider.find_by_room_user(room, affected_user)
+					
+					if affiliation.affiliation != "outcast":
+						found_affiliation = True
+				except NotFoundException, e:
+					found_affiliation = False
+					
+				if found_presence or found_affiliation:
+					notifier.notify_if_idle(sender, JID(user.jid), JID(room), body, highlight)
 	
 @LocalSingleton
 class Notifier(LocalSingletonBase):
 	def notify_if_idle(self, sender, recipient, room, body, highlight):
-		cache = UserProvider.Instance(self.identifier)
-		user = cache.get(recipient)
+		user_provider = UserProvider.Instance(self.identifier)
+		user = user_provider.normalize_user(recipient)
 		
 		if user.presence in (state.AWAY, state.XA, state.UNAVAILABLE, state.DND):
 			self.notify(sender, recipient, room, body, highlight)
@@ -46,11 +76,14 @@ class Notifier(LocalSingletonBase):
 			user.update_presence()
 		
 	def notify(self, sender, recipient, room, body, highlight):
-		# FIXME: Check DND!
-		if room == "":
-			self.notify_private_message(sender, recipient, body)
-		else:
-			self.notify_highlight(sender, recipient, room, body, highlight)
+		user_provider = UserProvider.Instance(self.identifier)
+		user = user_provider.normalize_user(recipient)
+		
+		if user.status != "dnd":
+			if room == "":
+				self.notify_private_message(sender, recipient, body)
+			else:
+				self.notify_highlight(sender, recipient, room, body, highlight)
 		
 	def notify_highlight(self, sender, recipient, room, body, highlight):
 		sms_sender = SmsSender.Instance(self.identifier)
@@ -58,9 +91,9 @@ class Notifier(LocalSingletonBase):
 		user_provider = UserProvider.Instance(self.identifier)
 		room_provider = RoomProvider.Instance(self.identifier)
 		
-		sending_user = user_provider.get(sender)
-		receiving_user = user_provider.get(recipient)
-		room_data = room_provider.get(room)
+		sending_user = user_provider.normalize_user(sender)
+		receiving_user = user_provider.normalize_user(recipient)
+		room_data = room_provider.normalize_room(room)
 		
 		if receiving_user.phone_number != "":
 			if highlight == "all":
@@ -111,30 +144,33 @@ class EmailSender(LocalSingletonBase):
 		
 		configuration = ConfigurationProvider.Instance(self.identifier)
 		
-		# FIXME: Deal properly with older SMTP implementations that only support SSL and not STARTTLS.
-		self.mailer = Mailer({
-			"manager.use": "immediate",
-			"transport.use": "smtp",
-			"transport.host": configuration.smtp_hostname,
-			"transport.port": configuration.smtp_port,
-			"transport.tls": configuration.smtp_tls,
-			"transport.username": configuration.smtp_username,
-			"transport.password": configuration.smtp_password,
-			"transport.max_messages_per_connection": 5
-		})
+		if configuration.mock_email == False:
+			# TODO: Deal properly with older SMTP implementations that only support SSL and not STARTTLS.
+			self.mailer = Mailer({
+				"manager.use": "immediate",
+				"transport.use": "smtp",
+				"transport.host": configuration.smtp_hostname,
+				"transport.port": configuration.smtp_port,
+				"transport.tls": configuration.smtp_tls,
+				"transport.username": configuration.smtp_username,
+				"transport.password": configuration.smtp_password,
+				"transport.max_messages_per_connection": 5
+			})
 		
 	def send(self, recipient, subject, body):
-		# FIXME: Mock config!
-		self.mailer.start()
-		
-		try:
-			message = Message(author=configuration.smtp_sender, to=recipient, subject=subject, plain=body)
-			self.mailer.send(message)
-			logging.info("E-mail sent to %s: %s" % (recipient, body))
-		except Exception, e:
-			logging.error("An error occurred during sending of an e-mail to %s: %s" % (recipient, repr(e)))
-		
-		self.mailer.stop()
+		if configuration.mock_email == False:
+			self.mailer.start()
+			
+			try:
+				message = Message(author=configuration.smtp_sender, to=recipient, subject=subject, plain=body)
+				self.mailer.send(message)
+				logging.info("E-mail sent to %s: %s" % (recipient, body))
+			except Exception, e:
+				logging.error("An error occurred during sending of an e-mail to %s: %s" % (recipient, repr(e)))
+			
+			self.mailer.stop()
+		else:
+			logging.info("Pretending to send e-mail to %s: %s" % (recipient, body))
 	
 @LocalSingleton
 class SmsSender(LocalSingletonBase):

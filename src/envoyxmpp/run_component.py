@@ -188,7 +188,7 @@ class EnvoyComponent(Component):
 			
 			try:
 				if user_resource in all_presences[user_bare][room_jid]:
-					# FIXME: This can probably be optimized for speed by keeping a separate list of to-be-deleted resources
+					#  TODO: This can probably be optimized for speed by keeping a separate list of to-be-deleted resources
 					#        and recreating the resource list in one pass.
 					all_presences[user_bare][room_jid] = [x for x in all_presences[user_bare][room_jid] if x != user_resource]
 				else:
@@ -251,7 +251,7 @@ class EnvoyComponent(Component):
 		if self._envoy_user_cache.get(recipient).presence in [state.AWAY, state.XA, state.UNAVAILABLE, state.DND]:
 			self.notify(sender, recipient, room, body, highlight)
 		elif self._envoy_user_cache.get(recipient).presence == state.UNKNOWN:
-			# FIXME: Fetch the correct state?
+			# TODO: Fetch the correct state?
 			logging.error("Unknown state detected for user %s" % recipient)
 		
 	def notify(self, sender, recipient, room, body, highlight):

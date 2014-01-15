@@ -72,6 +72,7 @@ class AffiliationSyncer(LocalSingletonBase):
 				user_affiliation = affiliation_provider.find_by_room_user(room_jid, user_jid)
 				
 				if user_affiliation.affiliation != affiliation:
+					# EVENT: Sync affiliation change
 					user_affiliation.change(affiliation)
 
 @LocalSingleton
@@ -79,11 +80,13 @@ class RoomSyncer(LocalSingletonBase):
 	def sync(self):
 		room_provider = RoomProvider.Instance(self.identifier)
 		component = Component.Instance(self.identifier)
+		logger = ApplicationLogger.Instance(self.identifier)
 		
 		try:
 			all_rooms = room_provider.find_by_fqdn(component.get_fqdn())
 		except NotFoundException, e:
-			return # No rooms for this FQDN at all... FIXME: Log?
+			# No rooms for this FQDN at all...
+			logger.warning("No rooms found for FQDN %s during sync!" % component.get_fqdn())
 			
 		for room in all_rooms:
 			try:
@@ -107,7 +110,7 @@ class RoomSyncer(LocalSingletonBase):
 				if category == "conference" and type_ == "text":
 					titles.append(name)
 					
-			if room.name not in titles: # FIXME: Why multiple titles?
+			if room.name not in titles: # TODO: Why multiple titles?
 				logging.debug("Mismatch for 'title' setting for room %s: %s not in %s" % (room.jid, room.title, repr(titles)))
 				needs_reconfiguration = True
 			
@@ -132,6 +135,7 @@ class RoomSyncer(LocalSingletonBase):
 				self.configure(room)
 		
 	def register(self, room):
+		# EVENT: Room registration
 		room_provider = RoomProvider.Instance(self.identifier)
 		component = Component.Instance(self.identifier)
 		
@@ -140,6 +144,7 @@ class RoomSyncer(LocalSingletonBase):
 		logging.debug("Room %s created." % room.jid)
 		
 	def configure(self, room):
+		# EVENT: Room (re-)configuration
 		room_provider = RoomProvider.Instance(self.identifier)
 		component = Component.Instance(self.identifier)
 		

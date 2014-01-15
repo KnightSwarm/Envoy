@@ -329,7 +329,7 @@ class Component(ComponentXMPP):
 		self._envoy_update_roster(room)
 	
 	def _envoy_handle_group_presence(self, stanza):
-		# FIXME: It's possible that an affiliation is not updated, if the target user is in a semi-anonymous
+		#  NOTE: It's possible that an affiliation is not updated, if the target user is in a semi-anonymous
 		#        room, and no moderators are present. In that case, whether a stanza containing the full JID
 		#        of the affected user is sent out, depends on the implementation of the XMPP daemon. The
 		#        XEP-0045 specification does not explicitly indicate what the daemon should do in this case.
