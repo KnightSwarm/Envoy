@@ -1,17 +1,8 @@
 # Local imports
-from util.singleton import Singleton, LocalSingleton
-
-from core.handlers import StanzaHandler, MucHandler, OverrideHandler
-from core.providers import FqdnProvider
-from core.sync import PresenceSyncer, AffiliationSyncer, RoomSyncer
+from .util import Singleton, LocalSingleton
 
 # SleekXMPP
 from sleekxmpp.componentxmpp import ComponentXMPP
-
-import uuid
-
-reload(sys)
-sys.setdefaultencoding('utf8')
 
 @LocalSingleton
 class Component(ComponentXMPP):
@@ -52,13 +43,12 @@ class Component(ComponentXMPP):
 		fqdn_provider = FqdnProvider.Instance(self.identifier)
 		return fqdn_provider.get(self.host)[0]
 
-xmpp = Component.Instance(uuid.uuid4())
-xmpp.initialize("component.envoy.local", "envoy.local", 5347, "password", "conference.envoy.local")
-xmpp.connect()
-xmpp.process(block=True)
-
 """
 xmpp = EnvoyComponent("component.envoy.local", "127.0.0.1", 5347, "password", "conference.envoy.local")
 xmpp.connect()
 xmpp.process(block=True)
 """
+
+from .handlers import StanzaHandler, MucHandler, OverrideHandler
+from .providers import FqdnProvider
+from .sync import PresenceSyncer, AffiliationSyncer, RoomSyncer
