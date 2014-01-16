@@ -168,6 +168,7 @@ class DevelopmentCommandHandler(LocalSingletonBase):
 			elif body == "debugtree":
 				# EVENT: (Dev) print debug tree
 				# TODO: Implement this! Not very urgent anymore, since UserCache/RoomCache have been removed.
+				pass
 				#builder = DebugTreeBuilder.Instance(self.identifier)
 				#message_sender.send(recipient=sender, body=builder.build())
 			
