@@ -380,7 +380,7 @@ class Room(object):
 		user_provider = UserProvider.Instance(self.identifier)
 		
 		self.id = row["Id"]
-		self.jid = "%s@%s" % (row["Node"], fqdn_provider.find_by_id(row["FqdnId"]).fqdn)
+		self.jid = "%s@conference.%s" % (row["Node"], fqdn_provider.find_by_id(row["FqdnId"]).fqdn)
 		self.name = row["Name"]
 		self.description = row["Description"]
 		self.owner = user_provider.find_by_id(row["OwnerId"])
@@ -739,7 +739,7 @@ class UserSettingProvider(LocalSingletonBase):
 		
 		return [self.wrap(item) for item in items]
 		
-	def get(self, user, key):
+	def get(self, user, key, default=None):
 		user_provider = UserProvider.Instance(self.identifier)
 		user = user_provider.normalize_user(user)
 		return self.get_from_query("SELECT * FROM user_settings WHERE `UserId` = ? AND `Key` = ? LIMIT 1", (user.id, key))[0]

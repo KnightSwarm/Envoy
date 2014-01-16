@@ -69,9 +69,9 @@ class Notifier(LocalSingletonBase):
 		user_provider = UserProvider.Instance(self.identifier)
 		user = user_provider.normalize_user(recipient)
 		
-		if user.presence in (state.AWAY, state.XA, state.UNAVAILABLE, state.DND):
+		if user.presence in ("away", "xa", "unavailable", "dnd"):
 			self.notify(sender, recipient, room, body, highlight)
-		elif user.presence == state.UNKNOWN:
+		elif user.presence == "unknown":
 			logging.warn("Unknown state detected for user %s" % recipient)
 			user.update_presence()
 		
