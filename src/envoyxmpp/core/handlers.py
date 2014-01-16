@@ -49,7 +49,7 @@ class MessageHandler(LocalSingletonBase):
 		user = stanza["from"].bare
 		topic = stanza["subject"]
 		
-		EventLogger.Instance(self.identifier).log_event(user, room, "topic"
+		EventLogger.Instance(self.identifier).log_event(user, room, "topic", topic)
 	
 @LocalSingleton	
 class IqHandler(LocalSingletonBase):
