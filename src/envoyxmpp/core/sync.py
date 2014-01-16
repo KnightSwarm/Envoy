@@ -1,9 +1,5 @@
 from .util import LocalSingleton, LocalSingletonBase
 
-from .exceptions import NotFoundException
-from .providers import UserProvider, PresenceProvider, AffiliationProvider
-from .component import Component
-
 @LocalSingleton
 class PresenceSyncer(LocalSingletonBase):
 	def sync(self):
@@ -174,3 +170,7 @@ class RoomSyncer(LocalSingletonBase):
 		new_iq.send()
 		
 		logging.debug("Room configuration form for %s filled in and submitted" % room.jid)
+
+from .exceptions import NotFoundException
+from .providers import UserProvider, PresenceProvider, AffiliationProvider
+from .component import Component

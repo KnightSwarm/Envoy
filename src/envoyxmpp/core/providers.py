@@ -1,10 +1,5 @@
 from .util import Singleton, LocalSingleton, LocalSingletonBase
 
-from .exceptions import NotFoundException, ConfigurationException
-from .loggers import ApplicationLogger
-from .db import Database, Row
-from .component import Component
-
 import json
 from sleekxmpp.jid import JID
 
@@ -877,3 +872,8 @@ class FqdnSetting(object):
 		usersetting_provider = UserSettingProvider.Instance(self.identifier)
 		usersetting_provider.delete_from_cache(self.id)
 		self.row.delete()
+
+from .exceptions import NotFoundException, ConfigurationException
+from .loggers import ApplicationLogger
+from .db import Database, Row
+from .component import Component

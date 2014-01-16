@@ -1,8 +1,5 @@
 from .util import Singleton, LocalSingleton, LocalSingletonBase
 
-from .db import Database, Row
-from .providers import UserProvider
-
 from datetime import datetime
 import logging
 
@@ -54,3 +51,5 @@ class ApplicationLogger(LocalSingletonBase):
 	def critical(message, *args, **kwargs):
 		logging.critical(message, *args, **kwargs)
 		
+from .db import Database, Row
+from .providers import UserProvider

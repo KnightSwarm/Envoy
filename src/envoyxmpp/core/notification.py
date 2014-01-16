@@ -1,9 +1,5 @@
 from .util import LocalSingleton, LocalSingletonBase
 
-from .providers import ConfigurationProvider, UserProvider, RoomProvider
-from .notify import SmsSender, EmailSender
-from .exceptions import NotFoundException
-
 from sleekxmpp.jid import JID
 
 @LocalSingleton
@@ -197,3 +193,7 @@ class SmsSender(LocalSingletonBase):
 			return body[:157] + "..."
 		else:
 			return body
+			
+from .providers import ConfigurationProvider, UserProvider, RoomProvider
+from .notify import SmsSender, EmailSender
+from .exceptions import NotFoundException

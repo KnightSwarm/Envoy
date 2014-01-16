@@ -1,13 +1,5 @@
 from .util import Singleton, LocalSingleton, LocalSingletonBase
 
-from .notification import HighlightChecker
-from .providers import UserProvider, PresenceProvider, AffiliationProvider, ConfigurationProvider
-from .loggers import EventLogger, ApplicationLogger
-from .component import Component
-from .senders import MessageSender
-from .db import Database, Row
-from .sync import RoomSyncer, AffiliationSyncer, PresenceSyncer
-
 from sleekxmpp.stanza import Presence
 
 @LocalSingleton
@@ -235,3 +227,11 @@ class OverrideHandler(LocalSingletonBase):
 		# Removes a JID presence in a room.
 		user_provider = UserProvider.Instance(self.identifier)
 		user_provider.get(jid).register_leave(node)
+
+from .notification import HighlightChecker
+from .providers import UserProvider, PresenceProvider, AffiliationProvider, ConfigurationProvider
+from .loggers import EventLogger, ApplicationLogger
+from .component import Component
+from .senders import MessageSender
+from .db import Database, Row
+from .sync import RoomSyncer, AffiliationSyncer, PresenceSyncer
