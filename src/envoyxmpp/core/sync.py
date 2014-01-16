@@ -50,7 +50,8 @@ class PresenceSyncer(LocalSingletonBase):
 class AffiliationSyncer(LocalSingletonBase):
 	def sync(self):
 		affiliation_provider = AffiliationProvider.Instance(self.identifier)
-		component = Component.Instance()
+		component = Component.Instance(self.identifier)
+		logger = ApplicationLogger.Instance(self.identifier)
 		
 		room_list = component['xep_0045'].get_rooms(ifrom=component.boundjid, jid=component.conference_host)['disco_items']['items']
 		
@@ -65,11 +66,17 @@ class AffiliationSyncer(LocalSingletonBase):
 				user_jid = presence["jid"]
 				affiliation = presence["affiliation"]
 				
-				user_affiliation = affiliation_provider.find_by_room_user(room_jid, user_jid)
-				
-				if user_affiliation.affiliation != affiliation:
-					# EVENT: Sync affiliation change
-					user_affiliation.change(affiliation)
+				if user_jid != component.boundjid: # We don't need to keep state for the component
+					try:
+						user_affiliation = affiliation_provider.find_by_room_user(room_jid, user_jid)
+					except NotFoundException, e:
+						# Not a known user, log and skip
+						logger.warning("Unknown user %s found during affiliation sync!")
+						continue
+					
+					if user_affiliation.affiliation != affiliation:
+						# EVENT: Sync affiliation change
+						user_affiliation.change(affiliation)
 
 @LocalSingleton
 class RoomSyncer(LocalSingletonBase):
@@ -82,7 +89,7 @@ class RoomSyncer(LocalSingletonBase):
 			all_rooms = room_provider.find_by_fqdn(component.get_fqdn())
 		except NotFoundException, e:
 			# No rooms for this FQDN at all...
-			logger.warning("No rooms found for FQDN %s during sync!" % component.get_fqdn())
+			logger.warning("No rooms found for FQDN %s during sync!" % component.get_fqdn().fqdn)
 			
 		for room in all_rooms:
 			try:

@@ -50,7 +50,7 @@ class Component(ComponentXMPP):
 		
 	def get_fqdn(self):
 		fqdn_provider = FqdnProvider.Instance(self.identifier)
-		return fqdn_provider.get(self.host)[0]
+		return fqdn_provider.get(self.host)
 
 """
 xmpp = EnvoyComponent("component.envoy.local", "127.0.0.1", 5347, "password", "conference.envoy.local")

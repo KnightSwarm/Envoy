@@ -199,7 +199,13 @@ class UserProvider(LocalSingletonBase):
 		
 	def get(self, jid):
 		component = Component.Instance(self.identifier)
-		username, fqdn = self.normalize_jid(jid).split("@", 1)
+		
+		try:
+			username, fqdn = self.normalize_jid(jid).split("@", 1)
+		except ValueError, e:
+			# No @ found, most likely a component name.
+			raise NotFoundException("Not a known user, no @ found.")
+			
 		return self.get_from_query("SELECT * FROM users WHERE `Username` = ? AND `FqdnId` = ? LIMIT 1", (username, component.get_fqdn().id))[0]
 		
 	def find_by_email(self, email):
@@ -351,7 +357,7 @@ class RoomProvider(LocalSingletonBase):
 	def get(self, jid):
 		component = Component.Instance(self.identifier)
 		roomname, fqdn = self.normalize_jid(jid).split("@", 1)
-		return self.get_from_query("SELECT * FROM rooms WHERE `Node` = ? AND `FqdnId` = ? LIMIT 1", (username, component.get_fqdn().id))[0]
+		return self.get_from_query("SELECT * FROM rooms WHERE `Node` = ? AND `FqdnId` = ? LIMIT 1", (roomname, component.get_fqdn().id))[0]
 		
 	def find_by_id(self, id_):
 		component = Component.Instance(self.identifier)
@@ -373,7 +379,8 @@ class Room(LazyLoadingObject):
 		self.load_row(self.row)
 		
 		self.lazy_loaders = {
-			"owner": self.get_owner
+			"owner": self.get_owner,
+			"fqdn": self.get_fqdn
 		}
 		
 	def commit(self):
@@ -385,6 +392,7 @@ class Room(LazyLoadingObject):
 		
 		self.id = row["Id"]
 		self.jid = "%s@conference.%s" % (row["Node"], fqdn_provider.find_by_id(row["FqdnId"]).fqdn)
+		self._fqdn = row["FqdnId"]
 		self.name = row["Name"]
 		self.description = row["Description"]
 		self._owner = row["OwnerId"]
@@ -397,6 +405,10 @@ class Room(LazyLoadingObject):
 	def get_owner(self):
 		user_provider = UserProvider.Instance(self.identifier)
 		return user_provider.find_by_id(self._owner)
+		
+	def get_fqdn(self):
+		fqdn_provider = FqdnProvider.Instance(self.identifier)
+		return fqdn_provider.find_by_id(self._fqdn)
 		
 	def increment_usercount(self, amount=1):
 		self.row["LastUserCount"] = row["LastUserCount"] + amount
@@ -682,11 +694,14 @@ class PresenceProvider(LocalSingletonBase):
 		resource = user_jid.resource
 		
 		user_id = UserProvider.normalize_user(bare_jid).id
-		room_id = RoomProvider.normalize_room(room).id
+		room = RoomProvider.normalize_room(room)
+		room_id = room.id
+		fqdn_id = room.fqdn.id
 		
 		row = Row()
 		row["UserId"] = user_id
 		row["RoomId"] = room_id
+		row["FqdnId"] = fqdn_id
 		row["Nickname"] = nickname
 		row["Role"] = self.role_number(role)
 		row["Resource"] = resource
@@ -706,7 +721,8 @@ class Presence(LazyLoadingObject):
 		
 		self.lazy_loaders = {
 			"user": self.get_user,
-			"room": self.get_room
+			"room": self.get_room,
+			"fqdn": self.get_fqdn
 		}
 		
 	def commit(self):
@@ -719,6 +735,7 @@ class Presence(LazyLoadingObject):
 		self.id = row["Id"]
 		self._user = row["UserId"]
 		self._room = row["RoomId"]
+		self._fqdn = row["FqdnId"]
 		self.resource = row["Resource"]
 		self.nickname = row["Nickname"]
 		self.role = presence_provider.role_string(row["Role"])
@@ -730,6 +747,10 @@ class Presence(LazyLoadingObject):
 	def get_room(self):
 		room_provider = RoomProvider.Instance(self.identifier)
 		return room_provider.find_by_id(self._room)
+		
+	def get_fqdn(self):
+		fqdn_provider = FqdnProvider.Instance(self.identifier)
+		return fqdn_provider.find_by_id(self._fqdn)
 		
 	def change_role(self, role):
 		presence_provider = PresenceProvider.Instance(self.identifier)
