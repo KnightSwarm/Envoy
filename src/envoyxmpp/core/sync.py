@@ -172,5 +172,6 @@ class RoomSyncer(LocalSingletonBase):
 		logging.debug("Room configuration form for %s filled in and submitted" % room.jid)
 
 from .exceptions import NotFoundException
-from .providers import UserProvider, PresenceProvider, AffiliationProvider
+from .providers import UserProvider, PresenceProvider, AffiliationProvider, RoomProvider
 from .component import Component
+from .loggers import ApplicationLogger

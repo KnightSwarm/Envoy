@@ -6,7 +6,10 @@ from sleekxmpp.componentxmpp import ComponentXMPP
 
 @LocalSingleton
 class Component(ComponentXMPP):
-	def initialize(self, jid, host, port, password, conference_host):
+	def __init__(self, singleton_identifier=None):
+		self.identifier = singleton_identifier
+		
+	def initialize(self, jid, host, port, password, conference_host, config_path):
 		ComponentXMPP.__init__(self, jid, password, host, port)
 		self.conference_host = "conference.%s" % host
 		#self.identifier = id(self)
@@ -30,7 +33,13 @@ class Component(ComponentXMPP):
 		self['xep_0045'].api.register(OverrideHandler.Instance(self.identifier).add_joined, 'add_joined_room')
 		self['xep_0045'].api.register(OverrideHandler.Instance(self.identifier).delete_joined, 'del_joined_room')
 		
-	def start(self):
+		configuration = ConfigurationProvider.Instance(self.identifier)
+		configuration.read(config_path)
+		
+		database = Database.Instance(self.identifier)
+		database.initialize(configuration.mysql_hostname, configuration.mysql_username, configuration.mysql_password, configuration.mysql_database)
+		
+	def start(self, *args, **kwargs):
 		# The following might be useful, if it is decided to re-add scheduled purging. This should not
 		# be necessary in an optimal scenario, as everything would stay in sync as long as the
 		# component is running.
@@ -49,6 +58,7 @@ xmpp.connect()
 xmpp.process(block=True)
 """
 
+from .db import Database
 from .handlers import StanzaHandler, MucHandler, OverrideHandler
-from .providers import FqdnProvider
+from .providers import FqdnProvider, ConfigurationProvider
 from .sync import PresenceSyncer, AffiliationSyncer, RoomSyncer

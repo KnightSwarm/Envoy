@@ -42,7 +42,7 @@ class LocalSingleton:
 	# Derivative of above
 	def __init__(self, decorated):
 		self._decorated = decorated
-		self._instance = []
+		self._instance = {}
 
 	def Instance(self, identifier):
 		try:
@@ -60,6 +60,18 @@ class LocalSingleton:
 class LocalSingletonBase(object):
 	def __init__(self, singleton_identifier=None):
 		self.identifier = singleton_identifier
+
+class LazyLoadingObject(object):
+	def __getattr__(self, name):
+		try:
+			value = self.lazy_loaders[name](self)
+		except AttributeError, e:
+			raise AttributeError("Attribute not found, and no lazy loaders specified.")
+		except KeyError, e:
+			raise AttributeError("Attribute not found, and no lazy loaders found for the specified attribute.")
+			
+		setattr(self, name, value)
+		return value
 
 def dedup(seq):
 	seen = set()

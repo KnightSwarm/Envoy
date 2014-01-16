@@ -1,4 +1,4 @@
-from .util import Singleton, LocalSingleton, LocalSingletonBase
+from .util import Singleton, LocalSingleton, LocalSingletonBase, LazyLoadingObject
 
 import json
 from sleekxmpp.jid import JID
@@ -94,20 +94,26 @@ class FqdnProvider(LocalSingletonBase):
 		
 		return self.cache[id_]
 	
-class Fqdn(object):
+class Fqdn(LazyLoadingObject):
 	def __init__(self, identifier, row):
 		self.identifier = identifier
 		self.row = row
 		self.load_row(self.row)
 		
-	def load_row(self, row):
-		user_provider = UserProvider.Instance(self.identifier)
+		self.lazy_loaders = {
+			"owner": self.get_owner
+		}
 		
-		self.id["Id"]
+	def load_row(self, row):
+		self.id = row["Id"]
 		self.fqdn = row["Fqdn"]
 		self.name = row["Name"]
 		self.description = row["Description"]
-		self.owner = user_provider.find_by_id(row["UserId"])
+		self._owner = row["UserId"]
+				
+	def get_owner(self):
+		user_provider = UserProvider.Instance(self.identifier)
+		return user_provider.find_by_id(self._owner)
 		
 	def commit(self):
 		self.row.commit()
@@ -360,11 +366,15 @@ class RoomProvider(LocalSingletonBase):
 		fqdn_id = fqdn_provider.normalize_fqdn(fqdn).id
 		return self.get_from_query("SELECT * FROM rooms WHERE `FqdnId` = ?", (fqdn_id,))
 	
-class Room(object):
+class Room(LazyLoadingObject):
 	def __init__(self, identifier, row):
 		self.identifier = identifier
 		self.row = row
 		self.load_row(self.row)
+		
+		self.lazy_loaders = {
+			"owner": self.get_owner
+		}
 		
 	def commit(self):
 		self.row.commit()
@@ -372,18 +382,21 @@ class Room(object):
 		
 	def load_row(self, row):
 		fqdn_provider = FqdnProvider.Instance(self.identifier)
-		user_provider = UserProvider.Instance(self.identifier)
 		
 		self.id = row["Id"]
 		self.jid = "%s@conference.%s" % (row["Node"], fqdn_provider.find_by_id(row["FqdnId"]).fqdn)
 		self.name = row["Name"]
 		self.description = row["Description"]
-		self.owner = user_provider.find_by_id(row["OwnerId"])
+		self._owner = row["OwnerId"]
 		self.usercount = row["LastUserCount"]
 		self.creation_date = row["CreationDate"]
 		self.archival_date = row["ArchivalDate"]
 		self.private = bool(row["IsPrivate"])
 		self.archived = bool(row["IsArchived"])
+		
+	def get_owner(self):
+		user_provider = UserProvider.Instance(self.identifier)
+		return user_provider.find_by_id(self._owner)
 		
 	def increment_usercount(self, amount=1):
 		self.row["LastUserCount"] = row["LastUserCount"] + amount
@@ -514,25 +527,36 @@ class AffiliationProvider(LocalSingletonBase):
 	def delete_from_cache(self, id_):
 		del self.cache[id_]
 	
-class Affiliation(object):
+class Affiliation(LazyLoadingObject):
 	def __init__(self, identifier, row):
 		self.identifier = identifier
 		self.row = row
 		self.load_row(self.row)
+		
+		self.lazy_loaders = {
+			"user": self.get_user,
+			"room": self.get_room
+		}
 		
 	def commit(self):
 		self.row.commit()
 		self.load_row(self.row)
 		
 	def load_row(self, row):
-		room_provider = RoomProvider.Instance(self.identifier)
-		user_provider = UserProvider.Instance(self.identifier)
 		affiliation_provider = AffiliationProvider.Instance(self.identifier)
 		
 		self.id = row["Id"]
-		self.user = user_provider.find_by_id(row["UserId"])
-		self.room = room_provider.find_by_id(row["RoomId"])
+		self._user = row["UserId"]
+		self._room = row["RoomId"]
 		self.affiliation = affiliation_provider.affiliation_string(row["Affiliation"])
+		
+	def get_user(self):
+		user_provider = UserProvider.Instance(self.identifier)
+		return user_provider.find_by_id(self._user)
+	
+	def get_room(self):
+		room_provider = RoomProvider.Instance(self.identifier)
+		return room_provider.find_by_id(self._room)
 		
 	def change(self, affiliation):
 		affiliation_provider = AffiliationProvider.Instance(self.identifier)
@@ -674,27 +698,38 @@ class PresenceProvider(LocalSingletonBase):
 		presence = self.find_by_room_user(room, user)
 		presence.delete()
 	
-class Presence(object):
+class Presence(LazyLoadingObject):
 	def __init__(self, identifier, row):
 		self.identifier = identifier
 		self.row = row
 		self.load_row(self.row)
+		
+		self.lazy_loaders = {
+			"user": self.get_user,
+			"room": self.get_room
+		}
 		
 	def commit(self):
 		self.row.commit()
 		self.load_row(self.row)
 		
 	def load_row(self, row):
-		room_provider = RoomProvider.Instance(self.identifier)
-		user_provider = UserProvider.Instance(self.identifier)
 		presence_provider = PresenceProvider.Instance(self.identifier)
 		
 		self.id = row["Id"]
-		self.user = user_provider.find_by_id(row["UserId"])
-		self.room = room_provider.find_by_id(row["RoomId"])
+		self._user = row["UserId"]
+		self._room = row["RoomId"]
 		self.resource = row["Resource"]
 		self.nickname = row["Nickname"]
 		self.role = presence_provider.role_string(row["Role"])
+		
+	def get_user(self):
+		user_provider = UserProvider.Instance(self.identifier)
+		return user_provider.find_by_id(self._user)
+	
+	def get_room(self):
+		room_provider = RoomProvider.Instance(self.identifier)
+		return room_provider.find_by_id(self._room)
 		
 	def change_role(self, role):
 		presence_provider = PresenceProvider.Instance(self.identifier)
@@ -758,24 +793,30 @@ class UserSettingProvider(LocalSingletonBase):
 	def delete_from_cache(self, id_):
 		del self.cache[id_]
 		
-class UserSetting(object):
+class UserSetting(LazyLoadingObject):
 	def __init__(self, identifier, row):
 		self.identifier = identifier
 		self.row = row
 		self.load_row(self.row)
+		
+		self.lazy_loaders = {
+			"user": self.get_user
+		}
 		
 	def commit(self):
 		self.row.commit()
 		self.load_row(self.row)
 		
 	def load_row(self, row):
-		user_provider = UserProvider.Instance(self.identifier)
-		
 		self.id = row["Id"]
-		self.user = user_provider.find_by_id(row["UserId"])
+		self._user = row["UserId"]
 		self.key = row["Key"]
 		self.value = row["Value"]
 		self.modified = row["LastModified"]
+		
+	def get_user(self):
+		user_provider = UserProvider.Instance(self.identifier)
+		return user_provider.find_by_id(self._user)
 		
 	def change(self, value):
 		self.row["Value"] = value
@@ -845,24 +886,30 @@ class FqdnSettingProvider(LocalSingletonBase):
 	def delete_from_cache(self, id_):
 		del self.cache[id_]
 		
-class FqdnSetting(object):
+class FqdnSetting(LazyLoadingObject):
 	def __init__(self, identifier, row):
 		self.identifier = identifier
 		self.row = row
 		self.load_row(self.row)
+		
+		self.lazy_loaders = {
+			"fqdn": self.get_fqdn
+		}
 		
 	def commit(self):
 		self.row.commit()
 		self.load_row(self.row)
 		
 	def load_row(self, row):
-		user_provider = UserProvider.Instance(self.identifier)
-		
 		self.id = row["Id"]
-		self.fqdn = user_provider.find_by_id(row["FqdnId"])
+		self._fqdn = row["FqdnId"]
 		self.key = row["Key"]
 		self.value = row["Value"]
 		self.modified = row["LastModified"]
+		
+	def get_fqdn(self):
+		fqdn_provider = FqdnProvider.Instance(self.identifier)
+		return fqdn_provider.find_by_id(self._fqdn)
 		
 	def change(self, value):
 		self.row["Value"] = value
