@@ -5,6 +5,21 @@ import logging
 
 @LocalSingleton
 class EventLogger(LocalSingletonBase):
+	presence_types = {
+		"login": 1,
+		"disconnect": 2,
+		"join": 3,
+		"leave": 4
+	}  # ???
+	
+	event_types = {
+		"message": 1,
+		"pm": 2,
+		"status": 3,
+		"presence": 4,
+		"topic": 5
+	}
+	
 	def log_message(self, sender, recipient, type_, body):
 		database = Database.Instance(self.identifier)
 		user_provider = UserProvider.Instance(self.identifier)
@@ -13,7 +28,7 @@ class EventLogger(LocalSingletonBase):
 		row["Date"] = datetime.now()
 		row["Sender"] = user_provider.normalize_jid(sender)
 		row["Recipient"] = user_provider.normalize_jid(recipient)
-		row["Type"] = type_
+		row["Type"] = self.event_number(type_)
 		row["Message"] = body
 		database["log_messages"].append(row)
 		
@@ -21,14 +36,41 @@ class EventLogger(LocalSingletonBase):
 		database = Database.Instance(self.identifier)
 		user_provider = UserProvider.Instance(self.identifier)
 		
+		print repr(recipient)
+		
 		row = Row()
 		row["Date"] = datetime.now()
 		row["Sender"] = user_provider.normalize_jid(sender)
 		row["Recipient"] = user_provider.normalize_jid(recipient)
-		row["Type"] = type_
-		row["Event"] = event
+		row["Type"] = self.event_number(type_)
+		row["Event"] = self.presence_number(event)
 		row["Extra"] = extra
 		database["log_events"].append(row)
+		
+	def presence_string(self, value):
+		user_provider = UserProvider.Instance(self.identifier)
+		
+		reversed_presences = dict(zip(self.presence_types.values(), self.presence_types.keys()))
+		
+		try:
+			return reversed_presences[value]
+		except KeyError, e:
+			return user_provider.status_string(value)
+		
+	def presence_number(self, value):
+		user_provider = UserProvider.Instance(self.identifier)
+		
+		try:
+			return self.presence_types[value]
+		except KeyError, e:
+			return user_provider.status_number(value)
+		
+	def event_string(self, value):
+		reversed_types = dict(zip(self.event_types.values(), self.event_types.keys()))
+		return reversed_types[value]
+		
+	def event_number(self, value):
+		return self.event_types[value]
 
 @LocalSingleton
 class ApplicationLogger(LocalSingletonBase):

@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
-import sys, logging, struct, oursql, json, os, envoyxmpp, base64
+import sys, logging, struct, oursql, json, os, base64
+import envoyxmpp.core.hash
 
 sys.stderr = open("/etc/envoy/extauth/extauth_err.log", "a")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s", filename="/etc/envoy/extauth/extauth.log", filemode="a")

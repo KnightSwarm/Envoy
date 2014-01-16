@@ -1,11 +1,12 @@
 from .util import Singleton, LocalSingleton, LocalSingletonBase
 
-from sleekxmpp.stanza import Presence
+from sleekxmpp.stanza import Message, Presence, Iq
+from sleekxmpp.xmlstream.matcher import MatchXPath, StanzaPath
 
 @LocalSingleton
 class StanzaHandler(LocalSingletonBase):	
 	def process(self, stanza):
-		stanza = wrapper['forwarded']['stanza']
+		stanza = stanza['forwarded']['stanza']
 		
 		if isinstance(stanza, Iq):
 			IqHandler.Instance(self.identifier).process(stanza)
@@ -37,11 +38,17 @@ class MessageHandler(LocalSingletonBase):
 		
 	def private_message(self, stanza):
 		# EVENT: Private message received
+		component = Component.Instance(self.identifier)
+		dev_handler = DevelopmentCommandHandler.Instance(self.identifier)
+		
 		sender = stanza["from"].bare
 		recipient = stanza["to"].bare
 		body = stanza["body"]
 		
 		EventLogger.Instance(self.identifier).log_message(sender, recipient, "pm", body)
+		
+		if recipient == component.boundjid:
+			dev_handler.process(stanza)
 	
 	def topic_change(self, stanza):
 		# EVENT: Topic changed
@@ -151,7 +158,7 @@ class DevelopmentCommandHandler(LocalSingletonBase):
 		if configuration.development_mode == True:
 			sender = stanza["from"]
 			recipient = stanza["to"]
-			body = stanza["body"]
+			body = stanza["body"].strip()
 			
 			if body.startswith("$"):
 				handler = EvalHandler.Instance(self.identifier)

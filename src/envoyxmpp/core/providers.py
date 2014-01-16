@@ -143,20 +143,14 @@ class Fqdn(LazyLoadingObject):
 		
 @LocalSingleton
 class UserProvider(LocalSingletonBase):
-	presences = {
-		"login": 1,
-		"disconnect": 2,
-		"join": 3,
-		"leave": 4
-	}
-	
 	statuses = {
+		"unknown": 0,
 		"available": 1,
 		"away": 2,
 		"xa": 3,
 		"dnd": 4,
 		"chat": 5,
-		"offline": 6
+		"unavailable": 6
 	}
 	
 	def __init__(self, singleton_identifier=None):
@@ -232,16 +226,9 @@ class UserProvider(LocalSingletonBase):
 	def status_string(self, value):
 		reversed_statuses = dict(zip(self.statuses.values(), self.statuses.keys()))
 		return reversed_statuses[value]
-		
-	def presence_string(self, value):
-		reversed_presences = dict(zip(self.presences.values(), self.presences.keys()))
-		return reversed_presences[value]
-		
+	
 	def status_number(self, value):
 		return self.statuses[value]
-		
-	def presence_number(self, value):
-		return self.presences[value]
 	
 class User(object):
 	def __init__(self, identifier, row):
@@ -451,6 +438,7 @@ class Room(LazyLoadingObject):
 @LocalSingleton
 class AffiliationProvider(LocalSingletonBase):
 	affiliations = {
+		"unknown": 0,
 		"owner": 1,
 		"admin": 2,
 		"member": 3,
@@ -583,6 +571,7 @@ class Affiliation(LazyLoadingObject):
 @LocalSingleton
 class PresenceProvider(LocalSingletonBase):
 	roles = {
+		"unknown": 0,
 		"moderator": 1,
 		"none": 2,
 		"participant": 3,
