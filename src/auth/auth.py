@@ -72,7 +72,7 @@ def authenticate(username, hostname, password):
 		return False
 	
 	_id, _username, _fqdn, _hash, _salt, _active = user
-	digest, _, _ = envoyxmpp.util.hash.pbkdf2_sha512(password, base64.b64decode(_salt))
+	digest, _, _ = envoyxmpp.core.hash.pbkdf2_sha512(password, base64.b64decode(_salt))
 	
 	if digest == base64.b64decode(_hash):
 		logging.debug("Successful authentication (%s@%s)" % (username, hostname))
