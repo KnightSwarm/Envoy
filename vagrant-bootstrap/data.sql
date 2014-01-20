@@ -18,7 +18,7 @@ INSERT INTO `rooms` (`Id`, `Node`, `Description`, `OwnerId`, `FqdnId`, `LastUser
 (5, 'sometest4', 'Testing description for this newly created room...', 32, 1, 0, 1, 0, '2013-10-15 19:10:41', NULL, 'Some Testing Room'),
 (6, 'sometest5', 'Testing description for this newly created room...', 32, 1, 0, 1, 0, '2013-10-15 19:13:00', NULL, 'Some Testing Room');
 
-INSERT INTO `users` (`Id`, `Username`, `Fqdn`, `Hash`, `Salt`, `Active`, `FqdnId`, `Nickname`, `EmailAddress`, `FirstName`, `LastName`, `JobTitle`, `MobileNumber`) VALUES
-(32, 'testuser', 'envoy.local', 'xg2UsUkCz4WGfPvfBMbPzfzQSlAb59IOlY0QTC7IjkQ=', 'yXnvvTcGgLAWIkSoNQZAqPXeO+c8J2Ss', 1, 1, 'testuser', 'testuser@cryto.net', 'Test', 'User', 'Dummy', '0031612345678'),
-(33, 'testuser2', 'envoy.local', 'Ag2mjqaE4w+8Nj2erVGxNmbylwMMz5u3VKCqGyEYhOU=', 'jTOyki+W7V9jlA5I+JGU9VfRxls7QONR', 1, 1, 'testuser2', 'testuser2@cryto.net', 'Second', 'User', 'Dummy', '0031612345678'),
-(34, 'asdfasdfasdf', '', '', '', 1, 2, 'asdf', '', '', '', '', '');
+INSERT INTO `users` (`Id`, `Username`, `Fqdn`, `Hash`, `Salt`, `Active`, `FqdnId`, `Nickname`, `EmailAddress`, `FirstName`, `LastName`, `JobTitle`, `MobileNumber`, `Status`, `StatusMessage`) VALUES
+(32, 'testuser', 'envoy.local', 'xg2UsUkCz4WGfPvfBMbPzfzQSlAb59IOlY0QTC7IjkQ=', 'yXnvvTcGgLAWIkSoNQZAqPXeO+c8J2Ss', 1, 1, 'testuser', 'testuser@cryto.net', 'Test', 'User', 'Dummy', '0031612345678', 4, ''),
+(33, 'testuser2', 'envoy.local', 'Ag2mjqaE4w+8Nj2erVGxNmbylwMMz5u3VKCqGyEYhOU=', 'jTOyki+W7V9jlA5I+JGU9VfRxls7QONR', 1, 1, 'testuser2', 'testuser2@cryto.net', 'Second', 'User', 'Dummy', '0031612345678', 4, ''),
+(34, 'asdfasdfasdf', '', '', '', 1, 2, 'asdf', '', '', '', '', '', 0, '');

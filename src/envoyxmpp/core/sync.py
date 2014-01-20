@@ -1,5 +1,7 @@
 from .util import LocalSingleton, LocalSingletonBase
 
+from sleekxmpp.exceptions import IqError
+
 @LocalSingleton
 class PresenceSyncer(LocalSingletonBase):
 	def sync(self):
@@ -25,7 +27,7 @@ class PresenceSyncer(LocalSingletonBase):
 			for presence in presences:
 				user_jid = presence["jid"]
 				nickname = presence["jid"].resource
-				role = presence["muc"]["role"]
+				role = presence["role"]
 				
 				try:
 					user_presence = presence_provider.get(room_jid, nickname)
@@ -114,47 +116,49 @@ class RoomSyncer(LocalSingletonBase):
 					titles.append(name)
 					
 			if room.name not in titles: # TODO: Why multiple titles?
-				logging.debug("Mismatch for 'title' setting for room %s: %s not in %s" % (room.jid, room.title, repr(titles)))
+				logger.debug("Mismatch for 'title' setting for room %s: %s not in %s" % (room.jid, room.name, repr(titles)))
 				needs_reconfiguration = True
 			
 			# Check if features are set correctly
 			
 			for feature in info['disco_info']['features']:
 				if feature == "muc_membersonly" and room.private != True:
-					logging.debug("Mismatch for 'private' setting for room %s: %s vs. %s" % (room.jid, True, room.private))
+					logger.debug("Mismatch for 'private' setting for room %s: %s vs. %s" % (room.jid, True, room.private))
 					needs_reconfiguration = True
 				elif feature == "muc_open" and room.private != False:
-					logging.debug("Mismatch for 'private' setting for room %s: %s vs. %s" % (room.jid, False, room.private))
+					logger.debug("Mismatch for 'private' setting for room %s: %s vs. %s" % (room.jid, False, room.private))
 					needs_reconfiguration = True
 				elif feature == "muc_moderated" and room.archived != True:
-					logging.debug("Mismatch for 'moderated' setting for room %s: %s vs. %s" % (room.jid, True, room.moderated))
+					logger.debug("Mismatch for 'moderated' setting for room %s: %s vs. %s" % (room.jid, True, room.moderated))
 					needs_reconfiguration = True
 				elif feature == "muc_unmoderated" and room.archived != False:
-					logging.debug("Mismatch for 'moderated' setting for room %s: %s vs. %s" % (room.jid, False, room.moderated))
+					logger.debug("Mismatch for 'moderated' setting for room %s: %s vs. %s" % (room.jid, False, room.moderated))
 					needs_reconfiguration = True
 			
 			if needs_reconfiguration:
-				logging.debug("Room configuration for %s incorrect; attempting reconfiguration" % room_jid)
+				logger.debug("Room configuration for %s incorrect; attempting reconfiguration" % room.jid)
 				self.configure(room)
 		
 	def register(self, room):
 		# EVENT: Room registration
 		room_provider = RoomProvider.Instance(self.identifier)
 		component = Component.Instance(self.identifier)
+		logger = ApplicationLogger.Instance(self.identifier)
 		
 		room = room_provider.normalize_room(room)
-		component['xep_0045'].join(room_jid, "Envoy_Component")
-		logging.debug("Room %s created." % room.jid)
+		component['xep_0045'].join(room.jid, "Envoy_Component")
+		logger.debug("Room %s created." % room.jid)
 		
 	def configure(self, room):
 		# EVENT: Room (re-)configuration
 		room_provider = RoomProvider.Instance(self.identifier)
 		component = Component.Instance(self.identifier)
+		logger = ApplicationLogger.Instance(self.identifier)
 		
 		room = room_provider.normalize_room(room)
 		
-		iq = component['xep_0045'].get_room_config(room.jid, ifrom=self.boundjid)
-		logging.debug("Received room configuration form for %s" % room.jid)
+		iq = component['xep_0045'].get_room_config(room.jid, ifrom=component.boundjid)
+		logger.debug("Received room configuration form for %s" % room.jid)
 		form = iq['muc_owner']['form']
 		
 		configuration = {
@@ -176,7 +180,7 @@ class RoomSyncer(LocalSingletonBase):
 		new_iq = component.make_iq_set(ifrom=component.boundjid, ito=room.jid, iq=iq)
 		new_iq.send()
 		
-		logging.debug("Room configuration form for %s filled in and submitted" % room.jid)
+		logger.debug("Room configuration form for %s filled in and submitted" % room.jid)
 
 from .exceptions import NotFoundException
 from .providers import UserProvider, PresenceProvider, AffiliationProvider, RoomProvider

@@ -74,7 +74,7 @@ usermod -a -G envoy prosody >/dev/null
 mkdir -p /etc/envoy/prosody >/dev/null
 mkdir -p /etc/envoy/extauth >/dev/null
 mkdir -p /etc/envoy/certs >/dev/null
-mkdir /etc/prosody/conf.d >/dev/null
+mkdir /etc/prosody/conf.d >/dev/null 2>/dev/null || true
 
 # Copy configuration
 echo "Configuring..."

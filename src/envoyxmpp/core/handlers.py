@@ -2,10 +2,13 @@ from .util import Singleton, LocalSingleton, LocalSingletonBase
 
 from sleekxmpp.stanza import Message, Presence, Iq
 from sleekxmpp.xmlstream.matcher import MatchXPath, StanzaPath
+from sleekxmpp.exceptions import IqError
 
 @LocalSingleton
 class StanzaHandler(LocalSingletonBase):	
 	def process(self, stanza):
+		logger = ApplicationLogger.Instance(self.identifier)
+		
 		stanza = stanza['forwarded']['stanza']
 		
 		if isinstance(stanza, Iq):
@@ -15,7 +18,7 @@ class StanzaHandler(LocalSingletonBase):
 		elif isinstance(stanza, Presence):
 			PresenceHandler.Instance(self.identifier).process(stanza)
 		else:
-			logging.warn("Unknown stanza type encountered: %s" % repr(stanza))
+			logger.warn("Unknown stanza type encountered: %s" % repr(stanza))
 
 @LocalSingleton
 class MessageHandler(LocalSingletonBase):
@@ -184,6 +187,7 @@ class EvalHandler(LocalSingletonBase):
 	def process(self, stanza):
 		# EVENT: (Dev) eval command
 		message_sender = MessageSender.Instance(self.identifier)
+		logger = ApplicationLogger.Instance(self.identifier)
 		
 		sender = stanza["from"]
 		recipient = stanza["to"]
@@ -197,7 +201,7 @@ class EvalHandler(LocalSingletonBase):
 			message_sender.send(recipient=sender, body=unicode(output))
 		except IqError, e:
 			message_sender.send(recipient=sender, body=unicode("IqError encountered\n%s" % traceback.format_exc()))
-			logging.error("IqError: %s" % e.iq)
+			logger.error("IqError: %s" % e.iq)
 		except:
 			message_sender.send(recipient=sender, body=unicode("Uncaught exception encountered:\n%s" % traceback.format_exc()))
 
@@ -243,3 +247,4 @@ from .component import Component
 from .senders import MessageSender
 from .db import Database, Row
 from .sync import RoomSyncer, AffiliationSyncer, PresenceSyncer
+from .exceptions import NotFoundException

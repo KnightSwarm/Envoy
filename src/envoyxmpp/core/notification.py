@@ -62,17 +62,20 @@ class HighlightChecker(LocalSingletonBase):
 @LocalSingleton
 class Notifier(LocalSingletonBase):
 	def notify_if_idle(self, sender, recipient, room, body, highlight):
+		logger = ApplicationLogger.Instance(self.identifier)
 		user_provider = UserProvider.Instance(self.identifier)
+		
 		user = user_provider.normalize_user(recipient)
 		
 		if user.presence in ("away", "xa", "unavailable", "dnd"):
 			self.notify(sender, recipient, room, body, highlight)
 		elif user.presence == "unknown":
-			logging.warn("Unknown state detected for user %s" % recipient)
+			logger.warn("Unknown state detected for user %s" % recipient)
 			user.update_presence()
 		
 	def notify(self, sender, recipient, room, body, highlight):
 		user_provider = UserProvider.Instance(self.identifier)
+		
 		user = user_provider.normalize_user(recipient)
 		
 		if user.status != "dnd":
@@ -154,19 +157,21 @@ class EmailSender(LocalSingletonBase):
 			})
 		
 	def send(self, recipient, subject, body):
+		logger = ApplicationLogger.Instance(self.identifier)
+		
 		if configuration.mock_email == False:
 			self.mailer.start()
 			
 			try:
 				message = Message(author=configuration.smtp_sender, to=recipient, subject=subject, plain=body)
 				self.mailer.send(message)
-				logging.info("E-mail sent to %s: %s" % (recipient, body))
+				logger.info("E-mail sent to %s: %s" % (recipient, body))
 			except Exception, e:
-				logging.error("An error occurred during sending of an e-mail to %s: %s" % (recipient, repr(e)))
+				logger.error("An error occurred during sending of an e-mail to %s: %s" % (recipient, repr(e)))
 			
 			self.mailer.stop()
 		else:
-			logging.info("Pretending to send e-mail to %s: %s" % (recipient, body))
+			logger.info("Pretending to send e-mail to %s: %s" % (recipient, body))
 	
 @LocalSingleton
 class SmsSender(LocalSingletonBase):
@@ -179,13 +184,14 @@ class SmsSender(LocalSingletonBase):
 			self.client = TwilioRestClient(configuration.twilio_sid, configuration.twilio_token)
 	
 	def send(self, recipient, body):
+		logger = ApplicationLogger.Instance(self.identifier)
 		configuration = ConfigurationProvider.Instance(self.identifier)
 			
 		if configuration.mock_sms == False:
 			message = self.client.sms.messages.create(body=self.cut_body(body), to=recipient, from_=configuration.twilio_sender)
-			logging.info("SMS sent to %s: %s" % (recipient, body))
+			logger.info("SMS sent to %s: %s" % (recipient, body))
 		else:
-			logging.info("Pretending to send SMS to %s: %s" % (recipient, body))
+			logger.info("Pretending to send SMS to %s: %s" % (recipient, body))
 			
 	def cut_body(self, body):
 		# An SMS message can be at most 160 characters
@@ -196,3 +202,4 @@ class SmsSender(LocalSingletonBase):
 			
 from .providers import ConfigurationProvider, UserProvider, RoomProvider
 from .exceptions import NotFoundException
+from .loggers import ApplicationLogger

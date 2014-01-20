@@ -66,9 +66,9 @@ class LazyLoadingObject(object):
 		try:
 			value = self.lazy_loaders[name](self)
 		except AttributeError, e:
-			raise AttributeError("Attribute not found, and no lazy loaders specified.")
+			raise AttributeError("Attribute %s not found, and no lazy loaders specified." % name)
 		except KeyError, e:
-			raise AttributeError("Attribute not found, and no lazy loaders found for the specified attribute.")
+			raise AttributeError("Attribute %s not found, and no lazy loaders found for the specified attribute." % name)
 			
 		setattr(self, name, value)
 		return value

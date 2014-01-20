@@ -198,7 +198,7 @@ class UserProvider(LocalSingletonBase):
 			username, fqdn = self.normalize_jid(jid).split("@", 1)
 		except ValueError, e:
 			# No @ found, most likely a component name.
-			raise NotFoundException("Not a known user, no @ found.")
+			raise NotFoundException("Not a known user, no @ found in '%s'." % jid)
 			
 		return self.get_from_query("SELECT * FROM users WHERE `Username` = ? AND `FqdnId` = ? LIMIT 1", (username, component.get_fqdn().id))[0]
 		
@@ -640,7 +640,7 @@ class PresenceProvider(LocalSingletonBase):
 		user_provider = UserProvider.Instance(self.identifier)
 		
 		jid = JID(user_provider.normalize_jid(jid, keep_resource=True))
-		user = user_provider.normalize_user(user)
+		user = user_provider.normalize_user(jid)
 		
 		if room is None:
 			return self.get_from_query("SELECT * FROM presences WHERE `UserId` = ? AND `Resource` = ?", (user.id, jid.resource))
