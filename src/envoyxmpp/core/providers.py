@@ -930,6 +930,20 @@ class FqdnSetting(LazyLoadingObject):
 		usersetting_provider.delete_from_cache(self.id)
 		self.row.delete()
 
+@LocalSingleton
+class XmppStatusProvider(LocalSingletonBase):
+	def get(self, user):
+		user_provider = UserProvider.Instance(self.identifier)
+		component = Component.Instance(self.identifier)
+		
+		user = user_provider.normalize_user(user)
+		
+		stanza = component.make_presence(ptype="probe", pto=user.jid, pfrom=component.boundjid)
+		stanza.send()
+		
+		# TODO: Return response, maybe use callback?
+		
+		
 from .exceptions import NotFoundException, ConfigurationException
 from .loggers import ApplicationLogger
 from .db import Database, Row

@@ -30,6 +30,7 @@ modules_enabled = {
                 "watchregistrations"; -- Alert admins of registrations
                 "auth_external"; -- Handles user authentication via an ejabberd extauth script.
                 "forward"; -- Forwards all stanzas to an external component and relays responses.
+                "admin_probe"; -- Lets admins retrieve presences for arbitrary users.
 };
 
 -- For now, we will only allow registration through the API.
