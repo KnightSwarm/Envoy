@@ -78,19 +78,19 @@ class ApplicationLogger(LocalSingletonBase):
 		self.identifier = singleton_identifier
 		logging.basicConfig(filename="/etc/envoy/envoy.log", level=logging.DEBUG, format='%(levelname)-8s %(message)s')
 		
-	def debug(message, *args, **kwargs):
+	def debug(self, message, *args, **kwargs):
 		logging.debug(message, *args, **kwargs)
 		
-	def info(message, *args, **kwargs):
+	def info(self, message, *args, **kwargs):
 		logging.info(message, *args, **kwargs)
 		
-	def warning(message, *args, **kwargs):
+	def warning(self, message, *args, **kwargs):
 		logging.warning(message, *args, **kwargs)
 		
-	def error(message, *args, **kwargs):
+	def error(self, message, *args, **kwargs):
 		logging.error(message, *args, **kwargs)
 		
-	def critical(message, *args, **kwargs):
+	def critical(self, message, *args, **kwargs):
 		logging.critical(message, *args, **kwargs)
 		
 from .db import Database, Row
