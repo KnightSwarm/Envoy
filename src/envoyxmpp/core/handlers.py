@@ -213,34 +213,46 @@ class OverrideHandler(LocalSingletonBase):
 		# Override for the _is_joined_room method.
 		# Checks whether a JID was already present in a room.
 		presence_provider = PresenceProvider.Instance(self.identifier)
+		component = Component.Instance(self.identifier)
 		
-		try:
-			presence = presence_provider.find_by_session(jid, node)
+		if jid != component.boundjid:
+			try:
+				presence = presence_provider.find_by_session(jid, node)
+				return True
+			except NotFoundException, e:
+				return False
+		else:
 			return True
-		except NotFoundException, e:
-			return False
 	
 	def get_joined(self, jid, node, ifrom, data):
 		# Override for the _get_joined_rooms method.
 		# Retrieves a list of all rooms a JID is present in.
 		presence_provider = PresenceProvider.Instance(self.identifier)
+		component = Component.Instance(self.identifier)
 		
-		try:
-			return [presence.room.jid for presence in presence_provider.find_by_session(jid)]
-		except NotFoundException, e:
-			return []
+		if jid != component.boundjid:
+			try:
+				return [presence.room.jid for presence in presence_provider.find_by_session(jid)]
+			except NotFoundException, e:
+				return []
+		else:
+			return [] # FIXME: Might need to return all rooms?
 		
 	def add_joined(self, jid, node, ifrom, data):
 		# Override for the _add_joined_room method.
 		# Registers a JID presence in a room.
 		user_provider = UserProvider.Instance(self.identifier)
-		user_provider.get(jid).register_join(node)
+		component = Component.Instance(self.identifier)
+		if jid != component.boundjid:
+			user_provider.get(jid).register_join(node)
 		
 	def delete_joined(self, jid, node, ifrom, data):
 		# Override for the _del_joined_room method.
 		# Removes a JID presence in a room.
 		user_provider = UserProvider.Instance(self.identifier)
-		user_provider.get(jid).register_leave(node)
+		component = Component.Instance(self.identifier)
+		if jid != component.boundjid:
+			user_provider.get(jid).register_leave(node)
 
 from .notification import HighlightChecker
 from .providers import UserProvider, PresenceProvider, AffiliationProvider, ConfigurationProvider
