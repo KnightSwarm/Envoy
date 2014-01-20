@@ -29,19 +29,26 @@ class PresenceSyncer(LocalSingletonBase):
 				nickname = presence["jid"].resource
 				role = presence["role"]
 				
-				try:
-					user_presence = presence_provider.get(room_jid, nickname)
-					if user_presence.role != role:
-						# EVENT: Sync role change
-						user_presence.change_role(role)
-				except NotFoundException, e:
-					# EVENT: Sync join
-					user_object = user_provider.get(user_jid)
-					user_object.register_join(room_jid, nickname, role)
+				if user_jid != component.boundjid: # No need to keep state for the component
+					try:
+						user_presence = presence_provider.get(room_jid, nickname)
+						if user_presence.role != role:
+							# EVENT: Sync role change
+							user_presence.change_role(role)
+					except NotFoundException, e:
+						# EVENT: Sync join
+						user_object = user_provider.get(user_jid)
+						user_object.register_join(room_jid, nickname, role)
 					
 			current_presences[room_jid] = [user_provider.normalize_jid(presence["jid"], keep_resource=True) for presence in presences]
 			
-		for presence in presence_provider.find_by_fqdn(component.get_fqdn()):
+		try:
+			known_presences = presence_provider.find_by_fqdn(component.get_fqdn())
+		except NotFoundException, e:
+			# We don't have any known presences for this FQDN, we're done here...
+			return
+			
+		for presence in known_presences:
 			try:
 				current_presences[presence.room.jid]["%s/%s" % (presence.user.jid, presence.resource)]
 			except KeyError, e:

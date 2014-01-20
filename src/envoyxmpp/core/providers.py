@@ -80,7 +80,7 @@ class FqdnProvider(LocalSingletonBase):
 		result = database.query(query, params, table="fqdns")
 		items = result.fetchall()
 		
-		if result is None:
+		if len(items) == 0:
 			raise NotFoundException("No such FQDN(s) exist.")
 		
 		return [self.wrap(item) for item in items]
@@ -186,7 +186,7 @@ class UserProvider(LocalSingletonBase):
 		result = database.query(query, params, table="users")
 		items = result.fetchall()
 		
-		if result is None:
+		if len(items) == 0:
 			raise NotFoundException("No such user(s) exist.")
 		
 		return [self.wrap(item) for item in items]
@@ -336,7 +336,7 @@ class RoomProvider(LocalSingletonBase):
 		result = database.query(query, params, table="rooms")
 		items = result.fetchall()
 		
-		if result is None:
+		if len(items) == 0:
 			raise NotFoundException("No such room(s) exist.")
 		
 		return [self.wrap(item) for item in items]
@@ -474,7 +474,7 @@ class AffiliationProvider(LocalSingletonBase):
 		result = database.query(query, params, table="affiliations")
 		items = result.fetchall()
 		
-		if result is None:
+		if len(items) == 0:
 			raise NotFoundException("No such affiliation(s) exist.")
 		
 		return [self.wrap(item) for item in items]
@@ -606,7 +606,7 @@ class PresenceProvider(LocalSingletonBase):
 		result = database.query(query, params, table="presences")
 		items = result.fetchall()
 		
-		if result is None:
+		if len(items) == 0:
 			raise NotFoundException("No such presence(s) exist.")
 		
 		return [self.wrap(item) for item in items]
@@ -614,7 +614,7 @@ class PresenceProvider(LocalSingletonBase):
 	def get(self, room, nickname):
 		room_provider = RoomProvider.Instance(self.identifier)
 		room = room_provider.normalize_room(room)
-		return self.get_from_query("SELECT * FROM presences WHERE `RoomId` = ? AND `Nickname` = ?", (room.id, nickname))
+		return self.get_from_query("SELECT * FROM presences WHERE `RoomId` = ? AND `Nickname` = ?", (room.id, nickname))[0]
 		
 	def find_by_room(self, room, user=None):
 		room_provider = RoomProvider.Instance(self.identifier)
@@ -774,7 +774,7 @@ class UserSettingProvider(LocalSingletonBase):
 		result = database.query(query, params, table="user_settings")
 		items = result.fetchall()
 		
-		if result is None:
+		if len(items) == 0:
 			raise NotFoundException("No such setting(s) exist.")
 		
 		return [self.wrap(item) for item in items]
@@ -860,7 +860,7 @@ class FqdnSettingProvider(LocalSingletonBase):
 		result = database.query(query, params, table="fqdn_settings")
 		items = result.fetchall()
 		
-		if result is None:
+		if len(items) == 0:
 			raise NotFoundException("No such setting(s) exist.")
 		
 		return [self.wrap(item) for item in items]

@@ -4,6 +4,8 @@ from sleekxmpp.stanza import Message, Presence, Iq
 from sleekxmpp.xmlstream.matcher import MatchXPath, StanzaPath
 from sleekxmpp.exceptions import IqError
 
+import traceback
+
 @LocalSingleton
 class StanzaHandler(LocalSingletonBase):	
 	def process(self, stanza):
