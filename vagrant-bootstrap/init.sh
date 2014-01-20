@@ -15,4 +15,4 @@ err_report() {
 trap 'err_report $LINENO' ERR
 
 prosodyctl start >/dev/null
-su -c "python /vagrant/src/envoyxmpp/run.py >/dev/null 2>/dev/null &" envoy
+/vagrant/vagrant-bootstrap/start-component.sh

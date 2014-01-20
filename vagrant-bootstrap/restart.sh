@@ -24,6 +24,6 @@ until [  $(pgrep -f run.py | wc -l) -lt 1 ]; do
 done
 
 echo "Component quit, restarting..."
-su -c "cd /etc/envoy/src; python /vagrant/src/envoyxmpp/run.py &" envoy
+/vagrant/vagrant-bootstrap/start-component.sh
 
 echo "Done!"
