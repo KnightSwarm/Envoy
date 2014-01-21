@@ -78,6 +78,7 @@ mkdir /etc/prosody/conf.d >/dev/null 2>/dev/null || true
 
 # Copy configuration
 echo "Configuring..."
+cp mysql-public.cnf /etc/mysql/conf.d/public.cnf >/dev/null
 cp template.cfg.lua /etc/prosody/prosody.cfg.lua
 ln -s /vagrant/vagrant-bootstrap/prosody-modules /etc/envoy/prosody/modules >/dev/null
 ln -s /vagrant/src/auth/auth.py /etc/envoy/extauth/auth.py >/dev/null
@@ -86,6 +87,9 @@ touch /etc/envoy/extauth/extauth.log >/dev/null
 touch /etc/envoy/extauth/extauth_err.log >/dev/null
 tar -xzf certs.tar.gz -C /etc/envoy/certs >/dev/null
 ln -s /vagrant/src/envoyxmpp /usr/lib/python2.7/envoyxmpp
+
+# Restart MySQL to apply public binding changes
+/etc/init.d/mysql restart >/dev/null
 
 # Fix permissions and ownership
 echo "Setting ownership and permissions..."
@@ -107,6 +111,7 @@ echo "127.0.0.1 api.envoy.local" >> /etc/hosts
 
 # Create database, import database dump
 echo "Setting up database..."
+mysql --user=root --password=vagrant -D mysql < root-public.sql
 mysql --user=root --password=vagrant -e "CREATE DATABASE envoy;"
 mysql --user=root --password=vagrant -D envoy < structure.sql
 mysql --user=root --password=vagrant -D envoy < data.sql

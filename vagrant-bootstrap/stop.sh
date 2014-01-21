@@ -14,9 +14,11 @@ err_report() {
 
 trap 'err_report $LINENO' ERR
 
-/vagrant/vagrant-bootstrap/stop.sh
+# Tell component to quit with a SIGINT...
+kill -15 `pgrep -f '^python .*run\.py'` || true
+echo "Told component to quit, waiting..."
 
-echo "Component quit, restarting..."
-/vagrant/vagrant-bootstrap/start-component.sh
-
-echo "Done!"
+# Wait for component to exit
+until [  $(pgrep -f run.py | wc -l) -lt 1 ]; do
+	sleep 0.5
+done

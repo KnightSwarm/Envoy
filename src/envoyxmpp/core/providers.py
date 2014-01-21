@@ -293,7 +293,7 @@ class User(object):
 	def set_presence(self, presence):
 		user_provider = UserProvider.Instance(self.identifier)
 		
-		if presence == "disconnect":
+		if presence == "disconnect": # TODO: Check for remaining resources
 			self.set_status("offline")
 			
 	def register_join(self, room, nickname, role):

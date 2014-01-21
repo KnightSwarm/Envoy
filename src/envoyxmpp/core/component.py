@@ -47,6 +47,7 @@ class Component(ComponentXMPP):
 		RoomSyncer.Instance(self.identifier).sync()
 		AffiliationSyncer.Instance(self.identifier).sync()
 		PresenceSyncer.Instance(self.identifier).sync()
+		StatusSyncer.Instance(self.identifier).sync()
 		
 	def get_fqdn(self):
 		fqdn_provider = FqdnProvider.Instance(self.identifier)

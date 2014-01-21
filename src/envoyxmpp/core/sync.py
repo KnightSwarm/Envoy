@@ -189,6 +189,24 @@ class RoomSyncer(LocalSingletonBase):
 		
 		logger.debug("Room configuration form for %s filled in and submitted" % room.jid)
 
+@LocalSingleton
+class StatusSyncer(LocalSingletonBase):
+	def sync(self):
+		user_provider = UserProvider.Instance(self.identifier)
+		component = Component.Instance(self.identifier)
+		
+		try:
+			all_users = user_provider.find_by_fqdn(component.host)
+		except NotFoundException, e:
+			return # No users yet
+			
+		for user in all_users:
+			# We only need to send out a presence probe and forget; incoming responses will be 
+			# handled by the default presence handler.
+			user = user_provider.normalize_user(user)
+			stanza = component.make_presence(ptype="probe", pto=user.jid, pfrom=component.boundjid)
+			stanza.send()
+
 from .exceptions import NotFoundException
 from .providers import UserProvider, PresenceProvider, AffiliationProvider, RoomProvider
 from .component import Component

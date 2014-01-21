@@ -91,7 +91,7 @@ class PresenceHandler(LocalSingletonBase):
 			type_ = stanza["type"]
 			message = stanza["status"]
 			
-			if recipient == "": # Ignore propagated presences
+			if recipient == "" or recipient == component.boundjid: # Ignore propagated presences
 				user_provider.get(sender).set_status(type_)
 				 
 				if type_ == "available" or type_ in Presence.showtypes:
@@ -126,6 +126,7 @@ class MucHandler(LocalSingletonBase):
 	def process_presence(self, stanza):
 		affiliation_provider = AffiliationProvider.Instance(self.identifier)
 		presence_provider = PresenceProvider.Instance(self.identifier)
+		component = Component.Instance(self.identifier)
 		
 		room = stanza["from"].bare
 		affiliation = stanza["muc"]["affiliation"]
@@ -136,21 +137,22 @@ class MucHandler(LocalSingletonBase):
 		except KeyError, e:
 			return # No JID present
 				
-		if str(user) != "":
-			affiliation_object = affiliation_provider.find_by_room_user(room, user)
-			
-			if affiliation_object.affiliation != affiliation:
-				# EVENT: Affiliation change
-				affiliation_object.change(affiliation)
-			
-			presence_object = presence_provider.find_by_room_user(room, user)
-			
-			if presence_object.role != role:
-				# EVENT: Role change
-				presence_object.change_role(role)
-		else:
-			logger = ApplicationLogger.Instance(self.identifier)
-			logger.warning("No valid JID found in presence stanza! Stanza was %s" % stanza)
+		if user != component.boundjid:
+			if str(user) != "":
+				affiliation_object = affiliation_provider.find_by_room_user(room, user)
+				
+				if affiliation_object.affiliation != affiliation:
+					# EVENT: Affiliation change
+					affiliation_object.change(affiliation)
+				
+				presence_object = presence_provider.find_by_room_user(room, user)
+				
+				if presence_object.role != role:
+					# EVENT: Role change
+					presence_object.change_role(role)
+			else:
+				logger = ApplicationLogger.Instance(self.identifier)
+				logger.warning("No valid JID found in presence stanza! Stanza was %s" % stanza)
 
 @LocalSingleton
 class DevelopmentCommandHandler(LocalSingletonBase):
@@ -260,5 +262,5 @@ from .loggers import EventLogger, ApplicationLogger
 from .component import Component
 from .senders import MessageSender
 from .db import Database, Row
-from .sync import RoomSyncer, AffiliationSyncer, PresenceSyncer
+from .sync import RoomSyncer, AffiliationSyncer, PresenceSyncer, StatusSyncer
 from .exceptions import NotFoundException
