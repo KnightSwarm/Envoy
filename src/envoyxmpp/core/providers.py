@@ -343,7 +343,7 @@ class RoomProvider(LocalSingletonBase):
 		
 	def get(self, jid):
 		component = Component.Instance(self.identifier)
-		roomname, fqdn = self.normalize_jid(jid).split("@", 1)
+		roomname, fqdn = self.normalize_jid(jid).split("@", 1) # FIXME: Catch errors?
 		return self.get_from_query("SELECT * FROM rooms WHERE `Node` = ? AND `FqdnId` = ? LIMIT 1", (roomname, component.get_fqdn().id))[0]
 		
 	def find_by_id(self, id_):
@@ -696,11 +696,17 @@ class PresenceProvider(LocalSingletonBase):
 		row["Resource"] = resource
 		database["presences"].append(row)
 		
+		# Update room statistics
+		room.increment_usercount()
+		
 		return self.wrap(row)
 		
 	def register_leave(self, user, room):
 		presence = self.find_by_room_user(room, user)
 		presence.delete()
+		
+		# Update room statistics
+		room.decrement_usercount()
 	
 class Presence(LazyLoadingObject):
 	def __init__(self, identifier, row):
