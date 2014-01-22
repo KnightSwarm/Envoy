@@ -1,0 +1,120 @@
+# RoomProvider
+
+## Public API
+
+^ RoomProvider.normalize_jid(**jid**)
+	
+	Normalizes a room JID; that is, returns a string containing the specified JID. If the input was a 
+	string, it is returned as is. If the input was a `JID` object or otherwise non-string object, it will 
+	be coerced to a string.
+	
+	jid::
+		The JID to normalize.
+		
+	= Returns
+	
+		A string representing the JID.
+		
+^ RoomProvider.normalize_room(**room**)
+	
+	Normalizes a room; that is, returns a Room object. If the input was already a Room object, it is
+	returned unchanged. If the input was a JID (either a `JID` object, or coercible to a string), it will
+	fetch the data for the corresponding `Room` object from the database.
+	
+	This function is heavily used internally, to allow provider functions to accept both Room objects
+	and JIDs. It uses `RoomProvider.normalize_jid` to ensure that JID-type input becomes a string.
+	
+	room::
+		The Room object or JID to normalize.
+
+	= Returns
+		
+		A `Room` object representing the specified room.
+	
+^ RoomProvider.get(**jid**)
+
+	Retrieves a `Room` object for the specified JID. This only searches within the current FQDN.
+	
+	jid::
+		The JID to retrieve a `Room` object for.
+		
+	= Returns
+	
+		A `Room` object representing the specified JID.
+	
+	= Exceptions
+	
+		NotFoundException::
+			Specified room was not found, or the specified JID did not contain a `node` component
+			(part before the @).
+
+^ RoomProvider.find_by_fqdn(**fqdn**)
+
+	Retrieves one or more `Room` objects, one for each room in the specified FQDN.
+
+	fqdn::
+		The FQDN to retrieve all rooms for. This may be either an `Fqdn` object, or an FQDN (row) ID.
+		
+	= Returns
+		
+		A list containing one or more `Room` objects, one for each room in the specified FQDN.
+	
+	= Exceptions
+	
+		NotFoundException::
+			Raised when there are no rooms for the specified FQDN, or the specified FQDN does not exist.
+
+^ RoomProvider.find_by_id(**id**)
+
+	Retrieves a `Room` object, representing the row in the database with the specified ID. Primarily
+	for internal use, such as referencing rooms by ID from other database tables.
+	
+	id::
+		The ID of the row to retrieve.
+		
+	! If an object with the same row ID exists in the internal cache, that object will be provided instead, and 
+	  no additional database query will be executed.
+		
+	= Returns
+		
+		A `Room` object representing the row with the specified ID.
+	
+	= Exceptions
+	
+		NotFoundException::
+			Raised when the specified ID does not exist in the database.
+
+^ RoomProvider.get_from_query(**query**, **parameters**)
+
+	Retrieves one or more `Room` objects, based on the specified database query and parameters. This is
+	a useful way to wrap custom `SELECT` queries, and get back `Room` objects.
+	
+	query::
+		The query to execute. Question-mark-style parameterization is used; queries are passed directly
+		to the `oursql` library.
+		
+	params::
+		The parameters for the query.
+		
+	= Returns
+	
+		A list containing one or more `Room` objects, one for each row resulting from the specified query.
+		
+	= Exceptions
+	
+		NotFoundException::
+			Raised when the query returned no results.
+
+## Internal methods
+
+^ RoomProvider.wrap(**row**)
+
+	Wraps a row resulting from a database query result, into a `Room` object representing it. This is used
+	internally by all `find_by` and `get` methods.
+	
+	row::
+		A `Row` object to be represented.
+		
+	= Returns
+	
+		A `Room` object representing the provided row.

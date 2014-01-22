@@ -1,0 +1,266 @@
+# PresenceProvider
+
+## Public API
+
+^ PresenceProvider.normalize_presence(**presence**)
+	
+	Normalizes a presence; that is, returns a `Presence` object. If the input was already a `Presence` object, it is
+	returned unchanged. Otherwise, the input will be assumed to be a row ID.
+	
+	This function is heavily used internally, to allow provider functions to accept both Presence objects
+	and IDs.
+	
+	presence::
+		The Presence object or ID to normalize.
+
+	= Returns
+		
+		A `Presence` object representing the specified presence.
+	
+^ PresenceProvider.get(**room**, **nickname**)
+	
+	Retrieves a `Presence` object for the specified room and nickname combination.
+	
+	room::
+		The MUC room to search for.
+		
+	nickname::
+		The nickname to retrieve the presence for. Note that this is a XEP-0045 MUC nickname, **not** the nickname
+		that is used for mentions.
+		
+	= Returns
+	
+		A `Presence` object representing the specified combination of room and nickname.
+		
+	= Exceptions
+	
+		NotFoundException::
+			Raised if the given nickname or room does not exist, or if an invalid room JID was
+			provided.
+			
+^ PresenceProvider.find_by_session(**jid**[, **room**=None])
+
+	Retrieves a `Presence` object for the specified session (that is, for a particular resource), optionally
+	filtering by a room.
+	
+	jid::
+		The user JID to retrieve the presence for. __This must be a full JID, including resource.__
+	
+	room::
+		**Optional.** The MUC room to search for.
+		
+	= Returns
+	
+		A list containing one or more `Presence` objects for the specified criteria.
+	
+	= Exceptions
+	
+		NotFoundException::
+			No presence found matching the criteria, or one of the values provided was a invalid
+			JID.
+			
+^ PresenceProvider.find_by_room_user(**room**, **user**)
+
+	Retrieves a `Presence` object for the specified room and user combination. Note that this will return
+	**all** presences for this room and user - more than one object may be returned if the user is in
+	the room from multiple resources (sessions).
+	
+	room::
+		The MUC room to search for.
+		
+	user::
+		The user to retrieve the presence for.
+		
+	= Returns
+	
+		A list containing one or more `Presence` objects for the specified combination of room and user.
+	
+	= Exceptions
+	
+		NotFoundException::
+			No presence found matching the criteria, or one of the values provided was a invalid
+			JID.
+		
+^ PresenceProvider.find_by_room(**room**)
+
+	Retrieves one or more `Presence` objects for the specified room. It will return all known presences
+	for the room.
+	
+	room::
+		Either a `Room` object or JID, representing the room to search for.
+
+	= Returns
+		
+		A list containing one or more `Presence` objects for the specified room.
+
+	= Exceptions
+		
+		NotFoundException::
+			Raised when there are no known presences for the specified room.
+		
+^ PresenceProvider.find_by_user(**user**)
+
+	Retrieves one or more `Presence` objects for the specified user. It will return all known presences
+	for the user.
+	
+	room::
+		Either a `User` object or JID, representing the user to search for.
+
+	= Returns
+		
+		A list containing one or more `Presence` objects for the specified user.
+
+	= Exceptions
+		
+		NotFoundException::
+			Raised when there are no known presences for the specified user.
+		
+^ PresenceProvider.find_by_fqdn(**fqdn**)
+
+	Retrieves one or more `Presence` objects, one for each presence in the specified FQDN.
+
+	fqdn::
+		The FQDN to retrieve all presences for. This may be either a `Fqdn` object, or a FQDN (row) ID.
+		
+	= Returns
+		
+		A list containing one or more `Presence` objects, one for each presence in the specified FQDN.
+	
+	= Exceptions
+	
+		NotFoundException::
+			Raised when there are no presences for the specified FQDN, or the specified FQDN does not exist.
+
+^ PresenceProvider.find_by_id(**id**)
+
+	Retrieves a `Presence` object, representing the row in the database with the specified ID. Primarily
+	for internal use, such as referencing presences by ID from other database tables.
+	
+	id::
+		The ID of the row to retrieve.
+		
+	! If a object with the same row ID exists in the internal cache, that object will be provided instead, and 
+	  no additional database query will be executed.
+		
+	= Returns
+		
+		A `Presence` object representing the row with the specified ID.
+	
+	= Exceptions
+	
+		NotFoundException::
+			Raised when the specified ID does not exist in the database.
+
+^ PresenceProvider.get_from_query(**query**, **parameters**)
+
+	Retrieves one or more `Presence` objects, based on the specified database query and parameters. This is
+	a useful way to wrap custom `SELECT` queries, and get back `Presence` objects.
+	
+	query::
+		The query to execute. Question-mark-style parameterization is used; queries are passed directly
+		to the `oursql` library.
+		
+	params::
+		The parameters for the query.
+		
+	= Returns
+	
+		A list containing one or more `Presence` objects, one for each row resulting from the specified query.
+		
+	= Exceptions
+	
+		NotFoundException::
+			Raised when the query returned no results.
+			
+^ PresenceProvider.delete_from_cache(id):
+
+	Removes the object for the specified row ID from the internal cache.
+	
+	id::
+		The row ID to remove.
+		
+	= Exceptions
+	
+		KeyError::
+			Raised when there is no entry in the internal cache with the specified row ID.
+			
+^ PresenceProvider.register_join(user, room, nickname, role)
+
+	Registers that a user has joined a room.
+
+	user::
+		The **full** JID of the user joining the room; that is, including the resource component.
+		
+	room::
+		The room that was joined.
+		
+	nickname::
+		The XEP-0045 MUC nickname that the user has joined as.
+		
+	role::
+		The role (as a string) that the user has been assigned, upon joining the room.
+		
+	= Exceptions
+	
+		NotFoundException::
+			Raised if an invalid JID was specified.
+			
+^ PresenceProvider.register_leave(user, room)
+
+	Registers that a user has left a room.
+	
+	user::
+		The **full** JID of the user leaving the room; that is, including the resource component.
+		
+	room::
+		The room that was left.
+			
+## Utility functions
+			
+^ PresenceProvider.role_string(**value**)
+
+	Returns a human-readable string, representing a numeric role. This is used internally, to convert
+	roles passed on to methods, to the integers stored in the database.
+	
+	value::
+		The role number to convert.
+		
+	= Returns
+	
+		A readable string representation of the role.
+		
+	= Exceptions
+	
+		KeyError::
+			The specified role number is not recognized. If this happens, it is almost certainly a bug.
+			
+^ PresenceProvider.role_number(**value**)
+
+	Returns a numeric value, representing a given role string. This is used internally, to convert
+	role numbers in the database to human-readable values that are passed on to methods.
+	
+	value::
+		The role string to convert.
+		
+	= Returns
+	
+		A readable string representation of the role.
+		
+	= Exceptions
+	
+		KeyError::
+			The specified role string is not recognized. If this happens, it is almost certainly a bug.
+
+## Internal methods
+
+^ PresenceProvider.wrap(**row**)
+
+	Wraps a row resulting from a database query result, into a `Presence` object representing it. This is used
+	internally by all `find_by` and `get` methods.
+	
+	row::
+		A `Row` object to be represented.
+		
+	= Returns
+	
+		A `Presence` object representing the provided row.

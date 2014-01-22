@@ -1,0 +1,197 @@
+# UserProvider
+
+## Public API
+
+^ UserProvider.normalize_jid(**jid** [, **keep_resource**=False])
+	
+	Normalizes a user JID; that is, returns a string containing the specified JID, optionally
+	leaving the resource component of the JID intact. If the	input was a string, it is returned 
+	as is. If the input was a `JID` object or otherwise non-string object, it will be coerced to a string.
+	
+	jid::
+		The JID to normalize.
+		
+	keep_resource::
+		**Optional.** Whether to retain the resource component (after the slash), or discard it.
+		By default, this argument is set to `False`, which will lead to the resource being discarded,
+		only leaving the "bare JID"; that is, `user@fqdn.tld`. Note that this argument currently 
+		only takes effect if the input was a `JID` object.
+		
+	= Returns
+	
+		A string representing the JID.
+		
+^ UserProvider.normalize_user(**user**)
+	
+	Normalizes a user; that is, returns a User object. If the input was already a User object, it is
+	returned unchanged. If the input was a JID (either a `JID` object, or coercible to a string), it will
+	fetch the data for the corresponding `User` object from the database.
+	
+	This function is heavily used internally, to allow provider functions to accept both User objects
+	and JIDs. It uses `UserProvider.normalize_jid` to ensure that JID-type input becomes a string.
+	
+	user::
+		The User object or JID to normalize.
+
+	= Returns
+		
+		A `User` object representing the specified user.
+	
+^ UserProvider.get(**jid**)
+
+	Retrieves a `User` object for the specified JID. This only searches within the current FQDN.
+	
+	jid::
+		The JID to retrieve a `User` object for.
+		
+	= Returns
+	
+		A `User` object representing the specified JID.
+	
+	= Exceptions
+	
+		NotFoundException::
+			Specified user was not found, or the specified JID did not contain a `node` component
+			(part before the @).
+		
+^ UserProvider.find_by_email(**email**)
+
+	Retrieves one or more `User` objects for the specified e-mail address. This only searches within
+	the current FQDN.
+	
+	email::
+		The e-mail address to search for.
+
+	= Returns
+		
+		A list containing one or more `User` objects with the specified e-mail address.
+
+	= Exceptions
+		
+		NotFoundException::
+			Raised when there are no users with the specified e-mail address.
+		
+^ UserProvider.find_by_nickname(**nickname**)
+
+	Retrieves one or more `User` objects for the specified nickname. This only searches within
+	the current FQDN. Note that "nickname" here refers to the nickname that is used in mentions
+	and configured in the user control panel, **not** the "MUC nickname" in XEP-0045.
+	
+	nickname::
+		The nickname to search for.
+	
+	= Returns	
+	
+		A list containing one or more `User` objects with the specified nickname.
+	
+	= Exceptions
+	
+		NotFoundException::
+			Raised when there are no users with the specified nickname.
+
+^ UserProvider.find_by_fqdn(**fqdn**)
+
+	Retrieves one or more `User` objects, one for each user in the specified FQDN.
+
+	fqdn::
+		The FQDN to retrieve all users for. This may be either an `Fqdn` object, or an FQDN (row) ID.
+		
+	= Returns
+		
+		A list containing one or more `User` objects, one for each user in the specified FQDN.
+	
+	= Exceptions
+	
+		NotFoundException::
+			Raised when there are no users for the specified FQDN, or the specified FQDN does not exist.
+
+^ UserProvider.find_by_id(**id**)
+
+	Retrieves a `User` object, representing the row in the database with the specified ID. Primarily
+	for internal use, such as referencing users by ID from other database tables.
+	
+	id::
+		The ID of the row to retrieve.
+		
+	! If an object with the same row ID exists in the internal cache, that object will be provided instead, and 
+	  no additional database query will be executed.
+		
+	= Returns
+		
+		A `User` object representing the row with the specified ID.
+	
+	= Exceptions
+	
+		NotFoundException::
+			Raised when the specified ID does not exist in the database.
+
+^ UserProvider.get_from_query(**query**, **parameters**)
+
+	Retrieves one or more `User` objects, based on the specified database query and parameters. This is
+	a useful way to wrap custom `SELECT` queries, and get back `User` objects.
+	
+	query::
+		The query to execute. Question-mark-style parameterization is used; queries are passed directly
+		to the `oursql` library.
+		
+	params::
+		The parameters for the query.
+		
+	= Returns
+	
+		A list containing one or more `User` objects, one for each row resulting from the specified query.
+		
+	= Exceptions
+	
+		NotFoundException::
+			Raised when the query returned no results.
+			
+## Utility functions
+			
+^ UserProvider.status_string(**value**)
+
+	Returns a human-readable string, representing a numeric user status. This is used internally, to convert
+	statuses passed on to methods, to the integers stored in the database.
+	
+	value::
+		The status number to convert.
+		
+	= Returns
+	
+		A readable string representation of the status.
+		
+	= Exceptions
+	
+		KeyError::
+			The specified status number is not recognized. If this happens, it is almost certainly a bug.
+			
+^ UserProvider.status_number(**value**)
+
+	Returns a numeric value, representing a given status string. This is used internally, to convert
+	status numbers in the database to human-readable values that are passed on to methods.
+	
+	value::
+		The status string to convert.
+		
+	= Returns
+	
+		An readable string representation of the status.
+		
+	= Exceptions
+	
+		KeyError::
+			The specified status string is not recognized. If this happens, it is almost certainly a bug.
+
+## Internal methods
+
+^ UserProvider.wrap(**row**)
+
+	Wraps a row resulting from a database query result, into a `User` object representing it. This is used
+	internally by all `find_by` and `get` methods.
+	
+	row::
+		A `Row` object to be represented.
+		
+	= Returns
+	
+		A `User` object representing the provided row.

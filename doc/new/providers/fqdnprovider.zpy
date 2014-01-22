@@ -1,0 +1,90 @@
+# FqdnProvider
+
+## Public API
+
+^ FqdnProvider.normalize_fqdn(**fqdn**)
+	
+	Normalizes an FQDN; that is, returns a Fqdn object. If the input was already a Fqdn object, it is
+	returned unchanged. If the input was a string, it will assume that the string represents an FQDN (domain),
+	and return the corresponding `Fqdn` object.
+	
+	This function is heavily used internally, to allow provider functions to accept both Fqdn objects
+	and JIDs. It uses `FqdnProvider.normalize_jid` to ensure that JID-type input becomes a string.
+	
+	fqdn::
+		The Fqdn object or JID to normalize.
+
+	= Returns
+		
+		An `Fqdn` object representing the specified FQDN.
+	
+^ FqdnProvider.get(**fqdn**)
+
+	Retrieves a `Fqdn` object for the specified FQDN.
+	
+	fqdn::
+		The FQDN to retrieve.
+		
+	= Returns
+	
+		A `Fqdn` object representing the specified FQDN.
+	
+	= Exceptions
+	
+		NotFoundException::
+			Raised if the specified FQDN was not found.
+
+^ FqdnProvider.find_by_id(**id**)
+
+	Retrieves a `Fqdn` object, representing the row in the database with the specified ID. Primarily
+	for internal use, such as referencing FQDNs by ID from other database tables.
+	
+	id::
+		The ID of the row to retrieve.
+		
+	! If an object with the same row ID exists in the internal cache, that object will be provided instead, and 
+	  no additional database query will be executed.
+		
+	= Returns
+		
+		An `Fqdn` object representing the row with the specified ID.
+	
+	= Exceptions
+	
+		NotFoundException::
+			Raised when the specified ID does not exist in the database.
+
+^ FqdnProvider.get_from_query(**query**, **parameters**)
+
+	Retrieves one or more `Fqdn` objects, based on the specified database query and parameters. This is
+	a useful way to wrap custom `SELECT` queries, and get back `Fqdn` objects.
+	
+	query::
+		The query to execute. Question-mark-style parameterization is used; queries are passed directly
+		to the `oursql` library.
+		
+	params::
+		The parameters for the query.
+		
+	= Returns
+	
+		A list containing one or more `Fqdn` objects, one for each row resulting from the specified query.
+		
+	= Exceptions
+	
+		NotFoundException::
+			Raised when the query returned no results.
+
+## Internal methods
+
+^ FqdnProvider.wrap(**row**)
+
+	Wraps a row resulting from a database query result, into an `Fqdn` object representing it. This is used
+	internally by all `find_by` and `get` methods.
+	
+	row::
+		A `Row` object to be represented.
+		
+	= Returns
+	
+		An `Fqdn` object representing the provided row.

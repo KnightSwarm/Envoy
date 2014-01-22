@@ -1,0 +1,192 @@
+# AffiliationProvider
+
+## Public API
+
+^ AffiliationProvider.normalize_affiliation(**affiliation**)
+	
+	Normalizes a affiliation; that is, returns an `Affiliation` object. If the input was already an `Affiliation` object, it is
+	returned unchanged. Otherwise, the input will be assumed to be a row ID.
+	
+	This function is heavily used internally, to allow provider functions to accept both Affiliation objects
+	and IDs.
+	
+	affiliation::
+		The Affiliation object or ID to normalize.
+
+	= Returns
+		
+		An `Affiliation` object representing the specified affiliation.
+	
+^ AffiliationProvider.get(**room**, **user**)
+  AffiliationProvider.find_by_room_user(**room**, **user**)
+
+	Retrieves an `Affiliation` object for the specified room and user combination.
+	
+	room::
+		The MUC room to search for.
+		
+	user::
+		The user to retrieve the affiliation for.
+		
+	= Returns
+	
+		An `Affiliation` object representing the specified combination of room and user.
+	
+	= Exceptions
+	
+		NotFoundException::
+			No affiliation found matching the criteria, or one of the values provided was an invalid
+			JID.
+		
+^ AffiliationProvider.find_by_room(**room**)
+
+	Retrieves one or more `Affiliation` objects for the specified room. It will return all known affiliations
+	for the room.
+	
+	room::
+		Either a `Room` object or JID, representing the room to search for.
+
+	= Returns
+		
+		A list containing one or more `Affiliation` objects for the specified room.
+
+	= Exceptions
+		
+		NotFoundException::
+			Raised when there are no known affiliations for the specified room.
+		
+^ AffiliationProvider.find_by_user(**user**)
+
+	Retrieves one or more `Affiliation` objects for the specified user. It will return all known affiliations
+	for the user.
+	
+	room::
+		Either a `User` object or JID, representing the user to search for.
+
+	= Returns
+		
+		A list containing one or more `Affiliation` objects for the specified user.
+
+	= Exceptions
+		
+		NotFoundException::
+			Raised when there are no known affiliations for the specified user.
+		
+^ AffiliationProvider.find_by_fqdn(**fqdn**)
+
+	Retrieves one or more `Affiliation` objects, one for each affiliation in the specified FQDN.
+
+	fqdn::
+		The FQDN to retrieve all affiliations for. This may be either an `Fqdn` object, or an FQDN (row) ID.
+		
+	= Returns
+		
+		A list containing one or more `Affiliation` objects, one for each affiliation in the specified FQDN.
+	
+	= Exceptions
+	
+		NotFoundException::
+			Raised when there are no affiliations for the specified FQDN, or the specified FQDN does not exist.
+
+^ AffiliationProvider.find_by_id(**id**)
+
+	Retrieves an `Affiliation` object, representing the row in the database with the specified ID. Primarily
+	for internal use, such as referencing affiliations by ID from other database tables.
+	
+	id::
+		The ID of the row to retrieve.
+		
+	! If an object with the same row ID exists in the internal cache, that object will be provided instead, and 
+	  no additional database query will be executed.
+		
+	= Returns
+		
+		An `Affiliation` object representing the row with the specified ID.
+	
+	= Exceptions
+	
+		NotFoundException::
+			Raised when the specified ID does not exist in the database.
+
+^ AffiliationProvider.get_from_query(**query**, **parameters**)
+
+	Retrieves one or more `Affiliation` objects, based on the specified database query and parameters. This is
+	a useful way to wrap custom `SELECT` queries, and get back `Affiliation` objects.
+	
+	query::
+		The query to execute. Question-mark-style parameterization is used; queries are passed directly
+		to the `oursql` library.
+		
+	params::
+		The parameters for the query.
+		
+	= Returns
+	
+		A list containing one or more `Affiliation` objects, one for each row resulting from the specified query.
+		
+	= Exceptions
+	
+		NotFoundException::
+			Raised when the query returned no results.
+			
+^ AffiliationProvider.delete_from_cache(id):
+
+	Removes the object for the specified row ID from the internal cache.
+	
+	id::
+		The row ID to remove.
+		
+	= Exceptions
+	
+		KeyError::
+			Raised when there is no entry in the internal cache with the specified row ID.
+			
+## Utility functions
+			
+^ AffiliationProvider.affiliation_string(**value**)
+
+	Returns a human-readable string, representing a numeric affiliation. This is used internally, to convert
+	affiliations passed on to methods, to the integers stored in the database.
+	
+	value::
+		The affiliation number to convert.
+		
+	= Returns
+	
+		A readable string representation of the affiliation.
+		
+	= Exceptions
+	
+		KeyError::
+			The specified affiliation number is not recognized. If this happens, it is almost certainly a bug.
+			
+^ AffiliationProvider.affiliation_number(**value**)
+
+	Returns a numeric value, representing a given affiliation string. This is used internally, to convert
+	affiliation numbers in the database to human-readable values that are passed on to methods.
+	
+	value::
+		The affiliation string to convert.
+		
+	= Returns
+	
+		A readable string representation of the affiliation.
+		
+	= Exceptions
+	
+		KeyError::
+			The specified affiliation string is not recognized. If this happens, it is almost certainly a bug.
+
+## Internal methods
+
+^ AffiliationProvider.wrap(**row**)
+
+	Wraps a row resulting from a database query result, into an `Affiliation` object representing it. This is used
+	internally by all `find_by` and `get` methods.
+	
+	row::
+		A `Row` object to be represented.
+		
+	= Returns
+	
+		An `Affiliation` object representing the provided row.

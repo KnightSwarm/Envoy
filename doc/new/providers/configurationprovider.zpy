@@ -1,0 +1,117 @@
+# ConfigurationProvider
+
+## Public API
+
+^ ConfigurationProvider.read(**path**)
+
+	Reads and processes a configuration file at the specified path. The configuration file must be
+	in JSON format, and must follow the standard Envoy configuration file schema.
+	
+	path::
+		The path of the configuration file to read.
+			
+## Public variables
+
+All configuration values are available as member variables of the ConfigurationProvider object.
+
+= MySQL
+	
+	^ ConfigurationProvider.mysql_hostname
+
+		The hostname of the configured MySQL server.
+
+	^ ConfigurationProvider.mysql_username
+
+		The username of the MySQL account to be used for connecting to the MySQL server.
+		
+	^ ConfigurationProvider.mysql_password
+
+		The password of the MySQL account to be used for connecting to the MySQL server.
+		
+	^ ConfigurationProvider.mysql_database
+
+		The name of the MySQL database that should be used.
+		
+= Mock modes and development
+
+	Mock modes are used in development environments for the purpose of testing code that calls
+	third party (external) services. To prevent side-effects to a production environment, or unnecessary
+	use of funds, a "mock mode" will log every third party call, but never actually execute them.
+
+	^ ConfigurationProvider.mock_sms
+
+		A boolean indicating whether mock mode is enabled for SMS notifications.
+
+	^ ConfigurationProvider.mock_email
+
+		A boolean indicating whether mock mode is enabled for e-mail notifications.
+		
+	^ ConfigurationProvider.development_mode
+
+		A boolean indicating whether development mode is enabled.
+		
+		Development mode will allow eval'ing code over XMPP, and may also enable other debugging
+		commands. It also changes the logging level to "DEBUG".
+		
+		! You must absolutely __never__ have development mode enabled in a production environment.
+		  Development mode allows any user to execute arbitrary code on the system that is running your
+		  component.
+	
+= SMTP
+
+	This information is used for sending e-mail notifications (except when mock mode is enabled for e-mail).
+
+	^ ConfigurationProvider.smtp_hostname
+
+		The hostname of the SMTP server to use.
+
+	^ ConfigurationProvider.smtp_port
+
+		The port that the SMTP server runs on.
+
+	^ ConfigurationProvider.smtp_tls
+
+		A boolean indicating whether to use TLS.
+		
+		! Old-style SSL is currently not supported in Envoy. Only STARTTLS-style connections can be made.
+
+	^ ConfigurationProvider.smtp_username
+
+		The username to use for authenticating with the specified SMTP server.
+
+	^ ConfigurationProvider.smtp_password
+
+		The password to use for authenticating with the specified SMTP server.
+
+	^ ConfigurationProvider.smtp_sender
+
+		The "sender" that should be displayed for e-mail notifications that are sent.
+	
+= SMS (Twilio)
+
+	This information is used for sending SMS notifications (except when mock mode is enabled for SMS).
+
+	^ ConfigurationProvider.twilio_sid
+
+		The Twilio account SID to use.
+		
+	^ ConfigurationProvider.twilio_token
+
+		The corresponding authentication token for the specified SID.
+		
+	^ ConfigurationProvider.twilio_sender
+
+		The Twilio phone number that should be used for sending the notifications. This will be shown to
+		the end-user as the "sender", and must be a phone number in your account that is able to send
+		SMS messages.
+
+			
+## Internal methods
+			
+^ ConfigurationProvider.parse(**data**)
+
+	Processes configuration data read from a configuration file using `ConfigurationProvider.read()`.
+	This makes the configuration available as member variabbles on the `ConfigurationProvider` object.
+	
+	data::
+		The configuration data to parse.

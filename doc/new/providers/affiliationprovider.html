@@ -1,0 +1,185 @@
+<!doctype html>
+<html>
+	<head>
+		<style>
+			body {
+				background-color: #F5F5F5;
+				font-family: sans-serif;
+				margin-right: 40px;
+			}
+
+			h2, h3, h4, h5, h6, h7
+			{
+				margin-top: 16px;
+				margin-bottom: 4px;
+			}
+
+			.children { padding-left: 40px; }
+
+			.definition
+			{
+				font-weight: bold;
+				margin-bottom: 32px;
+			}
+
+			.example , .section
+			{ 
+				padding: 5px 6px;
+				font-weight: bold;
+				margin-top: 11px;
+			}
+			
+			.example
+			{
+				font-size: 15px;
+				background-color: #E6E6E6; 
+			}
+			
+			.section
+			{
+				background-color: #E8E8E8; 
+			}
+			
+			.section > .title
+			{
+				font-size: 16px;
+			}
+
+			.example > .children, .section > .children
+			{
+				padding-top: 11px;
+				padding-left: 10px;
+			}
+			
+			.section > .children
+			{
+				font-size: 95%;
+			}
+			
+			.section > .children > div.text:first-child, .section > .children > dl:first-child
+			{
+				margin-top: 0px;
+			}
+
+			.example > .children > h7
+			{
+				font-size: 13px;
+			}
+
+			h7
+			{
+				font-size: 14px;
+				font-weight: bold;
+				margin-bottom: 2px;
+			}
+
+			pre
+			{
+				margin-top: 0px;
+				padding: 6px 7px;
+				background-color: #D9D9D9;
+				font-weight: normal;
+				font-size: 13px;
+			}
+
+			dl
+			{
+				margin: 5px 0px;
+			}
+
+			dt
+			{
+				font-weight: bold;
+			}
+
+			dd
+			{
+				font-size: 14px;
+				font-weight: normal;
+				margin-left: 8px;
+			}
+			
+			dd > .children
+			{
+				font-size: 95%;
+			}
+			
+			dd > .children > dl > dd
+			{
+				margin-left: 13px;
+			}
+
+			.exclamation
+			{
+				padding: 7px 8px;
+				margin: 11px 0px;
+				background-color: #FFE9AA;
+				border: 1px solid yellow;
+				font-size: 15px;
+				font-weight: normal;
+			}
+
+			.text
+			{
+				font-size: 15px;
+				font-weight: normal;
+				margin-bottom: 14px;
+				margin-top: 10px;
+			}
+
+			.toc
+			{
+				border: 1px solid gray;
+				background-color: #E6E6E6;
+				padding: 8px 9px;
+				font-size: 15px;
+				margin-bottom: 12px;
+			}
+
+			.toc h2
+			{
+				margin: 0px 0px 3px 0px;
+				font-size: 19px;
+			}
+
+			.toc ul
+			{
+				margin-top: 0px;
+				margin-bottom: 0px;
+				padding-left: 25px;
+			}
+
+			.toc li
+			{
+				margin-bottom: 2px;
+			}
+
+			.toc .alternatives
+			{
+				font-size: 12px;
+			}
+
+			.toc a
+			{
+				color: #292722;
+			}
+
+			.toc a:hover
+			{
+				color: black;
+			}
+			
+			.fixed
+			{
+				font-family: monospace;
+				background-color: white;
+				padding: 1px 4px;
+				border: 1px solid silver;
+				border-radius: 4px;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="children"><h1>AffiliationProvider</h1><h2>Public API</h2><div class="definition"><a name="AffiliationProvider_normalize_affiliationaffiliation">AffiliationProvider.normalize_affiliation(<em>affiliation</em>) <div class="children"><div class="text">Normalizes a affiliation; that is, returns an <span class="fixed">Affiliation</span> object. If the input was already an <span class="fixed">Affiliation</span> object, it is returned unchanged. Otherwise, the input will be assumed to be a row ID.</div><div class="text">This function is heavily used internally, to allow provider functions to accept both Affiliation objects and IDs.</div><dl><dt>affiliation</dt><dd>The Affiliation object or ID to normalize.<div class="children"></div></dd></dl><div class="section"><div class="title">Returns</div><div class="children"><div class="text">An <span class="fixed">Affiliation</span> object representing the specified affiliation.</div></div></div></div></a></div><div class="definition"><a name="AffiliationProvider_getroomuser">AffiliationProvider.get(<em>room</em>, <em>user</em>)<br>AffiliationProvider.find_by_room_user(<em>room</em>, <em>user</em>) <div class="children"><div class="text">Retrieves an <span class="fixed">Affiliation</span> object for the specified room and user combination.</div><dl><dt>room</dt><dd>The MUC room to search for.<div class="children"></div></dd></dl><dl><dt>user</dt><dd>The user to retrieve the affiliation for.<div class="children"></div></dd></dl><div class="section"><div class="title">Returns</div><div class="children"><div class="text">An <span class="fixed">Affiliation</span> object representing the specified combination of room and user.</div></div></div><div class="section"><div class="title">Exceptions</div><div class="children"><dl><dt>NotFoundException</dt><dd>No affiliation found matching the criteria, or one of the values provided was an invalid JID.<div class="children"></div></dd></dl></div></div></div></a></div><div class="definition"><a name="AffiliationProvider_find_by_roomroom">AffiliationProvider.find_by_room(<em>room</em>) <div class="children"><div class="text">Retrieves one or more <span class="fixed">Affiliation</span> objects for the specified room. It will return all known affiliations for the room.</div><dl><dt>room</dt><dd>Either a <span class="fixed">Room</span> object or JID, representing the room to search for.<div class="children"></div></dd></dl><div class="section"><div class="title">Returns</div><div class="children"><div class="text">A list containing one or more <span class="fixed">Affiliation</span> objects for the specified room.</div></div></div><div class="section"><div class="title">Exceptions</div><div class="children"><dl><dt>NotFoundException</dt><dd>Raised when there are no known affiliations for the specified room.<div class="children"></div></dd></dl></div></div></div></a></div><div class="definition"><a name="AffiliationProvider_find_by_useruser">AffiliationProvider.find_by_user(<em>user</em>) <div class="children"><div class="text">Retrieves one or more <span class="fixed">Affiliation</span> objects for the specified user. It will return all known affiliations for the user.</div><dl><dt>room</dt><dd>Either a <span class="fixed">User</span> object or JID, representing the user to search for.<div class="children"></div></dd></dl><div class="section"><div class="title">Returns</div><div class="children"><div class="text">A list containing one or more <span class="fixed">Affiliation</span> objects for the specified user.</div></div></div><div class="section"><div class="title">Exceptions</div><div class="children"><dl><dt>NotFoundException</dt><dd>Raised when there are no known affiliations for the specified user.<div class="children"></div></dd></dl></div></div></div></a></div><div class="definition"><a name="AffiliationProvider_find_by_fqdnfqdn">AffiliationProvider.find_by_fqdn(<em>fqdn</em>) <div class="children"><div class="text">Retrieves one or more <span class="fixed">Affiliation</span> objects, one for each affiliation in the specified FQDN.</div><dl><dt>fqdn</dt><dd>The FQDN to retrieve all affiliations for. This may be either an <span class="fixed">Fqdn</span> object, or an FQDN (row) ID.<div class="children"></div></dd></dl><div class="section"><div class="title">Returns</div><div class="children"><div class="text">A list containing one or more <span class="fixed">Affiliation</span> objects, one for each affiliation in the specified FQDN.</div></div></div><div class="section"><div class="title">Exceptions</div><div class="children"><dl><dt>NotFoundException</dt><dd>Raised when there are no affiliations for the specified FQDN, or the specified FQDN does not exist.<div class="children"></div></dd></dl></div></div></div></a></div><div class="definition"><a name="AffiliationProvider_find_by_idid">AffiliationProvider.find_by_id(<em>id</em>) <div class="children"><div class="text">Retrieves an <span class="fixed">Affiliation</span> object, representing the row in the database with the specified ID. Primarily for internal use, such as referencing affiliations by ID from other database tables.</div><dl><dt>id</dt><dd>The ID of the row to retrieve.<div class="children"></div></dd></dl><div class="exclamation"><strong>Important:</strong> If an object with the same row ID exists in the internal cache, that object will be provided instead, and    no additional database query will be executed. <div class="children"></div></div><div class="section"><div class="title">Returns</div><div class="children"><div class="text">An <span class="fixed">Affiliation</span> object representing the row with the specified ID.</div></div></div><div class="section"><div class="title">Exceptions</div><div class="children"><dl><dt>NotFoundException</dt><dd>Raised when the specified ID does not exist in the database.<div class="children"></div></dd></dl></div></div></div></a></div><div class="definition"><a name="AffiliationProvider_get_from_queryqueryparameters">AffiliationProvider.get_from_query(<em>query</em>, <em>parameters</em>) <div class="children"><div class="text">Retrieves one or more <span class="fixed">Affiliation</span> objects, based on the specified database query and parameters. This is a useful way to wrap custom <span class="fixed">SELECT</span> queries, and get back <span class="fixed">Affiliation</span> objects.</div><dl><dt>query</dt><dd>The query to execute. Question-mark-style parameterization is used; queries are passed directly to the <span class="fixed">oursql</span> library.<div class="children"></div></dd></dl><dl><dt>params</dt><dd>The parameters for the query.<div class="children"></div></dd></dl><div class="section"><div class="title">Returns</div><div class="children"><div class="text">A list containing one or more <span class="fixed">Affiliation</span> objects, one for each row resulting from the specified query.</div></div></div><div class="section"><div class="title">Exceptions</div><div class="children"><dl><dt>NotFoundException</dt><dd>Raised when the query returned no results.<div class="children"></div></dd></dl></div></div></div></a></div><div class="definition"><a name="AffiliationProvider_delete_from_cacheid">AffiliationProvider.delete_from_cache(id): <div class="children"><div class="text">Removes the object for the specified row ID from the internal cache.</div><dl><dt>id</dt><dd>The row ID to remove.<div class="children"></div></dd></dl><div class="section"><div class="title">Exceptions</div><div class="children"><dl><dt>KeyError</dt><dd>Raised when there is no entry in the internal cache with the specified row ID.<div class="children"></div></dd></dl></div></div></div></a></div><h2>Utility functions</h2><div class="definition"><a name="AffiliationProvider_affiliation_stringvalue">AffiliationProvider.affiliation_string(<em>value</em>) <div class="children"><div class="text">Returns a human-readable string, representing a numeric affiliation. This is used internally, to convert affiliations passed on to methods, to the integers stored in the database.</div><dl><dt>value</dt><dd>The affiliation number to convert.<div class="children"></div></dd></dl><div class="section"><div class="title">Returns</div><div class="children"><div class="text">A readable string representation of the affiliation.</div></div></div><div class="section"><div class="title">Exceptions</div><div class="children"><dl><dt>KeyError</dt><dd>The specified affiliation number is not recognized. If this happens, it is almost certainly a bug.<div class="children"></div></dd></dl></div></div></div></a></div><div class="definition"><a name="AffiliationProvider_affiliation_numbervalue">AffiliationProvider.affiliation_number(<em>value</em>) <div class="children"><div class="text">Returns a numeric value, representing a given affiliation string. This is used internally, to convert affiliation numbers in the database to human-readable values that are passed on to methods.</div><dl><dt>value</dt><dd>The affiliation string to convert.<div class="children"></div></dd></dl><div class="section"><div class="title">Returns</div><div class="children"><div class="text">A readable string representation of the affiliation.</div></div></div><div class="section"><div class="title">Exceptions</div><div class="children"><dl><dt>KeyError</dt><dd>The specified affiliation string is not recognized. If this happens, it is almost certainly a bug.<div class="children"></div></dd></dl></div></div></div></a></div><h2>Internal methods</h2><div class="definition"><a name="AffiliationProvider_wraprow">AffiliationProvider.wrap(<em>row</em>) <div class="children"><div class="text">Wraps a row resulting from a database query result, into an <span class="fixed">Affiliation</span> object representing it. This is used internally by all <span class="fixed">find_by</span> and <span class="fixed">get</span> methods.</div><dl><dt>row</dt><dd>A <span class="fixed">Row</span> object to be represented.<div class="children"></div></dd></dl><div class="section"><div class="title">Returns</div><div class="children"><div class="text">An <span class="fixed">Affiliation</span> object representing the provided row.</div></div></div></div></a></div></div>
+	</body>
+</html>

@@ -1,0 +1,185 @@
+<!doctype html>
+<html>
+	<head>
+		<style>
+			body {
+				background-color: #F5F5F5;
+				font-family: sans-serif;
+				margin-right: 40px;
+			}
+
+			h2, h3, h4, h5, h6, h7
+			{
+				margin-top: 16px;
+				margin-bottom: 4px;
+			}
+
+			.children { padding-left: 40px; }
+
+			.definition
+			{
+				font-weight: bold;
+				margin-bottom: 32px;
+			}
+
+			.example , .section
+			{ 
+				padding: 5px 6px;
+				font-weight: bold;
+				margin-top: 11px;
+			}
+			
+			.example
+			{
+				font-size: 15px;
+				background-color: #E6E6E6; 
+			}
+			
+			.section
+			{
+				background-color: #E8E8E8; 
+			}
+			
+			.section > .title
+			{
+				font-size: 16px;
+			}
+
+			.example > .children, .section > .children
+			{
+				padding-top: 11px;
+				padding-left: 10px;
+			}
+			
+			.section > .children
+			{
+				font-size: 95%;
+			}
+			
+			.section > .children > div.text:first-child, .section > .children > dl:first-child
+			{
+				margin-top: 0px;
+			}
+
+			.example > .children > h7
+			{
+				font-size: 13px;
+			}
+
+			h7
+			{
+				font-size: 14px;
+				font-weight: bold;
+				margin-bottom: 2px;
+			}
+
+			pre
+			{
+				margin-top: 0px;
+				padding: 6px 7px;
+				background-color: #D9D9D9;
+				font-weight: normal;
+				font-size: 13px;
+			}
+
+			dl
+			{
+				margin: 5px 0px;
+			}
+
+			dt
+			{
+				font-weight: bold;
+			}
+
+			dd
+			{
+				font-size: 14px;
+				font-weight: normal;
+				margin-left: 8px;
+			}
+			
+			dd > .children
+			{
+				font-size: 95%;
+			}
+			
+			dd > .children > dl > dd
+			{
+				margin-left: 13px;
+			}
+
+			.exclamation
+			{
+				padding: 7px 8px;
+				margin: 11px 0px;
+				background-color: #FFE9AA;
+				border: 1px solid yellow;
+				font-size: 15px;
+				font-weight: normal;
+			}
+
+			.text
+			{
+				font-size: 15px;
+				font-weight: normal;
+				margin-bottom: 14px;
+				margin-top: 10px;
+			}
+
+			.toc
+			{
+				border: 1px solid gray;
+				background-color: #E6E6E6;
+				padding: 8px 9px;
+				font-size: 15px;
+				margin-bottom: 12px;
+			}
+
+			.toc h2
+			{
+				margin: 0px 0px 3px 0px;
+				font-size: 19px;
+			}
+
+			.toc ul
+			{
+				margin-top: 0px;
+				margin-bottom: 0px;
+				padding-left: 25px;
+			}
+
+			.toc li
+			{
+				margin-bottom: 2px;
+			}
+
+			.toc .alternatives
+			{
+				font-size: 12px;
+			}
+
+			.toc a
+			{
+				color: #292722;
+			}
+
+			.toc a:hover
+			{
+				color: black;
+			}
+			
+			.fixed
+			{
+				font-family: monospace;
+				background-color: white;
+				padding: 1px 4px;
+				border: 1px solid silver;
+				border-radius: 4px;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="children"><h1>ConfigurationProvider</h1><h2>Public API</h2><div class="definition"><a name="ConfigurationProvider_readpath">ConfigurationProvider.read(<em>path</em>) <div class="children"><div class="text">Reads and processes a configuration file at the specified path. The configuration file must be in JSON format, and must follow the standard Envoy configuration file schema.</div><dl><dt>path</dt><dd>The path of the configuration file to read.<div class="children"></div></dd></dl></div></a></div><h2>Public variables</h2><div class="text">All configuration values are available as member variables of the ConfigurationProvider object.</div><div class="section"><div class="title">MySQL</div><div class="children"><div class="definition"><a name="ConfigurationProvider_mysql_hostname">ConfigurationProvider.mysql_hostname <div class="children"><div class="text">The hostname of the configured MySQL server.</div></div></a></div><div class="definition"><a name="ConfigurationProvider_mysql_username">ConfigurationProvider.mysql_username <div class="children"><div class="text">The username of the MySQL account to be used for connecting to the MySQL server.</div></div></a></div><div class="definition"><a name="ConfigurationProvider_mysql_password">ConfigurationProvider.mysql_password <div class="children"><div class="text">The password of the MySQL account to be used for connecting to the MySQL server.</div></div></a></div><div class="definition"><a name="ConfigurationProvider_mysql_database">ConfigurationProvider.mysql_database <div class="children"><div class="text">The name of the MySQL database that should be used.</div></div></a></div></div></div><div class="section"><div class="title">Mock modes and development</div><div class="children"><div class="text">Mock modes are used in development environments for the purpose of testing code that calls third party (external) services. To prevent side-effects to a production environment, or unnecessary use of funds, a "mock mode" will log every third party call, but never actually execute them.</div><div class="definition"><a name="ConfigurationProvider_mock_sms">ConfigurationProvider.mock_sms <div class="children"><div class="text">A boolean indicating whether mock mode is enabled for SMS notifications.</div></div></a></div><div class="definition"><a name="ConfigurationProvider_mock_email">ConfigurationProvider.mock_email <div class="children"><div class="text">A boolean indicating whether mock mode is enabled for e-mail notifications.</div></div></a></div><div class="definition"><a name="ConfigurationProvider_development_mode">ConfigurationProvider.development_mode <div class="children"><div class="text">A boolean indicating whether development mode is enabled.</div><div class="text">Development mode will allow eval'ing code over XMPP, and may also enable other debugging commands. It also changes the logging level to "DEBUG".</div><div class="exclamation"><strong>Important:</strong> You must absolutely <strong>never</strong> have development mode enabled in a production environment.   Development mode allows any user to execute arbitrary code on the system that is running your   component. <div class="children"></div></div></div></a></div></div></div><div class="section"><div class="title">SMTP</div><div class="children"><div class="text">This information is used for sending e-mail notifications (except when mock mode is enabled for e-mail).</div><div class="definition"><a name="ConfigurationProvider_smtp_hostname">ConfigurationProvider.smtp_hostname <div class="children"><div class="text">The hostname of the SMTP server to use.</div></div></a></div><div class="definition"><a name="ConfigurationProvider_smtp_port">ConfigurationProvider.smtp_port <div class="children"><div class="text">The port that the SMTP server runs on.</div></div></a></div><div class="definition"><a name="ConfigurationProvider_smtp_tls">ConfigurationProvider.smtp_tls <div class="children"><div class="text">A boolean indicating whether to use TLS.</div><div class="exclamation"><strong>Important:</strong> Old-style SSL is currently not supported in Envoy. Only STARTTLS-style connections can be made. <div class="children"></div></div></div></a></div><div class="definition"><a name="ConfigurationProvider_smtp_username">ConfigurationProvider.smtp_username <div class="children"><div class="text">The username to use for authenticating with the specified SMTP server.</div></div></a></div><div class="definition"><a name="ConfigurationProvider_smtp_password">ConfigurationProvider.smtp_password <div class="children"><div class="text">The password to use for authenticating with the specified SMTP server.</div></div></a></div><div class="definition"><a name="ConfigurationProvider_smtp_sender">ConfigurationProvider.smtp_sender <div class="children"><div class="text">The "sender" that should be displayed for e-mail notifications that are sent.</div></div></a></div></div></div><div class="section"><div class="title">SMS (Twilio)</div><div class="children"><div class="text">This information is used for sending SMS notifications (except when mock mode is enabled for SMS).</div><div class="definition"><a name="ConfigurationProvider_twilio_sid">ConfigurationProvider.twilio_sid <div class="children"><div class="text">The Twilio account SID to use.</div></div></a></div><div class="definition"><a name="ConfigurationProvider_twilio_token">ConfigurationProvider.twilio_token <div class="children"><div class="text">The corresponding authentication token for the specified SID.</div></div></a></div><div class="definition"><a name="ConfigurationProvider_twilio_sender">ConfigurationProvider.twilio_sender <div class="children"><div class="text">The Twilio phone number that should be used for sending the notifications. This will be shown to the end-user as the "sender", and must be a phone number in your account that is able to send SMS messages.</div></div></a></div></div></div><h2>Internal methods</h2><div class="definition"><a name="ConfigurationProvider_parsedata">ConfigurationProvider.parse(<em>data</em>) <div class="children"><div class="text">Processes configuration data read from a configuration file using <span class="fixed">ConfigurationProvider.read()</span>. This makes the configuration available as member variabbles on the <span class="fixed">ConfigurationProvider</span> object.</div><dl><dt>data</dt><dd>The configuration data to parse.<div class="children"></div></dd></dl></div></a></div></div>
+	</body>
+</html>
