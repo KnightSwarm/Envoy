@@ -29,6 +29,7 @@ modules_enabled = {
                 "announce"; -- Send announcement to all online users
                 "watchregistrations"; -- Alert admins of registrations
                 "auth_external"; -- Handles user authentication via an ejabberd extauth script.
+                "mam_pretend"; -- Pretends to have archived according to XEP-0313; actually just adds a UUID.
                 "forward"; -- Forwards all stanzas to an external component and relays responses.
                 "admin_probe"; -- Lets admins retrieve presences for arbitrary users.
 };
@@ -53,7 +54,7 @@ external_auth_command = "/etc/envoy/extauth/auth.py"
 
 -- System logging
 log = {
-        info = "/etc/envoy/prosody/prosody.log";  -- TODO: Let installer pick between 'info' or 'debug' log level.
+        debug = "/etc/envoy/prosody/prosody.log";  -- TODO: Let installer pick between 'info' or 'debug' log level.
         error = "/etc/envoy/prosody/prosody.err";
 }
 
