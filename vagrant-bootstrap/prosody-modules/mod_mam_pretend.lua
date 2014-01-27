@@ -21,7 +21,7 @@ local function message_handler(event)
 		return;
 	end
 	
-	id = uuid.generate();
+	local id = uuid.generate();
 	stanza:tag("archived", { xmlns = xmlns_mam, by = "component.envoy.local", id = id }):up();
 	module:log("debug", "Archiving stanza: %s (content)", stanza:top_tag());
 end
