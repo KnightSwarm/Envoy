@@ -48,25 +48,27 @@ CREATE TABLE IF NOT EXISTS `fqdn_settings` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 CREATE TABLE IF NOT EXISTS `log_events` (
-  `Id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `Id` varchar(36) NOT NULL,
   `Type` tinyint(3) unsigned NOT NULL,
   `Sender` varchar(1514) NOT NULL,
   `Recipient` varchar(1514) DEFAULT NULL,
   `Date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `Event` smallint(5) unsigned NOT NULL,
   `Extra` varchar(512) DEFAULT NULL,
+  `Stanza` text,
   PRIMARY KEY (`Id`)
-) ENGINE=InnoDB  DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 CREATE TABLE IF NOT EXISTS `log_messages` (
-  `Id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `Id` varchar(36) NOT NULL,
   `Type` smallint(5) unsigned NOT NULL,
   `Sender` varchar(1514) NOT NULL,
   `Recipient` varchar(1514) NOT NULL,
   `Date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `Message` mediumtext NOT NULL,
+  `Stanza` text,
   PRIMARY KEY (`Id`)
-) ENGINE=InnoDB  DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 CREATE TABLE IF NOT EXISTS `presences` (
   `Id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
@@ -78,14 +80,14 @@ CREATE TABLE IF NOT EXISTS `presences` (
   `FqdnId` bigint(20) unsigned NOT NULL,
   PRIMARY KEY (`Id`),
   KEY `FqdnId` (`FqdnId`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8;
 
 CREATE TABLE IF NOT EXISTS `presences_old` (
   `Id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `UserJid` varchar(1514) NOT NULL,
   `RoomJid` varchar(1514) NOT NULL,
   PRIMARY KEY (`Id`)
-) ENGINE=InnoDB  DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 CREATE TABLE IF NOT EXISTS `rooms` (
   `Id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,

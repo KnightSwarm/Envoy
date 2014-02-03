@@ -1,7 +1,7 @@
 from .util import Singleton, LocalSingleton, LocalSingletonBase
 
 from datetime import datetime
-import logging
+import logging, uuid
 
 @LocalSingleton
 class EventLogger(LocalSingletonBase):
@@ -20,31 +20,35 @@ class EventLogger(LocalSingletonBase):
 		"topic": 5
 	}
 	
-	def log_message(self, sender, recipient, type_, body):
+	def log_message(self, sender, recipient, type_, body, stanza):
 		database = Database.Instance(self.identifier)
 		user_provider = UserProvider.Instance(self.identifier)
 		
 		row = Row()
+		row["Id"] = stanza["mam_archived"]["id"] # Use the UUID that mod_mam_pretend assigned for us
 		row["Date"] = datetime.now()
 		row["Sender"] = user_provider.normalize_jid(sender)
 		row["Recipient"] = user_provider.normalize_jid(recipient)
 		row["Type"] = self.event_number(type_)
 		row["Message"] = body
+		row["Stanza"] = str(stanza)
 		database["log_messages"].append(row)
 		
-	def log_event(self, sender, recipient, type_, event, extra=None):
+	def log_event(self, sender, recipient, type_, event, stanza, extra=None):
 		database = Database.Instance(self.identifier)
 		user_provider = UserProvider.Instance(self.identifier)
 		
 		print repr(recipient)
 		
 		row = Row()
+		row["Id"] = str(uuid.uuid4()) # Generate a new UUID, mod_mam_pretend doesn't deal with anything that isn't a message
 		row["Date"] = datetime.now()
 		row["Sender"] = user_provider.normalize_jid(sender)
 		row["Recipient"] = user_provider.normalize_jid(recipient)
 		row["Type"] = self.event_number(type_)
 		row["Event"] = self.presence_number(event)
 		row["Extra"] = extra
+		row["Stanza"] = str(stanza)
 		database["log_events"].append(row)
 		
 	def presence_string(self, value):

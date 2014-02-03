@@ -27,6 +27,7 @@ class Component(ComponentXMPP):
 		self.registerPlugin('xep_0060') # PubSub
 		self.registerPlugin('xep_0199') # XMPP Ping
 		self.registerPlugin('xep_0297') # Stanza forwarding
+		self.registerPlugin('xep_0313') # Message Archive Management
 		
 		self['xep_0045'].api.register(OverrideHandler.Instance(self.identifier).is_joined, 'is_joined_room')
 		self['xep_0045'].api.register(OverrideHandler.Instance(self.identifier).get_joined, 'get_joined_rooms')
@@ -62,4 +63,4 @@ xmpp.process(block=True)
 from .db import Database
 from .handlers import StanzaHandler, MucHandler, OverrideHandler
 from .providers import FqdnProvider, ConfigurationProvider
-from .sync import PresenceSyncer, AffiliationSyncer, RoomSyncer
+from .sync import PresenceSyncer, AffiliationSyncer, RoomSyncer, StatusSyncer

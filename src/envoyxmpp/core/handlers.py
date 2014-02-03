@@ -39,7 +39,7 @@ class MessageHandler(LocalSingletonBase):
 		body = stanza["body"]
 		
 		HighlightChecker.Instance(self.identifier).check(stanza)
-		EventLogger.Instance(self.identifier).log_message(user, room, "message", body)
+		EventLogger.Instance(self.identifier).log_message(user, room, "message", body, stanza) # TODO: Move parsing logic to event logger?
 		
 	def private_message(self, stanza):
 		# EVENT: Private message received
@@ -50,7 +50,7 @@ class MessageHandler(LocalSingletonBase):
 		recipient = stanza["to"].bare
 		body = stanza["body"]
 		
-		EventLogger.Instance(self.identifier).log_message(sender, recipient, "pm", body)
+		EventLogger.Instance(self.identifier).log_message(sender, recipient, "pm", body, stanza)
 		
 		if recipient == component.boundjid:
 			dev_handler.process(stanza)
@@ -61,7 +61,7 @@ class MessageHandler(LocalSingletonBase):
 		user = stanza["from"].bare
 		topic = stanza["subject"]
 		
-		EventLogger.Instance(self.identifier).log_event(user, room, "topic", topic)
+		EventLogger.Instance(self.identifier).log_event(user, room, "topic", topic, stanza)
 	
 @LocalSingleton	
 class IqHandler(LocalSingletonBase):
@@ -73,7 +73,7 @@ class IqHandler(LocalSingletonBase):
 			# EVENT: User logged in
 			user = stanza["from"]
 			
-			logger.log_event(user, None, "presence", "login")
+			logger.log_event(user, None, "presence", "login", stanza)
 		
 @LocalSingleton	
 class PresenceHandler(LocalSingletonBase):
@@ -96,10 +96,10 @@ class PresenceHandler(LocalSingletonBase):
 				 
 				if type_ == "available" or type_ in Presence.showtypes:
 					# EVENT: User status changed
-					logger.log_event(sender, "", "status", type_, message)
+					logger.log_event(sender, "", "status", type_, stanza, message)
 				elif type_ == "unavailable":
 					# EVENT: User logged out
-					logger.log_event(sender, "", "presence", "disconnect", message)
+					logger.log_event(sender, "", "presence", "disconnect", stanza, message)
 				
 @LocalSingleton
 class MucHandler(LocalSingletonBase):
@@ -108,20 +108,22 @@ class MucHandler(LocalSingletonBase):
 		presence_provider = PresenceProvider.Instance()
 		
 		user = stanza["to"]
+		resource = stanza["to"].resource
 		room = stanza["from"].bare
 		nickname = stanza["from"].resource
 		role = stanza["muc"]["role"]
 		
-		presence_provider.register_join(user, room, nickname, role) # TODO: This might be better in a separate handler
+		presence_provider.register_join(user, room, resource, nickname, role) # TODO: This might be better in a separate handler
 		
 	def process_leave(self, stanza):
 		# EVENT: User left room
 		presence_provider = PresenceProvider.Instance()
 		
 		user = stanza["to"]
+		resource = stanza["to"].resource
 		room = stanza["from"].bare
 		
-		presence_provider.register_leave(user, room) # TODO: This might be better in a separate handler
+		presence_provider.register_leave(user, room, resource) # TODO: This might be better in a separate handler
 		
 	def process_presence(self, stanza):
 		affiliation_provider = AffiliationProvider.Instance(self.identifier)

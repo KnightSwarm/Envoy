@@ -26,7 +26,8 @@ class PresenceSyncer(LocalSingletonBase):
 			
 			for presence in presences:
 				user_jid = presence["jid"]
-				nickname = presence["jid"].resource
+				resource = presence["jid"].resource
+				nickname = presence["nick"]
 				role = presence["role"]
 				
 				if user_jid != component.boundjid: # No need to keep state for the component
@@ -38,7 +39,7 @@ class PresenceSyncer(LocalSingletonBase):
 					except NotFoundException, e:
 						# EVENT: Sync join
 						user_object = user_provider.get(user_jid)
-						user_object.register_join(room_jid, nickname, role)
+						user_object.register_join(room_jid, resource, nickname, role)
 					
 			current_presences[room_jid] = [user_provider.normalize_jid(presence["jid"], keep_resource=True) for presence in presences]
 			
@@ -49,11 +50,9 @@ class PresenceSyncer(LocalSingletonBase):
 			return
 			
 		for presence in known_presences:
-			try:
-				current_presences[presence.room.jid]["%s/%s" % (presence.user.jid, presence.resource)]
-			except KeyError, e:
+			if "%s/%s" % (presence.user.jid, presence.resource) not in current_presences[presence.room.jid]:
 				# EVENT: Sync leave
-				presence.user.register_leave(presence.room.jid)
+				presence.user.register_leave(presence.room.jid, presence.resource)
 
 @LocalSingleton
 class AffiliationSyncer(LocalSingletonBase):

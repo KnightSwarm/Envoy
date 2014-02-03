@@ -158,6 +158,9 @@ class UserProvider(LocalSingletonBase):
 		self.cache = {}
 	
 	def normalize_jid(self, user, keep_resource=False):
+		if isinstance(user, User):
+			user = user.jid # Extract the JID from the User object
+			
 		if user is None or user == "":
 			return None
 		elif isinstance(user, JID):
@@ -296,13 +299,13 @@ class User(object):
 		if presence == "disconnect": # TODO: Check for remaining resources
 			self.set_status("offline")
 			
-	def register_join(self, room, nickname, role):
+	def register_join(self, room, resource, nickname, role):
 		presence_provider = PresenceProvider.Instance(self.identifier)
-		return presence_provider.register_join(self, room, nickname, role)
+		return presence_provider.register_join(self, room, resource, nickname, role)
 			
-	def register_leave(self, room):
+	def register_leave(self, room, resource):
 		presence_provider = PresenceProvider.Instance(self.identifier)
-		return presence_provider.register_leave(self, room)
+		return presence_provider.register_leave(self, room, resource)
 	
 @LocalSingleton
 class RoomProvider(LocalSingletonBase):
@@ -311,6 +314,9 @@ class RoomProvider(LocalSingletonBase):
 		self.cache = {}
 	
 	def normalize_jid(self, room):
+		if isinstance(room, Room):
+			room = room.jid # Extract the JID from the User object
+			
 		if room is None or room == "":
 			return None
 		elif isinstance(room, JID):
@@ -398,11 +404,11 @@ class Room(LazyLoadingObject):
 		return fqdn_provider.find_by_id(self._fqdn)
 		
 	def increment_usercount(self, amount=1):
-		self.row["LastUserCount"] = row["LastUserCount"] + amount
+		self.row["LastUserCount"] = self.row["LastUserCount"] + amount
 		self.commit()
 		
 	def decrement_usercount(self, amount=1):
-		self.row["LastUserCount"] = row["LastUserCount"] + amount
+		self.row["LastUserCount"] = self.row["LastUserCount"] + amount
 		self.commit()
 		
 	def update_metadata(self, data):
@@ -429,7 +435,11 @@ class Room(LazyLoadingObject):
 	
 	def register_join(self, user, nickname, role):
 		presence_provider = PresenceProvider.Instance(self.identifier)
-		return presence_provider.register_join(user, self, nickname, role)
+		user_provider = UserProvider.Instance(self.identifier)
+		
+		user = user_provider.normalize_jid(user, keep_resource=True)
+		
+		return presence_provider.register_join(user, self, user.resource, nickname, role)
 		
 	def register_leave(self, user):
 		presence_provider = PresenceProvider.Instance(self.identifier)
@@ -652,7 +662,7 @@ class PresenceProvider(LocalSingletonBase):
 		user_provider = UserProvider.Instance(self.identifier)
 		
 		room = room_provider.normalize_room(room)
-		user_jid = JID(user_provider.normalize_jid(jid, keep_resource=True))
+		user_jid = JID(user_provider.normalize_jid(user, keep_resource=True))
 		user = user_provider.normalize_user(user)
 		
 		return self.get_from_query("SELECT * FROM presences WHERE `RoomId` = ? AND `UserId` = ? AND `Resource` = ?", (room.id, user.id, user_jid.resource))
@@ -673,17 +683,16 @@ class PresenceProvider(LocalSingletonBase):
 	def delete_from_cache(self, id_):
 		del self.cache[id_]
 		
-	def register_join(self, user, room, nickname, role):
+	def register_join(self, user, room, resource, nickname, role):
 		user_provider = UserProvider.Instance(self.identifier)
 		room_provider = RoomProvider.Instance(self.identifier)
 		database = Database.Instance(self.identifier)
 		
 		user_jid = JID(user_provider.normalize_jid(user, keep_resource=True))
 		bare_jid = user_provider.normalize_jid(user_jid)
-		resource = user_jid.resource
 		
-		user_id = UserProvider.normalize_user(bare_jid).id
-		room = RoomProvider.normalize_room(room)
+		user_id = user_provider.normalize_user(bare_jid).id
+		room = room_provider.normalize_room(room)
 		room_id = room.id
 		fqdn_id = room.fqdn.id
 		
@@ -701,8 +710,12 @@ class PresenceProvider(LocalSingletonBase):
 		
 		return self.wrap(row)
 		
-	def register_leave(self, user, room):
-		presence = self.find_by_room_user(room, user)
+	def register_leave(self, user, room, resource):
+		room_provider = RoomProvider.Instance(self.identifier)
+		
+		room = room_provider.normalize_room(room)
+		
+		presence = self.find_by_room_user(room, user)[0] # TODO: Use session instead?
 		presence.delete()
 		
 		# Update room statistics
@@ -726,6 +739,9 @@ class Presence(LazyLoadingObject):
 		
 	def load_row(self, row):
 		presence_provider = PresenceProvider.Instance(self.identifier)
+		
+		logger = ApplicationLogger.Instance(self.identifier)
+		logger.warning(row._data)
 		
 		self.id = row["Id"]
 		self._user = row["UserId"]

@@ -64,7 +64,7 @@ class LocalSingletonBase(object):
 class LazyLoadingObject(object):
 	def __getattr__(self, name):
 		try:
-			value = self.lazy_loaders[name](self)
+			value = self.lazy_loaders[name]()
 		except AttributeError, e:
 			raise AttributeError("Attribute %s not found, and no lazy loaders specified." % name)
 		except KeyError, e:

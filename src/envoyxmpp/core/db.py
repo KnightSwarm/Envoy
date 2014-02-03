@@ -167,10 +167,16 @@ class Table(object):
 		query = "INSERT INTO %s (%s) VALUES (%s)" % (self.table, column_list, sub_list)  # Not SQLi-safe!
 		
 		result = self.db.query(query, params=value._commit_buffer.values(), commit=True)
+		new_id = result.lastrowid
 		
 		value._new = False
+		value._data.update(value._commit_buffer)
+		value._commit_buffer = {}
 		
-		return result.lastrowid
+		if "Id" not in value._data.keys():
+			value._data["Id"] = new_id
+		
+		return new_id
 	
 	def _try_set(self, key, value, cache):
 		if key in cache:
