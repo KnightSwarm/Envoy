@@ -177,7 +177,7 @@ while True:
 		result = remove_user_safe(request[1], request[2], request[3])
 		logging.debug("Result of removeuser3 call for %s@%s: %s" % (request[1], request[2], result))
 	else:
-		ejabberd.info("Unsupported method encountered: %s" % request[0])
+		logging.info("Unsupported method encountered: %s" % request[0])
 		continue
 		
 	ejabberd_write(result)
