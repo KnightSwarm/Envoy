@@ -860,6 +860,200 @@ class UserSetting(LazyLoadingObject):
 		self.row.delete()
 		
 @LocalSingleton
+class LogEntryProvider(LocalSingletonBase):
+	def __init__(self, singleton_identifier=None):
+		self.identifier = singleton_identifier
+		self.cache = {}
+		
+	def normalize_entry(self, entry):
+		if isinstance(entry, EventLogEntry) or isinstance(entry, MessageLogEntry):
+			return entry
+		else:
+			return self.find_by_id(entry)
+			
+	def wrap(self, row):
+		if row._table == "log_events":
+			item = EventLogEntry(self.identifier, row)
+		elif row._table == "log_messages":
+			item = MessageLogEntry(self.identifier, row)
+		else:
+			raise ValueError("The row must originate from the log_events or log_messages table.")
+			
+		self.cache[row["Id"]] = item
+		return item
+		
+	def get_events_from_query(self, query, params):
+		database = Database.Instance(self.identifier)
+		
+		result = database.query(query, params, table="log_events")
+		items = result.fetchall()
+		
+		if len(items) == 0:
+			raise NotFoundException("No such log entry/entries exist.")
+		
+		return [self.wrap(item) for item in items]
+		
+	def get_messages_from_query(self, query, params):
+		database = Database.Instance(self.identifier)
+		
+		result = database.query(query, params, table="log_messages")
+		items = result.fetchall()
+		
+		if len(items) == 0:
+			raise NotFoundException("No such log entry/entries exist.")
+		
+		return [self.wrap(item) for item in items]
+		
+	def get(self, id_):
+		return self.find_by_id(id_)
+		
+	def find_events_by_fqdn(self, fqdn, limit=""):
+		fqdn_provider = FqdnProvider.Instance(self.identifier)
+		fqdn = fqdn_provider.normalize_fqdn(fqdn)
+		if limit != "":
+			limit = "LIMIT %s" % limit
+		return self.get_events_from_query("SELECT * FROM log_events WHERE `FqdnId` = ? %s" % limit, (fqdn.id,))
+		
+	def find_messages_by_fqdn(self, fqdn):
+		fqdn_provider = FqdnProvider.Instance(self.identifier)
+		fqdn = fqdn_provider.normalize_fqdn(fqdn)
+		if limit != "":
+			limit = "LIMIT %s" % limit
+		return self.get_messages_from_query("SELECT * FROM log_messages WHERE `FqdnId` = ? %s" % limit, (fqdn.id,))
+		
+	def find_events_by_user(self, user):
+		user_provider = UserProvider.Instance(self.identifier)
+		user = user_provider.normalize_user(user)
+		if limit != "":
+			limit = "LIMIT %s" % limit
+		return self.get_events_from_query("SELECT * FROM log_events WHERE `Sender` = ? %s" % limit, (user.jid,))
+		
+	def find_events_by_room(self, room):
+		room_provider = RoomProvider.Instance(self.identifier)
+		room = room_provider.normalize_room(room)
+		if limit != "":
+			limit = "LIMIT %s" % limit
+		return self.get_events_from_query("SELECT * FROM log_events WHERE `Recipient` = ? %s" % limit, (room.jid,))
+		
+	def find_messages_by_sender(self, user):
+		user_provider = UserProvider.Instance(self.identifier)
+		user = user_provider.normalize_user(user)
+		if limit != "":
+			limit = "LIMIT %s" % limit
+		return self.get_events_from_query("SELECT * FROM log_messages WHERE `Sender` = ? %s" % limit, (user.jid,))
+		
+	def find_messages_by_recipient(self, recipient):
+		# NOTE: The recipient may be either a user or a room!
+		room_provider = RoomProvider.Instance(self.identifier)
+		user_provider = UserProvider.Instance(self.identifier)
+		
+		try:
+			recipient = user_provider.normalize_user(recipient)
+		except NotFoundException, e:
+			recipient = room_provider.normalize_room(recipient)
+			
+		if limit != "":
+			limit = "LIMIT %s" % limit
+			
+		return self.get_events_from_query("SELECT * FROM log_messages WHERE `Recipient` = ? %s" % limit, (recipient.jid,))
+		
+class EventLogEntry(LazyLoadingObject):
+	def __init__(self, identifier, row):
+		self.identifier = identifier
+		self.row = row
+		self.load_row(self.row)
+		
+		self.lazy_loaders = {
+			"fqdn": self.get_fqdn,
+			"user": self.get_user,
+			"room": self.get_room
+		}
+		
+	def commit(self):
+		self.row.commit()
+		self.load_row(self.row)
+		
+	def load_row(self, row):
+		logger = EventLogger.Instance(self.identifier)
+		
+		self.id = row["Id"]
+		self._fqdn = row["FqdnId"]
+		self._user = row["Sender"]
+		self._room = row["Recipient"]
+		self.type = logger.event_string(row["Type"])
+		self.date = row["Date"]
+		self.event = logger.presence_string(row["Event"])
+		self.extra = row["Extra"]
+		self.stanza = row["Stanza"]
+		
+	def get_fqdn(self):
+		fqdn_provider = FqdnProvider.Instance(self.identifier)
+		return fqdn_provider.find_by_id(self._fqdn)
+		
+	def get_user(self):
+		user_provider = UserProvider.Instance(self.identifier)
+		return user_provider.get(self._user)
+		
+	def get_room(self):
+		room_provider = RoomProvider.Instance(self.identifier)
+		return room_provider.get(self._room)
+		
+	def delete(self):
+		logentry_provider = LogEntryProvider.Instance(self.identifier)
+		logentry_provider.delete_from_cache(self.id)
+		self.row.delete()
+		
+class MessageLogEntry(LazyLoadingObject):
+	def __init__(self, identifier, row):
+		self.identifier = identifier
+		self.row = row
+		self.load_row(self.row)
+		
+		self.lazy_loaders = {
+			"fqdn": self.get_fqdn,
+			"sender": self.get_sender,
+			"recipient": self.get_recipient
+		}
+		
+	def commit(self):
+		self.row.commit()
+		self.load_row(self.row)
+		
+	def load_row(self, row):
+		logger = EventLogger.Instance(self.identifier)
+		
+		self.id = row["Id"]
+		self._fqdn = row["FqdnId"]
+		self._sender = row["Sender"]
+		self._recipient = row["Recipient"]
+		self.type = logger.event_string(row["Type"])
+		self.date = row["Date"]
+		self.message = row["Messaeg"]
+		self.stanza = row["Stanza"]
+		
+	def get_fqdn(self):
+		fqdn_provider = FqdnProvider.Instance(self.identifier)
+		return fqdn_provider.find_by_id(self._fqdn)
+		
+	def get_sender(self):
+		user_provider = UserProvider.Instance(self.identifier)
+		return user_provider.get(self._user)
+		
+	def get_recipient(self):
+		room_provider = RoomProvider.Instance(self.identifier)
+		user_provider = UserProvider.Instance(self.identifier)
+		
+		try:
+			return user_provider.get(self._recipient)
+		except NotFoundException, e:
+			return room_provider.get(self._recipient)
+		
+	def delete(self):
+		logentry_provider = LogEntryProvider.Instance(self.identifier)
+		logentry_provider.delete_from_cache(self.id)
+		self.row.delete()
+		
+@LocalSingleton
 class FqdnSettingProvider(LocalSingletonBase):
 	def __init__(self, singleton_identifier=None):
 		self.identifier = singleton_identifier
