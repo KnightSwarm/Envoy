@@ -258,6 +258,13 @@ class OverrideHandler(LocalSingletonBase):
 		if jid != component.boundjid:
 			user_provider.get(jid).register_leave(node)
 
+@LocalSingleton
+class LogRequestHandler(LocalSingletonBase):
+	def process(self, stanza):
+		logger = ApplicationLogger.Instance(self.identifier)
+		logger.warning(stanza)
+		logger.warning(repr(stanza["mam"]["extended_support"]))
+
 from .notification import HighlightChecker
 from .providers import UserProvider, PresenceProvider, AffiliationProvider, ConfigurationProvider
 from .loggers import EventLogger, ApplicationLogger

@@ -2,7 +2,11 @@
 from .util import Singleton, LocalSingleton
 
 # SleekXMPP
+from sleekxmpp import Iq
 from sleekxmpp.componentxmpp import ComponentXMPP
+from sleekxmpp.xmlstream import register_stanza_plugin
+from sleekxmpp.xmlstream.matcher.xpath import MatchXPath
+from sleekxmpp.xmlstream.handler.callback import Callback
 
 @LocalSingleton
 class Component(ComponentXMPP):
@@ -34,6 +38,10 @@ class Component(ComponentXMPP):
 		self['xep_0045'].api.register(OverrideHandler.Instance(self.identifier).add_joined, 'add_joined_room')
 		self['xep_0045'].api.register(OverrideHandler.Instance(self.identifier).delete_joined, 'del_joined_room')
 		
+		# Log retrieval handling
+		self["xep_0030"].add_feature("urn:xmpp:mam:tmp") # Register the MAM feature as being available
+		self.register_handler(Callback("MAM Query", MatchXPath("{%s}iq/{urn:xmpp:mam:tmp}query" % self.default_ns), LogRequestHandler.Instance(self.identifier).process))
+		
 		configuration = ConfigurationProvider.Instance(self.identifier)
 		configuration.read(config_path)
 		
@@ -61,6 +69,12 @@ xmpp.process(block=True)
 """
 
 from .db import Database
-from .handlers import StanzaHandler, MucHandler, OverrideHandler
+from .handlers import StanzaHandler, MucHandler, OverrideHandler, LogRequestHandler
 from .providers import FqdnProvider, ConfigurationProvider
 from .sync import PresenceSyncer, AffiliationSyncer, RoomSyncer, StatusSyncer
+from .stanzas import EnvoyQueryFlag
+
+from sleekxmpp.plugins.xep_0313 import MAM
+
+#register_stanza_plugin(Iq, Query)
+register_stanza_plugin(MAM, EnvoyQueryFlag)
