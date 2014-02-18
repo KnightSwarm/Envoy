@@ -48,6 +48,10 @@ apt-get install -y mysql-server mysql-client libmysql++-dev >mysql-log 2>&1
 echo "Installing Python dependencies..."
 pip install -r requirements.txt -q >&2
 
+# Install optional libraries for URL preview resolving etc.
+echo "Installing optional Python modules..."
+pip install -r optional_deps.txt -q >&2
+
 # Set up Prosody repository
 echo "Setting up Prosody repository..."
 DIST="$(lsb_release -sc)"
