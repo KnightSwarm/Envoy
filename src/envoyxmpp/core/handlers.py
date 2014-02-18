@@ -4,7 +4,7 @@ from sleekxmpp.stanza import Message, Presence, Iq
 from sleekxmpp.xmlstream.matcher import MatchXPath, StanzaPath
 from sleekxmpp.exceptions import IqError
 
-import traceback
+import traceback, re
 
 @LocalSingleton
 class StanzaHandler(LocalSingletonBase):	
@@ -272,38 +272,40 @@ class ResolveHandler(LocalSingletonBase):
 		
 		# IDEA: Perhaps have a qualifying string for each category of regexes; don't try to match regex until
 		# qualifying string is present as a substring in the message. This should help performance.
+		# TODO: Include tests.
 		# FIXME: .Instance()s spawned here, might not be thread-safe!
 		resolver_map = {
-			"https?:\/\/github.com\/(?P<user>[^\/?]+)\/?(?:\?.*)?": GitHubResolver.Instance(self.identifier).resolve_user, # May also indicate an organization, rather than a user
-			"https?:\/\/github.com\/(?P<user>[^\/?]+)\/(?P<repository>[^\/?]+)\/?(?:\?.*)?": GitHubResolver.Instance(self.identifier).resolve_repository,
-			"https?:\/\/github.com\/(?P<user>[^\/?]+)\/(?P<repository>[^\/?]+)\/tree\/(?P<branch>[^\/?]+)\/(?P<path>[^?]+)\/?(?:\?.*)?": GitHubResolver.Instance(self.identifier).resolve_tree,
-			"https?:\/\/github.com\/(?P<user>[^\/?]+)\/(?P<repository>[^\/?]+)\/blob\/(?P<branch>[^\/?]+)\/(?P<path>[^?]+)\/?(?:\?.*)?": GitHubResolver.Instance(self.identifier).resolve_blob, # 'branch' can also point to a commit reference!
-			"https?:\/\/github.com\/(?P<user>[^\/?]+)\/(?P<repository>[^\/?]+)\/issues\/(?P<id>[0-9]+)\/?(?:\?.*)?": GitHubResolver.Instance(self.identifier).resolve_issue,
-			"https?:\/\/github.com\/(?P<user>[^\/?]+)\/(?P<repository>[^\/?]+)\/pull\/(?P<id>[0-9]+)\/?(?:\?.*)?": GitHubResolver.Instance(self.identifier).resolve_pullrequest,
-			"https?:\/\/github.com\/(?P<user>[^\/?]+)\/(?P<repository>[^\/?]+)\/commit\/(?P<id>[0-9a-f]+)\/?(?:\?.*)?": GitHubResolver.Instance(self.identifier).resolve_commit,
-			"https?:\/\/github.com\/(?P<user>[^\/?]+)\/(?P<repository>[^\/?]+)\/compare\/(?P<id1>[0-9a-f]+)\.\.\.(?P<id2>[0-9a-f]+)\/?(?:\?.*)?": GitHubResolver.resolve_comparison,
-			"https?:\/\/gist\.github.com\/(?P<user>[^\/?]+)\/?(?:\?.*)?": GitHubResolver.Instance(self.identifier).resolve_gist_user,
-			"https?:\/\/gist\.github.com\/(?P<user>[^\/?]+)\/(?P<id>[^\/?]+)\/?(?:\?.*)?": GitHubResolver.Instance(self.identifier).resolve_gist,
-			"https?:\/\/imgur.com\/gallery\/(?P<id>[^\/?]+)\/?(?:\?.*)?": ImgurResolver.Instance(self.identifier).resolve_gallery_item,
-			"https?:\/\/imgur.com\/(?P<id>[^\/?]+)\/?(?:\?.*)?": ImgurResolver.Instance(self.identifier).resolve_item, # This will trigger a false positive for URLs like imgur.com/random!
-			"(?:\s|^|\()(?P<url>https?:\/\/.+\.(?P<type>svg|png|gif|bmp|jpg))(?:\s|$|\))": ImageResolver.Instance(self.identifier).resolve_item, # This is for generic image resolving (including i.imgur.com, since those URLs just carry image extensions)
+			"https?:\/\/github.com\/(?P<user>[^\/?\s!]+)\/?(?:\?.*)?": GitHubResolver.Instance(self.identifier).resolve_user, # May also indicate an organization, rather than a user
+			"https?:\/\/github.com\/(?P<user>[^\/?\s!]+)\/(?P<repository>[^\/?\s!]+)\/?(?:\?.*)?": GitHubResolver.Instance(self.identifier).resolve_repository,
+			"https?:\/\/github.com\/(?P<user>[^\/?\s!]+)\/(?P<repository>[^\/?\s!]+)\/tree\/(?P<branch>[^\/?\s!]+)\/(?P<path>[^?]+)\/?(?:\?.*)?": GitHubResolver.Instance(self.identifier).resolve_tree,
+			"https?:\/\/github.com\/(?P<user>[^\/?\s!]+)\/(?P<repository>[^\/?\s!]+)\/blob\/(?P<branch>[^\/?\s!]+)\/(?P<path>[^?]+)\/?(?:\?.*)?": GitHubResolver.Instance(self.identifier).resolve_blob, # 'branch' can also point to a commit reference!
+			"https?:\/\/github.com\/(?P<user>[^\/?\s!]+)\/(?P<repository>[^\/?\s!]+)\/issues\/(?P<id>[0-9]+)\/?(?:\?.*)?": GitHubResolver.Instance(self.identifier).resolve_issue,
+			"https?:\/\/github.com\/(?P<user>[^\/?\s!]+)\/(?P<repository>[^\/?\s!]+)\/pull\/(?P<id>[0-9]+)\/?(?:\?.*)?": GitHubResolver.Instance(self.identifier).resolve_pullrequest,
+			"https?:\/\/github.com\/(?P<user>[^\/?\s!]+)\/(?P<repository>[^\/?\s!]+)\/commit\/(?P<id>[0-9a-f]+)\/?(?:\?.*)?": GitHubResolver.Instance(self.identifier).resolve_commit,
+			"https?:\/\/github.com\/(?P<user>[^\/?\s!]+)\/(?P<repository>[^\/?\s!]+)\/compare\/(?P<id1>[0-9a-f]+)\.\.\.(?P<id2>[0-9a-f]+)\/?(?:\?.*)?": GitHubResolver.Instance(self.identifier).resolve_comparison,
+			"https?:\/\/gist\.github.com\/(?P<user>[^\/?\s!]+)\/?(?:\?.*)?": GitHubResolver.Instance(self.identifier).resolve_gist_user,
+			"https?:\/\/gist\.github.com\/(?P<user>[^\/?\s!]+)\/(?P<id>[^\/?\s!]+)\/?(?:\?.*)?": GitHubResolver.Instance(self.identifier).resolve_gist,
+			"https?:\/\/imgur.com\/gallery\/(?P<id>[^\/?\s!]+)\/?(?:\?.*)?": ImgurResolver.Instance(self.identifier).resolve_gallery_item,
+			"https?:\/\/imgur.com\/(?P<id>[^\/?\s!]+)\/?(?:\?.*)?": ImgurResolver.Instance(self.identifier).resolve_item, # This will trigger a false positive for URLs like imgur.com/random!
+			"(?:\s|^|\()(?P<url>https?:\/\/.+\.(?P<type>svg|png|gif|bmp|jpg))": ImageResolver.Instance(self.identifier).resolve_item, # This is for generic image resolving (including i.imgur.com, since those URLs just carry image extensions)
 			"https?:\/\/(?P<organization>[^.]+)\.beanstalkapp\.com\/\/?(?:\?.*)?": BeanstalkResolver.Instance(self.identifier).resolve_organization,
-			"https?:\/\/(?P<organization>[^.]+)\.beanstalkapp\.com\/(?P<repository>[^\/?]+)\/?(?:\?.*)?": BeanstalkResolver.Instance(self.identifier).resolve_repository,
-			"https?:\/\/(?P<organization>[^.]+)\.beanstalkapp\.com\/(?P<repository>[^\/?]+)\/changesets\/(?P<id>[0-9a-f]+)\/?(?:\?.*)?": BeanstalkResolver.Instance(self.identifier).resolve_changeset,
-			"https?:\/\/(?P<organization>[^.]+)\.beanstalkapp\.com\/(?P<repository>[^\/?]+)\/browse\/(?P<type>[^\/?]+)(?:\/(?P<path>[^?]+))?\/?(?:\?(?:.+&)?ref=(?P<ref>[^\/&]+))?": BeanstalkResolver.Instance(self.identifier).resolve_path, # 'type' may refer to SVN subdir (trunk/tags/etc.) or 'git' for Git
-			"https?:\/\/trello.com\/b\/(?P<id>[^\/?]+)(?:\/(?P<name>[^\/?]+))?\/?(?:\?.*)?": TrelloResolver.Instance(self.identifier).resolve_board,
-			"https?:\/\/trello.com\/c\/(?P<id>[^\/?]+)(?:\/(?P<name>[^\/?]+))?\/?(?:\?.*)?": TrelloResolver.Instance(self.identifier).resolve_card,
-			"https?:\/\/trello.com\/(?P<id>[^\/?]+)\/?(?:\?.*)?": TrelloResolver.Instance(self.identifier).resolve_user, # This may bring up false positives, eg. for trello.com/gold. It may also correspond to an organization rather than a user.
+			"https?:\/\/(?P<organization>[^.]+)\.beanstalkapp\.com\/(?P<repository>[^\/?\s!]+)\/?(?:\?.*)?": BeanstalkResolver.Instance(self.identifier).resolve_repository,
+			"https?:\/\/(?P<organization>[^.]+)\.beanstalkapp\.com\/(?P<repository>[^\/?\s!]+)\/changesets\/(?P<id>[0-9a-f]+)\/?(?:\?.*)?": BeanstalkResolver.Instance(self.identifier).resolve_changeset,
+			"https?:\/\/(?P<organization>[^.]+)\.beanstalkapp\.com\/(?P<repository>[^\/?\s!]+)\/browse\/(?P<type>[^\/?\s!]+)(?:\/(?P<path>[^?]+))?\/?(?:\?(?:.+&)?ref=(?P<ref>[^\/&]+))?": BeanstalkResolver.Instance(self.identifier).resolve_path, # 'type' may refer to SVN subdir (trunk/tags/etc.) or 'git' for Git
+			"https?:\/\/trello.com\/b\/(?P<id>[^\/?\s!]+)(?:\/(?P<name>[^\/?\s!]+))?\/?(?:\?.*)?": TrelloResolver.Instance(self.identifier).resolve_board,
+			"https?:\/\/trello.com\/c\/(?P<id>[^\/?\s!]+)(?:\/(?P<name>[^\/?\s!]+))?\/?(?:\?.*)?": TrelloResolver.Instance(self.identifier).resolve_card,
+			"https?:\/\/trello.com\/(?P<id>[^\/?\s!]+)\/?(?:\?.*)?": TrelloResolver.Instance(self.identifier).resolve_user, # This may bring up false positives, eg. for trello.com/gold. It may also correspond to an organization rather than a user.
 		}
 		
 		total_matches = 0
 		
-		for regex, resolver in resolver_map:
+		for regex, resolver in resolver_map.iteritems():
 			# IDEA: Store compiled regexes separately rather than rebuilding them every time, to improve performance.
-			result = re.search("%s(?:\s|!|$)" % regex, message)
+			result = re.search("%s(?:\s|!|$)" % regex, message, re.IGNORECASE)
 			
 			if result is not None:
-				queue.add((resolver, message, stanza))
+				# (resolver, matches, message, stanza)
+				queue.add((resolver, result.groupdict(), message, stanza))
 				total_matches += 1
 				
 		return total_matches

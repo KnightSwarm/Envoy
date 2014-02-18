@@ -54,6 +54,17 @@ class ConfigurationProvider(LocalSingletonBase):
 		except KeyError, e:
 			self.development_mode = False
 			
+		try:
+			self.excluded_resolvers = data["excluded_resolvers"]
+		except KeyError, e:
+			self.excluded_resolvers = []
+			
+		try:
+			self.github_token = data["github"]["token"]
+		except KeyError, e:
+			if self.excluded_resolvers != "*" and "github" not in self.excluded_resolvers:
+				raise ConfigurationException("The GitHub resolver is not configured, but GitHub was also not excluded from the resolvers. Either configure the resolver, or add it to the exclude list.")
+			
 		if self.development_mode == True:
 			logger.warning("Development mode is enabled!")
 

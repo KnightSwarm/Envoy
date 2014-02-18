@@ -1,3 +1,10 @@
+try:
+	import xml.etree.cElementTree as ET
+except ImportError, e:
+	import xml.etree.ElementTree as ET
+	
+import functools
+
 class Singleton:
 	# http://stackoverflow.com/a/7346105/1332715
 	"""
@@ -78,3 +85,29 @@ def dedup(seq):
 	seen_add = seen.add
 	return [x for x in seq if x not in seen and not seen_add(x)]
 
+# Source: http://effbot.org/zone/element-builder.htm
+# (c) 2006 Fredrik Lundh
+# Modifications (c) 2014 Sven Slootweg
+class _E(object):
+	def __call__(self, tag, *children, **attrib):
+		attrib = {attribute.rstrip("_").replace("_", "-"): unicode(value) for attribute, value in attrib.iteritems()}
+		elem = ET.Element(tag, attrib)
+		for item in children:
+			if isinstance(item, dict):
+				elem.attrib.update(item)
+			elif ET.iselement(item):
+				elem.append(item)
+			else:
+				if not isinstance(item, basestring):
+					item = unicode(item)
+				if len(elem):
+					elem[-1].tail = (elem[-1].tail or "") + item
+				else:
+					elem.text = (elem.text or "") + item
+				
+		return elem
+
+	def __getattr__(self, tag):
+		return functools.partial(self, tag)
+
+E = _E()
