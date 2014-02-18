@@ -65,6 +65,12 @@ class ConfigurationProvider(LocalSingletonBase):
 			if self.excluded_resolvers != "*" and "github" not in self.excluded_resolvers:
 				raise ConfigurationException("The GitHub resolver is not configured, but GitHub was also not excluded from the resolvers. Either configure the resolver, or add it to the exclude list.")
 			
+		try:
+			self.imgur_client_id = data["imgur"]["client_id"]
+		except KeyError, e:
+			if self.excluded_resolvers != "*" and "imgur" not in self.excluded_resolvers:
+				raise ConfigurationException("The Imgur resolver is not configured, but Imgur was also not excluded from the resolvers. Either configure the resolver, or add it to the exclude list.")
+			
 		if self.development_mode == True:
 			logger.warning("Development mode is enabled!")
 

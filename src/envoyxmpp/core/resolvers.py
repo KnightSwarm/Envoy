@@ -14,6 +14,12 @@ try:
 	available_libraries.add("libsaas")
 except:
 	pass
+
+try:
+	import pyimgur
+	available_libraries.add("pyimgur")
+except:
+	pass
 	
 def require_library(name):
 	if name not in available_libraries:
@@ -359,14 +365,53 @@ class GitHubResolver(LocalSingletonBase):
 	
 @LocalSingleton
 class ImgurResolver(LocalSingletonBase):
+	def __init__(self, singleton_identifier=None):
+		self.identifier = singleton_identifier
+		configuration = ConfigurationProvider.Instance(self.identifier)
+		try:
+			require_library("pyimgur")
+			self.client = pyimgur.Imgur(configuration.imgur_client_id)
+		except LibraryUnavailableException, e:
+			pass
+			
+	def process_image(self, image):
+		# Turns an Image object (or derivative thereof such as GalleryImage) into HTML/JSON
+		if image.title is None:
+			title = "Untitled"
+		else:
+			title = image.title
+		
+		json = {
+			"title": title,
+			"image": image.link_small_thumbnail
+		}
+		
+		html = ET.tostring((
+			E.div(
+				E.div(title, class_="title"),
+				E.img(src=image.link_small_thumbnail),
+				class_="imgur-image"
+			)
+		), method="html")
+		
+		return (html, json)
+		
 	def resolve_item(self, match, message, stanza):
 		# May also be false positive
 		# IDEA: Use ImageResolver for thumbnail
-		pass
-	
+		require_library("pyimgur")
+		try:
+			return self.process_image(self.client.get_image(match["id"]))
+		except Exception, e: # WTF pyimgur, why no clear custom exceptions?
+			raise ResolutionFailedException("Could not resolve the specified Imgur image.")
+		
 	def resolve_gallery_item(self, match, message, stanza):
 		# IDEA: Use ImageResolver for thumbnail
-		pass
+		require_library("pyimgur")
+		try:
+			return self.process_image(self.client.get_gallery_image(match["id"]))
+		except Exception, e:
+			raise ResolutionFailedException("Could not resolve the specified Imgur image.")
 	
 @LocalSingleton
 class BeanstalkResolver(LocalSingletonBase):
