@@ -3,3 +3,4 @@ passlib
 oursql
 marrow.mailer
 twilio
+requests
