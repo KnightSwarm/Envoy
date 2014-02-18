@@ -282,7 +282,7 @@ class ResolveHandler(LocalSingletonBase):
 			"https?:\/\/github.com\/(?P<user>[^\/?\s!]+)\/(?P<repository>[^\/?\s!]+)\/issues\/(?P<id>[0-9]+)\/?(?:\?.*)?": GitHubResolver.Instance(self.identifier).resolve_issue,
 			"https?:\/\/github.com\/(?P<user>[^\/?\s!]+)\/(?P<repository>[^\/?\s!]+)\/pull\/(?P<id>[0-9]+)\/?(?:\?.*)?": GitHubResolver.Instance(self.identifier).resolve_pullrequest,
 			"https?:\/\/github.com\/(?P<user>[^\/?\s!]+)\/(?P<repository>[^\/?\s!]+)\/commit\/(?P<id>[0-9a-f]+)\/?(?:\?.*)?": GitHubResolver.Instance(self.identifier).resolve_commit,
-			"https?:\/\/github.com\/(?P<user>[^\/?\s!]+)\/(?P<repository>[^\/?\s!]+)\/compare\/(?P<id1>[0-9a-f]+)\.\.\.(?P<id2>[0-9a-f]+)\/?(?:\?.*)?": GitHubResolver.Instance(self.identifier).resolve_comparison,
+			"https?:\/\/github.com\/(?P<user>[^\/?\s!]+)\/(?P<repository>[^\/?\s!]+)\/compare\/(?P<id1>[0-9a-f]+)\.\.\.(?P<id2>[0-9a-f]+)\/?(?:\?.*)?": GitHubResolver.Instance(self.identifier).resolve_comparison,# TODO: Allow comparisons between things other than SHA hashes?
 			"https?:\/\/gist\.github.com\/(?P<user>[^\/?\s!]+)\/?(?:\?.*)?": GitHubResolver.Instance(self.identifier).resolve_gist_user,
 			"https?:\/\/gist\.github.com\/(?P<user>[^\/?\s!]+)\/(?P<id>[^\/?\s!]+)\/?(?:\?.*)?": GitHubResolver.Instance(self.identifier).resolve_gist,
 			"https?:\/\/imgur.com\/gallery\/(?P<id>[^\/?\s!]+)\/?(?:\?.*)?": ImgurResolver.Instance(self.identifier).resolve_gallery_item,

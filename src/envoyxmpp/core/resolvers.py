@@ -1,4 +1,4 @@
-from .util import Singleton, LocalSingleton, LocalSingletonBase, E, ET
+from .util import Singleton, LocalSingleton, LocalSingletonBase, E, ET, cut_text
 
 available_libraries = set()
 
@@ -36,6 +36,8 @@ class ImageResolver(LocalSingletonBase):
 	
 @LocalSingleton
 class GitHubResolver(LocalSingletonBase):
+	# FIXME: Nice name handling... Now some calls will throw "None" as name, if no realname is set.
+	
 	def __init__(self, singleton_identifier=None):
 		self.identifier = singleton_identifier
 		configuration = ConfigurationProvider.Instance(self.identifier)
@@ -44,6 +46,20 @@ class GitHubResolver(LocalSingletonBase):
 			self.client = github.MainClass.Github(configuration.github_token)
 		except LibraryUnavailableException, e:
 			pass
+	
+	def add_statistics(self, files):
+		 # Calculates total additions, changes, and removals for a list of Files. Faster than a list comprehension.
+		 # Changed lines are meaningless; it seems GitHub only does line-level diffing.
+		additions = 0
+		changes = 0
+		deletions = 0
+		
+		for file_ in files:
+			additions += file_.additions
+			changes += file_.changes
+			deletions += file_.deletions
+			
+		return (additions, changes, deletions)
 	
 	def resolve_user(self, match, message, stanza):
 		# May also be organization
@@ -151,7 +167,7 @@ class GitHubResolver(LocalSingletonBase):
 			raise ResolutionFailedException("The specified repository does not exist or cannot be accessed.")
 		
 		json = {
-			"title": "%s" % repo.name,
+			"title": repo.name,
 			"description": repo.description,
 			"statistics": "%s forks, %s followers, %s favourites" % (repo.forks_count, repo.watchers_count, repo.stargazers_count)
 		}
@@ -173,28 +189,165 @@ class GitHubResolver(LocalSingletonBase):
 		return (html, json)
 		
 	def resolve_tree(self, match, message, stanza):
+		# No information on directory trees is currently returned by the GitHub API; for now,
+		# we will just return information about the branch.
 		require_library("github")
-		pass
+		return self.resolve_branch(match, message, stanza)
+		
+	def resolve_branch(self, match, message, stanza):
+		# Called by resolve_tree (temporarily).
+		branch = self.client.get_repo("%s/%s" % (match["user"], match["repository"])).get_branch(match["branch"])
+		
+		title = "Branch %s on %s/%s" % (branch.name, match["user"], match["repository"])
+		
+		json = {
+			"title": title,
+			"statistics": "Last commit: %s\n%s" % (branch.commit.sha, branch.commit.commit.message)
+		}
+		
+		html = ET.tostring((
+			E.div(
+				E.div(title, class_="title"),
+				E.div(
+					"Last commit: ", E.strong(branch.commit.sha),
+					E.div(branch.commit.commit.message, class_="message"),
+					class_="statistics"
+				),
+				class_="github-branch"
+			)
+		), method="html")
+		
+		return (html, json)
 		
 	def resolve_blob(self, match, message, stanza):
+		# Not quite certain how to implement this. Returning branch information for now.
 		require_library("github")
-		pass
+		return self.resolve_branch(match, message, stanza)
 		
 	def resolve_issue(self, match, message, stanza):
 		require_library("github")
-		pass
+		
+		issue = self.client.get_repo("%s/%s" % (match["user"], match["repository"])).get_issue(int(match["id"]))
+		
+		name = "Issue #%d: %s" % (issue.number, issue.title)
+		description = cut_text(issue.body, 250)
+		
+		json = {
+			"title": name,
+			"description": description,
+			"statistics": "Status is '%s'. Opened by %s (%s)." % (issue.state, issue.user.name, issue.user.login)
+		}
+		
+		html = ET.tostring((
+			E.div(
+				E.div(name, class_="title"),
+				E.div(description, class_="description"),
+				E.div(
+					"Currently ", E.strong(issue.state), ". ",
+					"Opened by ", E.strong(issue.user.name), " (%s)." % issue.user.login,
+					class_="statistics"
+				),
+				class_="github-issue"
+			)
+		), method="html")
+		
+		return (html, json)
 		
 	def resolve_pullrequest(self, match, message, stanza):
 		require_library("github")
-		pass
+		
+		pullreq = self.client.get_repo("%s/%s" % (match["user"], match["repository"])).get_pull(int(match["id"]))
+		
+		name = "Pull request #%d: %s" % (pullreq.number, pullreq.title)
+		description = cut_text(pullreq.body, 250)
+		
+		json = {
+			"title": name,
+			"description": description,
+			"statistics": "Status is '%s'. Opened by %s (%s). Results in %s line(s) added, %s deleted." % (pullreq.state, pullreq.user.name, pullreq.user.login, pullreq.additions, pullreq.deletions)
+		}
+		
+		html = ET.tostring((
+			E.div(
+				E.div(name, class_="title"),
+				E.div(description, class_="description"),
+				E.div(
+					"Currently ", E.strong(pullreq.state), ". ",
+					"Opened by ", E.strong(pullreq.user.name), " (%s)." % pullreq.user.login,
+					E.div(
+						"Results in ",
+						E.strong(pullreq.additions), " line(s) added, and ",
+						E.strong(pullreq.deletions), " line(s) deleted.",
+					),
+					class_="statistics"
+				),
+				class_="github-pullreq"
+			)
+		), method="html")
+		
+		return (html, json)
 		
 	def resolve_commit(self, match, message, stanza):
 		require_library("github")
-		pass
+		
+		commit = self.client.get_repo("%s/%s" % (match["user"], match["repository"])).get_commit(match["id"])
+		
+		title = "Commit %s on %s/%s" % (commit.sha, match["user"], match["repository"])
+		
+		additions, changes, deletions = self.add_statistics(commit.files)
+		
+		json = {
+			"title": title,
+			"description": commit.commit.message,
+			"statistics": "Committed by %s (%s). %s line(s) added, %s deleted." % (commit.committer.name, commit.committer.login, additions, deletions)
+		}
+		
+		html = ET.tostring((
+			E.div(
+				E.div(title, class_="title"),
+				E.div(
+					"Committed by ", E.strong(commit.committer.name), " (%s)." % commit.committer.login,
+					E.div(
+						E.strong(additions), " line(s) added, ", E.strong(deletions), " line(s) deleted."
+					),
+					class_="statistics"
+				),
+				E.div(commit.commit.message, class_="description"),
+				class_="github-commit"
+			)
+		), method="html")
+		
+		return (html, json)
 		
 	def resolve_comparison(self, match, message, stanza):
 		require_library("github")
-		pass
+		
+		repo = self.client.get_repo("%s/%s" % (match["user"], match["repository"]))
+		comparison = repo.compare(match["id1"], match["id2"])
+		commit1 = comparison.base_commit
+		commit2 = repo.get_commit(match["id2"]) # Not sure how to extract this from the comparison data...?
+		
+		title = "Comparison between %s and %s on %s/%s" % (commit1.sha, commit2.sha, match["user"], match["repository"])
+		
+		additions, changes, deletions = self.add_statistics(comparison.files)
+		
+		json = {
+			"title": title,
+			"statistics": "%s line(s) added, %s deleted." % (additions, deletions)
+		}
+		
+		html = ET.tostring((
+			E.div(
+				E.div(title, class_="title"),
+				E.div(
+					E.strong(additions), " line(s) added, ", E.strong(deletions), " line(s) deleted.",
+					class_="statistics"
+				),
+				class_="github-comparison"
+			)
+		), method="html")
+		
+		return (html, json)
 		
 	def resolve_gist_user(self, match, message, stanza):
 		require_library("github")

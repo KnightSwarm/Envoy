@@ -3,7 +3,7 @@ try:
 except ImportError, e:
 	import xml.etree.ElementTree as ET
 	
-import functools
+import functools, re
 
 class Singleton:
 	# http://stackoverflow.com/a/7346105/1332715
@@ -84,6 +84,12 @@ def dedup(seq):
 	seen = set()
 	seen_add = seen.add
 	return [x for x in seq if x not in seen and not seen_add(x)]
+
+def cut_text(text, length):
+	if len(text) > length:
+		return "%s..." % re.match(r"^(.{0,%d})(\b|$)" % length, text).group(1)
+	else:
+		return text
 
 # Source: http://effbot.org/zone/element-builder.htm
 # (c) 2006 Fredrik Lundh
