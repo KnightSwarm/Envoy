@@ -71,6 +71,21 @@ class ConfigurationProvider(LocalSingletonBase):
 			if self.excluded_resolvers != "*" and "imgur" not in self.excluded_resolvers:
 				raise ConfigurationException("The Imgur resolver is not configured, but Imgur was also not excluded from the resolvers. Either configure the resolver, or add it to the exclude list.")
 			
+		try:
+			self.trello_key = data["trello"]["key"]
+			self.trello_token = data["trello"]["token"]
+		except KeyError, e:
+			if self.excluded_resolvers != "*" and "trello" not in self.excluded_resolvers:
+				raise ConfigurationException("The Trello resolver is not configured, but Trello was also not excluded from the resolvers. Either configure the resolver, or add it to the exclude list.")
+			
+		try:
+			self.beanstalk_host = data["beanstalk"]["host"]
+			self.beanstalk_user = data["beanstalk"]["user"]
+			self.beanstalk_key = data["beanstalk"]["key"]
+		except KeyError, e:
+			if self.excluded_resolvers != "*" and "beanstalk" not in self.excluded_resolvers:
+				raise ConfigurationException("The Beanstalk resolver is not configured, but Beanstalk was also not excluded from the resolvers. Either configure the resolver, or add it to the exclude list.")
+			
 		if self.development_mode == True:
 			logger.warning("Development mode is enabled!")
 

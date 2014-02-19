@@ -288,10 +288,9 @@ class ResolveHandler(LocalSingletonBase):
 			"https?:\/\/imgur.com\/gallery\/(?P<id>[^\/?\s!]+)\/?(?:\?.*)?": ImgurResolver.Instance(self.identifier).resolve_gallery_item,
 			"https?:\/\/imgur.com\/(?P<id>[^\/?\s!]+)\/?(?:\?.*)?": ImgurResolver.Instance(self.identifier).resolve_item, # This will trigger a false positive for URLs like imgur.com/random!
 			"(?:\s|^|\()(?P<url>https?:\/\/.+\.(?P<type>svg|png|gif|bmp|jpg))": ImageResolver.Instance(self.identifier).resolve_item, # This is for generic image resolving (including i.imgur.com, since those URLs just carry image extensions)
-			"https?:\/\/(?P<organization>[^.]+)\.beanstalkapp\.com\/\/?(?:\?.*)?": BeanstalkResolver.Instance(self.identifier).resolve_organization,
 			"https?:\/\/(?P<organization>[^.]+)\.beanstalkapp\.com\/(?P<repository>[^\/?\s!]+)\/?(?:\?.*)?": BeanstalkResolver.Instance(self.identifier).resolve_repository,
 			"https?:\/\/(?P<organization>[^.]+)\.beanstalkapp\.com\/(?P<repository>[^\/?\s!]+)\/changesets\/(?P<id>[0-9a-f]+)\/?(?:\?.*)?": BeanstalkResolver.Instance(self.identifier).resolve_changeset,
-			"https?:\/\/(?P<organization>[^.]+)\.beanstalkapp\.com\/(?P<repository>[^\/?\s!]+)\/browse\/(?P<type>[^\/?\s!]+)(?:\/(?P<path>[^?]+))?\/?(?:\?(?:.+&)?ref=(?P<ref>[^\/&]+))?": BeanstalkResolver.Instance(self.identifier).resolve_path, # 'type' may refer to SVN subdir (trunk/tags/etc.) or 'git' for Git
+			# [there does not appear to currently be support for this in the API] "https?:\/\/(?P<organization>[^.]+)\.beanstalkapp\.com\/(?P<repository>[^\/?\s!]+)\/browse\/(?P<type>[^\/?\s!]+)(?:\/(?P<path>[^?]+))?\/?(?:\?(?:.+&)?ref=(?P<ref>[^\/&]+))?": BeanstalkResolver.Instance(self.identifier).resolve_path, # 'type' may refer to SVN subdir (trunk/tags/etc.) or 'git' for Git
 			"https?:\/\/trello.com\/b\/(?P<id>[^\/?\s!]+)(?:\/(?P<name>[^\/?\s!]+))?\/?(?:\?.*)?": TrelloResolver.Instance(self.identifier).resolve_board,
 			"https?:\/\/trello.com\/c\/(?P<id>[^\/?\s!]+)(?:\/(?P<name>[^\/?\s!]+))?\/?(?:\?.*)?": TrelloResolver.Instance(self.identifier).resolve_card,
 			"https?:\/\/trello.com\/(?P<id>[^\/?\s!]+)\/?(?:\?.*)?": TrelloResolver.Instance(self.identifier).resolve_user, # This may bring up false positives, eg. for trello.com/gold. It may also correspond to an organization rather than a user.
