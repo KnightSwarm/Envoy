@@ -273,10 +273,15 @@ class LogRequestHandler(LocalSingletonBase):
 		rsm_before = stanza["mam"]["rsm"]["before"]
 		rsm_max = stanza["mam"]["rsm"]["max"]
 		
+		requesting_user = stanza["from"].bare
 		extended = stanza["mam"]["extended_support"]
 		
 		predicates = []
 		values = []
+		
+		# We only return stanzas where the requesting user is either the sender or the recipient.
+		predicates.append("(`Sender` = ? OR `Recipient` = ?)")
+		values = values + [requesting_user, requesting_user]
 		
 		if filter_user != "":
 			predicates.append("(`Sender` = ? OR `Recipient` = ?)")
@@ -294,21 +299,25 @@ class LogRequestHandler(LocalSingletonBase):
 			predicates.append("`OrderId` > (SELECT `OrderId` FROM %(table)s WHERE `Id` = ? LIMIT 1)")
 			values.append(rsm_after)
 			
-		if rsm_before != "" and rsm_before is not None: # Deals with implementation inconsistency in SleekXMPP
+		if rsm_before != "" and rsm_before is not None and rsm_before != True: # Deals with implementation inconsistency in SleekXMPP
 			predicates.append("`OrderId` < (SELECT `OrderId` FROM %(table)s WHERE `Id` = ? LIMIT 1)")
 			values.append(rsm_before)
 		
 		base_query = "SELECT * FROM %(table)s WHERE " + " AND ".join(predicates)
 		
-		message_query = base_query % {"table": "log_messages"}
+		if rsm_before == True: # Special case, return last page...
+			message_query = base_query % {"table": "log_messages"} + " ORDER BY `OrderId` DESC"
+			message_query = "(%s) ORDER BY `OrderId` ASC" % message_query
+		else:
+			message_query = base_query % {"table": "log_messages"} + " ORDER BY `OrderId` ASC"
 		
 		if rsm_max != "":
-			message_query += " ORDER BY `OrderId` ASC LIMIT %d" % int(rsm_max)
-		
-		print message_query
-		print values
+			message_query += " LIMIT %d" % int(rsm_max)
 		
 		try:
+			print "query"
+			print message_query
+			print values
 			messages = logentry_provider.get_messages_from_query(message_query, values)
 		except NotFoundException, e:
 			messages = []
@@ -320,6 +329,8 @@ class LogRequestHandler(LocalSingletonBase):
 				# matched message. Why? Because events and messages are stored and counted
 				# separately, and we can't use RSM to page through two collections at the same time.
 				# This could probably be optimized/improved with some SQL magicks in the future.
+				# Bonus drawback of current approach: No way to tell with any certainty what came
+				# first when an event and a message both have the same timestamp.
 				start_boundary = messages[0].date
 				end_boundary = messages[-1].date
 				# TODO: Could be optimized by leaving out earlier `Date` and RSM predicates if present.
@@ -334,9 +345,11 @@ class LogRequestHandler(LocalSingletonBase):
 				except NotFoundException, e:
 					events = []
 				
+				combined = messages + events
+				combined.sort(key=lambda item: item.date)
+				
 				logger.warning(stanza)
-				logger.warning("MESSAGES: %s" % messages)
-				logger.warning("EVENTS: %s" % events)
+				logger.warning("COMBINED: %s" % combined)
 		else:
 			logger.warning("No results.")
 			pass # No results
