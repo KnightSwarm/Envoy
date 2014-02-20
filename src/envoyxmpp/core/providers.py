@@ -1060,7 +1060,7 @@ class MessageLogEntry(LazyLoadingObject):
 		self._recipient = row["Recipient"]
 		self.type = logger.event_string(row["Type"])
 		self.date = row["Date"]
-		self.message = row["Messaeg"]
+		self.message = row["Message"]
 		self.stanza = row["Stanza"]
 		
 	def get_fqdn(self):
@@ -1193,6 +1193,6 @@ class XmppStatusProvider(LocalSingletonBase):
 		
 		
 from .exceptions import NotFoundException, ConfigurationException
-from .loggers import ApplicationLogger
+from .loggers import ApplicationLogger, EventLogger
 from .db import Database, Row
 from .component import Component

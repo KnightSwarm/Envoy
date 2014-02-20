@@ -4,7 +4,7 @@ from sleekxmpp.stanza import Message, Presence, Iq
 from sleekxmpp.xmlstream.matcher import MatchXPath, StanzaPath
 from sleekxmpp.exceptions import IqError
 
-import traceback, re
+import traceback, re, datetime, time
 
 @LocalSingleton
 class StanzaHandler(LocalSingletonBase):	
@@ -261,9 +261,85 @@ class OverrideHandler(LocalSingletonBase):
 @LocalSingleton
 class LogRequestHandler(LocalSingletonBase):
 	def process(self, stanza):
+		component = Component.Instance(self.identifier)
+		logentry_provider = LogEntryProvider.Instance(self.identifier)
 		logger = ApplicationLogger.Instance(self.identifier)
-		logger.warning(stanza)
-		logger.warning(repr(stanza["mam"]["extended_support"]))
+		
+		filter_user = stanza["mam"]["with"]
+		filter_start = stanza["mam"]["start"]
+		filter_end = stanza["mam"]["end"]
+		
+		rsm_after = stanza["mam"]["rsm"]["after"]
+		rsm_before = stanza["mam"]["rsm"]["before"]
+		rsm_max = stanza["mam"]["rsm"]["max"]
+		
+		extended = stanza["mam"]["extended_support"]
+		
+		predicates = []
+		values = []
+		
+		if filter_user != "":
+			predicates.append("(`Sender` = ? OR `Recipient` = ?)")
+			values = values + [filter_user, filter_user]
+			
+		if filter_start != "":
+			predicates.append("`Date` >= ?")
+			values.append(filter_start)
+			
+		if time.mktime(filter_end.timetuple()) > (60 * 60 * 24): # WTF? Why is it returning January 1, 1970 when the element does not exist?
+			predicates.append("`Date` <= ?")
+			values.append(filter_end)
+			
+		if rsm_after != "":
+			predicates.append("`OrderId` > (SELECT `OrderId` FROM %(table)s WHERE `Id` = ? LIMIT 1)")
+			values.append(rsm_after)
+			
+		if rsm_before != "" and rsm_before is not None: # Deals with implementation inconsistency in SleekXMPP
+			predicates.append("`OrderId` < (SELECT `OrderId` FROM %(table)s WHERE `Id` = ? LIMIT 1)")
+			values.append(rsm_before)
+		
+		base_query = "SELECT * FROM %(table)s WHERE " + " AND ".join(predicates)
+		
+		message_query = base_query % {"table": "log_messages"}
+		
+		if rsm_max != "":
+			message_query += " ORDER BY `OrderId` ASC LIMIT %d" % int(rsm_max)
+		
+		print message_query
+		print values
+		
+		try:
+			messages = logentry_provider.get_messages_from_query(message_query, values)
+		except NotFoundException, e:
+			messages = []
+		
+		if len(messages) > 0:
+			if extended and len(messages) > 1: # Only fetch events if we have at least two messages
+				# TODO: This is a sub-optimal implementation. It currently looks for the (paged) messages
+				# matching the predicates first, then selects all events inbetween the first and the last
+				# matched message. Why? Because events and messages are stored and counted
+				# separately, and we can't use RSM to page through two collections at the same time.
+				# This could probably be optimized/improved with some SQL magicks in the future.
+				start_boundary = messages[0].date
+				end_boundary = messages[-1].date
+				# TODO: Could be optimized by leaving out earlier `Date` and RSM predicates if present.
+				event_query = base_query % {"table": "log_events"} + " AND `Date` > ? AND `Date` < ? ORDER BY `OrderId` ASC"
+				values += [start_boundary, end_boundary]
+				
+				print event_query
+				print values
+				
+				try:
+					events = logentry_provider.get_events_from_query(event_query, values)
+				except NotFoundException, e:
+					events = []
+				
+				logger.warning(stanza)
+				logger.warning("MESSAGES: %s" % messages)
+				logger.warning("EVENTS: %s" % events)
+		else:
+			logger.warning("No results.")
+			pass # No results
 		
 @LocalSingleton
 class ResolveHandler(LocalSingletonBase):
@@ -310,7 +386,7 @@ class ResolveHandler(LocalSingletonBase):
 		return total_matches
 
 from .notification import HighlightChecker
-from .providers import UserProvider, PresenceProvider, AffiliationProvider, ConfigurationProvider
+from .providers import UserProvider, PresenceProvider, AffiliationProvider, ConfigurationProvider, LogEntryProvider
 from .loggers import EventLogger, ApplicationLogger
 from .component import Component
 from .senders import MessageSender

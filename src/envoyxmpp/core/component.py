@@ -28,7 +28,9 @@ class Component(ComponentXMPP):
 		self.registerPlugin('xep_0030') # Service Discovery
 		self.registerPlugin('xep_0004') # Data Forms
 		self.registerPlugin('xep_0045') # MUC
+		self.registerPlugin('xep_0059') # Result Set Management
 		self.registerPlugin('xep_0060') # PubSub
+		self.registerPlugin('xep_0082') # XMPP Date and Time Profiles
 		self.registerPlugin('xep_0199') # XMPP Ping
 		self.registerPlugin('xep_0297') # Stanza forwarding
 		self.registerPlugin('xep_0313') # Message Archive Management
