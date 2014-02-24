@@ -337,9 +337,6 @@ class LogRequestHandler(LocalSingletonBase):
 				event_query = base_query % {"table": "log_events"} + " AND `Date` > ? AND `Date` < ? ORDER BY `OrderId` ASC"
 				values += [start_boundary, end_boundary]
 				
-				print event_query
-				print values
-				
 				try:
 					events = logentry_provider.get_events_from_query(event_query, values)
 				except NotFoundException, e:
@@ -347,9 +344,31 @@ class LogRequestHandler(LocalSingletonBase):
 				
 				combined = messages + events
 				combined.sort(key=lambda item: item.date)
+			else:
+				combined = messages
 				
-				logger.warning(stanza)
-				logger.warning("COMBINED: %s" % combined)
+			# Send the stanzas to the requesting entity
+			for item in combined:
+				item_stanza = stanza.stream._build_stanza(ET.fromstring(item.stanza))
+				# Need to build this stanza manually; the forwarding module will send it straight-away, but
+				# we want to wrap it in a <result /> first.
+				msg = component.Message()
+				msg["to"] = stanza["from"]
+				msg["from"] = component.boundjid
+				msg["body"] = None
+				msg["mam_result"]["id"] = item.id
+				msg["mam_result"]["forwarded"]["stanza"] = item_stanza
+				msg["mam_result"]["forwarded"]["delay"]["stamp"] = item.date
+				
+				try:
+					msg["mam_result"]["queryid"] = stanza["id"]
+				except KeyError, e:
+					pass # No ID specified
+				    
+				msg.send()
+				
+			# Finished
+			stanza.reply().send()
 		else:
 			logger.warning("No results.")
 			pass # No results

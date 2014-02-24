@@ -42,6 +42,7 @@ class Component(ComponentXMPP):
 		
 		# Log retrieval handling
 		self["xep_0030"].add_feature("urn:xmpp:mam:tmp") # Register the MAM feature as being available
+		self["xep_0030"].add_feature("urn:envoy:mam:extended") # Register extended (Envoy) MAM as available feature
 		self.register_handler(Callback("MAM Query", MatchXPath("{%s}iq/{urn:xmpp:mam:tmp}query" % self.default_ns), LogRequestHandler.Instance(self.identifier).process))
 		
 		configuration = ConfigurationProvider.Instance(self.identifier)
