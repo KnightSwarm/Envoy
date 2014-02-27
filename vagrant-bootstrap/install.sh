@@ -44,9 +44,9 @@ sudo debconf-set-selections <<< 'mysql-server-5.5 mysql-server/root_password pas
 sudo debconf-set-selections <<< 'mysql-server-5.5 mysql-server/root_password_again password vagrant'
 apt-get install -y mysql-server mysql-client libmysql++-dev >mysql-log 2>&1
 
-# Get lighttpd and PHP
+# Get lighttpd and PHP (with memcached)
 echo "Installing lighttpd and PHP..."
-apt-get install -y lighttpd php5-cgi >/dev/null 2>&1
+apt-get install -y lighttpd php5-cgi memcached php5-memcache php5-mysql php5-curl >/dev/null 2>&1
 
 # Install Python dependencies
 echo "Installing Python dependencies..."

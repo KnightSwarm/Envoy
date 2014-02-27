@@ -1,0 +1,21 @@
+{%if isempty|errors == false}
+	<ul>
+		{%foreach error in errors}
+			<li>{%?error}</li>
+		{%/foreach}
+	</ul>
+{%/if}
+
+<form method="post" action="/login" class="pure-form pure-form-aligned">
+	<div class="pure-control-group">
+		<label>Username</label>
+		{%input type="text" name="username"}
+	</div>
+	<div class="pure-control-group">
+		<label>Password</label>
+		<input type="password" name="password">
+	</div>
+	<div class="pure-controls">
+		<button type="submit">Log in</button>
+	</div>
+</form>

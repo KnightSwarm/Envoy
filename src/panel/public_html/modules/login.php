@@ -18,10 +18,11 @@
 
 if(!isset($_APP)) { die("Unauthorized."); }
 
+$sErrors = array();
+
 if($router->uMethod == "post")
 {
 	/* Process login */
-	$sErrors = array();
 	$handler = new CPHPFormHandler();
 	
 	try
@@ -29,21 +30,21 @@ if($router->uMethod == "post")
 		$handler
 			->RequireNonEmpty("username")
 			->RequireNonEmpty("password")
-			->ValidateCustom("username", "The provided address is not a valid XMPP address.", function($value){
+			->ValidateCustom("username", "The provided address is not a valid XMPP address.", function($key, $value){
 				return filter_var($value, FILTER_VALIDATE_EMAIL) !== false;
 			})
 			->Done();
 	}
 	catch (FormValidationException $e)
 	{
-		$sErrors = $e->GetErrors();
+		$sErrors = $e->GetErrorMessages();
 	}
 	
 	if(empty($sErrors))
 	{
 		/* Actual authentication step */
-		list($uUsername, $sFqdn) = explode("@", $_POST["username"], 2)
-		$sUser = $sAPI->User($sUsername, $sFqdn);
+		list($uUsername, $uFqdn) = explode("@", $_POST["username"], 2);
+		$sUser = $sAPI->User($uUsername, $uFqdn);
 		
 		if($sUser->VerifyPassword($_POST["password"]) === true)
 		{
@@ -52,13 +53,17 @@ if($router->uMethod == "post")
 			 * that keypair for any subsequent requests. This way, we don't
 			 * have to reimplement access controls, and can just rely on the
 			 * access control in the API itself. */
-			$result = $sUser->GetKeypair("Envoy Panel")
-			$_SESSION["user_id"] = $result["user_id"]
-			$_SESSION["keypair_id"] = $result["keypair_id"]
-			$_SESSION["access_level"] = $result["access_level"]
-			$_SESSION["api_id"] = $result["api_id"]
-			$_SESSION["api_key"] = $result["api_key"]
+			$result = $sUser->GetKeypair("Envoy Panel");
+			$_SESSION["user_id"] = $result["user_id"];
+			$_SESSION["keypair_id"] = $result["keypair_id"];
+			$_SESSION["access_level"] = $result["access_level"];
+			$_SESSION["api_id"] = $result["api_id"];
+			$_SESSION["api_key"] = $result["api_key"];
 			redirect("/");
+		}
+		else
+		{
+			$sErrors[] = "The provided login details are incorrect.";
 		}
 	}
 }
