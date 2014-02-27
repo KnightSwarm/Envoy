@@ -31,7 +31,7 @@ apt-get upgrade -y >/dev/null
 
 # Get htop and such
 echo "Installing tools..."
-apt-get install -y htop iftop iotop git > /dev/null
+apt-get install -y htop iftop iotop git highlight > /dev/null
 
 # Get Python and pip
 echo "Installing Python..."
@@ -43,6 +43,10 @@ echo "Installing MySQL..."
 sudo debconf-set-selections <<< 'mysql-server-5.5 mysql-server/root_password password vagrant'
 sudo debconf-set-selections <<< 'mysql-server-5.5 mysql-server/root_password_again password vagrant'
 apt-get install -y mysql-server mysql-client libmysql++-dev >mysql-log 2>&1
+
+# Get lighttpd and PHP
+echo "Installing lighttpd and PHP..."
+apt-get install -y lighttpd php5-cgi >/dev/null 2>&1
 
 # Install Python dependencies
 echo "Installing Python dependencies..."
@@ -92,8 +96,16 @@ touch /etc/envoy/extauth/extauth_err.log >/dev/null
 tar -xzf certs.tar.gz -C /etc/envoy/certs >/dev/null
 ln -s /vagrant/src/envoyxmpp /usr/lib/python2.7/envoyxmpp
 
+mkdir /etc/lighttpd/vhosts.d/
+cp lighttpd.conf /etc/lighttpd/lighttpd.conf
+cp api.envoy.local.conf /etc/lighttpd/vhosts.d/
+cp panel.envoy.local.conf /etc/lighttpd/vhosts.d/
+
 # Restart MySQL to apply public binding changes
 /etc/init.d/mysql restart >/dev/null
+
+# Restart lighttpd to apply vhost changes
+/etc/init.d/lighttpd restart >/dev/null
 
 # Fix permissions and ownership
 echo "Setting ownership and permissions..."
@@ -112,6 +124,7 @@ chmod o-rwx /etc/prosody/prosody.cfg.lua >/dev/null
 echo "Configuring /etc/hosts..."
 echo "127.0.0.1 envoy.local" >> /etc/hosts
 echo "127.0.0.1 api.envoy.local" >> /etc/hosts
+echo "127.0.0.1 panel.envoy.local" >> /etc/hosts
 
 # Create database, import database dump
 echo "Setting up database..."

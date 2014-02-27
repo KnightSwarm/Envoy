@@ -5,3 +5,5 @@ src/envoyxmpp/raw.log
 src/client/Envoy Client/Envoy Client/
 .vagrant
 vagrant-bootstrap/mysql-log
+src/panel/.sass-cache
+src/panel/sasswatch.*

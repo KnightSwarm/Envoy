@@ -55,38 +55,52 @@ class ApiKeypair extends CPHPDatabaseRecordClass
 		}
 	}
 	
-	public function RequireAccessLevel($fqdn, $level, $error)
+	public function GetAccessLevel($fqdn)
 	{
-		if($level <= 200 && $this->HasMasterAccess())
+		if($this->HasMasterAccess())
 		{
-			return true;
+			return 200;
 		}
 		
 		$sFqdn = Fqdn::CreateFromQuery("SELECT * FROM fqdns WHERE `Fqdn` = :Fqdn", array(":Fqdn" => $fqdn), 60, true);
 		
 		try
 		{
-			ApiPermission::CreateFromQuery("SELECT * FROM api_permissions WHERE `FqdnId` = :FqdnId AND `ApiKeyId` = :ApiKeyId AND `Type` >= :AccessLevel",
-			                               array(":FqdnId" => $sFqdn->sId, ":ApiKeyId" => $this->sId, ":AccessLevel" => $level));
+			$sApiPermission = ApiPermission::CreateFromQuery("SELECT * FROM api_permissions WHERE `FqdnId` = :FqdnId AND `ApiKeyId` = :ApiKeyId",
+			                               array(":FqdnId" => $sFqdn->sId, ":ApiKeyId" => $this->sId));
 		}
 		catch (NotFoundException $e)
 		{
 			/* Disallowed by API key access restriction */
-			throw new NotAuthorizedException($error);
+			return 0;
 		}
 		
 		if($this->sType == ApiKeypair::USER)
 		{
 			try
 			{
-				ApiPermission::CreateFromQuery("SELECT * FROM user_permissions WHERE `FqdnId` = :FqdnId AND `UserId` = :UserId AND `Type` >= :AccessLevel",
-							       array(":FqdnId" => $sFqdn->sId, ":UserId" => $this->sUser->sId, ":AccessLevel" => $level));
+				UserPermission::CreateFromQuery("SELECT * FROM user_permissions WHERE `FqdnId` = :FqdnId AND `UserId` = :UserId",
+							       array(":FqdnId" => $sFqdn->sId, ":UserId" => $this->sUser->sId));
 			}
 			catch (NotFoundException $e)
 			{
 				/* Disallowed by user access restriction */
-				throw new NotAuthorizedException($error);
+				return 0;
 			}
+			
+			return min($sUserPermission->sType, $sApiPermission->sType);
+		}
+		else
+		{
+			return $sApiPermission->sType;
+		}
+	}
+	
+	public function RequireAccessLevel($fqdn, $level, $error)
+	{
+		if($this->GetAccessLevel($fqdn) < $level)
+		{
+			throw new NotAuthorizedException($error);
 		}
 	}
 	
@@ -130,5 +144,13 @@ class ApiKeypair extends CPHPDatabaseRecordClass
 	public function RequireReadAccess($fqdn)
 	{
 		$this->RequireAccessLevel($fqdn, 10, "You do not have read access to this FQDN.");
+	}
+	
+	public function GenerateKeypair()
+	{
+		/* FIXME: CPHP should use openssl_pseudo_random_bytes or mt_rand
+		 * rather than rand(). */
+		$this->uApiId = random_string(16);
+		$this->uApiKey = random_string(24);
 	}
 }

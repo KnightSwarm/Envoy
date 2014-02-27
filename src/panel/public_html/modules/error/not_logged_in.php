@@ -16,31 +16,6 @@
  * You should have received a copy of the GNU General Public License
  * along with Envoy.  If not, see <http://www.gnu.org/licenses/>. */
 
-$_APP = true;
+if(!isset($_APP)) { die("Unauthorized."); }
 
-require("include/base.php");
-
-$sPageTitle = "";
-$sPageContents = "";
-
-$router = new CPHPRouter();
-
-$router->allow_slashes = true;
-$router->ignore_query = true;
-
-$router->routes = array(
-	0 => array(
-		"^/$" => array(
-			"target" => "modules/dashboard.php",
-			"authenticator" => "authenticators/logged_in.php",
-			"auth_error" => "modules/error/not_logged_in.php"
-		),
-		"^/login$" => array(
-			"target" => "modules/login.php"
-		),
-	)
-);
-
-$router->RouteRequest();
-
-echo(NewTemplater::Render("layout", $locale->strings, array("title" => $sPageTitle, "contents" => $sPageContents)));
+redirect("/login");

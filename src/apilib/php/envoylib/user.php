@@ -48,4 +48,14 @@ class User extends ApiObject
 		
 		return $result["valid"];
 	}
+	
+	public function GetKeypair($description)
+	{
+		return $this->DoGetRequest("/user/api-key", array(
+			"username"	=> $this->username,
+			"fqdn"		=> $this->fqdn,
+			"description"	=> $description,
+			"create"		=> true
+		));
+	}
 }

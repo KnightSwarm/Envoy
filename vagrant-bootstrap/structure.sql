@@ -56,9 +56,11 @@ CREATE TABLE IF NOT EXISTS `log_events` (
   `Event` smallint(5) unsigned NOT NULL,
   `Extra` varchar(512) DEFAULT NULL,
   `Stanza` text,
-  `OrderId` bigint(20) NOT NULL AUTO_INCREMENT,
+  `OrderId` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `FqdnId` bigint(20) unsigned NOT NULL,
   PRIMARY KEY (`Id`),
-  UNIQUE KEY `OrderId` (`OrderId`)
+  UNIQUE KEY `OrderId` (`OrderId`),
+  KEY `FqdnId` (`FqdnId`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8;
 
 CREATE TABLE IF NOT EXISTS `log_messages` (
@@ -69,9 +71,11 @@ CREATE TABLE IF NOT EXISTS `log_messages` (
   `Date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `Message` mediumtext NOT NULL,
   `Stanza` text,
-  `OrderId` bigint(20) NOT NULL AUTO_INCREMENT,
+  `OrderId` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `FqdnId` bigint(20) unsigned NOT NULL,
   PRIMARY KEY (`Id`),
-  UNIQUE KEY `OrderId` (`OrderId`)
+  UNIQUE KEY `OrderId` (`OrderId`),
+  KEY `FqdnId` (`FqdnId`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8;
 
 CREATE TABLE IF NOT EXISTS `presences` (

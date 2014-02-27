@@ -88,6 +88,12 @@ $router->routes = array(
 			"authenticator"	=> "authenticators/fqdn_exists.php",
 			"auth_error"	=> ""
 		),
+		"^/user/api-key"=> array(
+			"methods"	=> "get",
+			"target"	=> "modules/user/api_key.php",
+			"authenticator"	=> "authenticators/fqdn_exists.php",
+			"auth_error"	=> ""
+		),
 		"^/room/lookup$"	=> array(
 			"methods"	=> "get",
 			"target"	=> "modules/room/lookup.php",
