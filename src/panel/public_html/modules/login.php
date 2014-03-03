@@ -46,7 +46,22 @@ if($router->uMethod == "post")
 		list($uUsername, $uFqdn) = explode("@", $_POST["username"], 2);
 		$sUser = $sAPI->User($uUsername, $uFqdn);
 		
-		if($sUser->VerifyPassword($_POST["password"]) === true)
+		try
+		{
+			$sValid = $sUser->VerifyPassword($_POST["password"]) === true;
+		}
+		catch (EnvoyLib\NotFoundException $e)
+		{
+			/* User does not exist */
+			$sValid = false;
+		}
+		catch (EnvoyLib\InvalidArgumentException $e)
+		{
+			/* FQDN does not exist */
+			$sValid = false;
+		}
+		
+		if($sValid === true)
 		{
 			/* Password was valid. We'll now retrieve the panel API keypair for
 			 * this user - and create one if it doesn't exist yet - and we'll use
@@ -59,6 +74,7 @@ if($router->uMethod == "post")
 			$_SESSION["access_level"] = $result["access_level"];
 			$_SESSION["api_id"] = $result["api_id"];
 			$_SESSION["api_key"] = $result["api_key"];
+			//var_dump($_SESSION);
 			redirect("/");
 		}
 		else

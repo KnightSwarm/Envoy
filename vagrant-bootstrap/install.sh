@@ -97,9 +97,10 @@ tar -xzf certs.tar.gz -C /etc/envoy/certs >/dev/null
 ln -s /vagrant/src/envoyxmpp /usr/lib/python2.7/envoyxmpp
 
 mkdir /etc/lighttpd/vhosts.d/
-cp lighttpd.conf /etc/lighttpd/lighttpd.conf
-cp api.envoy.local.conf /etc/lighttpd/vhosts.d/
-cp panel.envoy.local.conf /etc/lighttpd/vhosts.d/
+cp /vagrant/vagrant-bootstrap/lighttpd.conf /etc/lighttpd/lighttpd.conf
+cp /vagrant/vagrant-bootstrap/api.envoy.local.conf /etc/lighttpd/vhosts.d/
+cp /vagrant/vagrant-bootstrap/panel.envoy.local.conf /etc/lighttpd/vhosts.d/
+cp /vagrant/vagrant-bootstrap/php.ini /etc/php5/cgi/php.ini
 
 # Restart MySQL to apply public binding changes
 /etc/init.d/mysql restart >/dev/null

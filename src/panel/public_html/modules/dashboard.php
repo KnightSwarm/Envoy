@@ -18,28 +18,4 @@
 
 if(!isset($_APP)) { die("Unauthorized."); }
 
-class Fqdn extends CPHPDatabaseRecordClass
-{
-	public $table_name = "fqdns";
-	public $fill_query = "SELECT * FROM fqdns WHERE `Id` = :Id";
-	public $verify_query = "SELECT * FROM fqdns WHERE `Id` = :Id";
-	
-	public $prototype = array(
-		'string' => array(
-			'Fqdn'			=> "Fqdn",
-			'Name'			=> "Name",
-			'Description'		=> "Description"
-		),
-		'numeric' => array(
-			'OwnerId'		=> "UserId"
-		),
-		'user' => array(
-			'Owner'			=> "UserId"
-		)
-	);
-	
-	public static function GetByFqdn($fqdn, $expiry = 60)
-	{
-		return  Fqdn::CreateFromQuery("SELECT * FROM fqdns WHERE `Fqdn` = :Fqdn", array("Fqdn" => $fqdn), $expiry, true);
-	}
-}
+$sPageContents = "Access level: {$_SESSION['access_level']}";

@@ -13,6 +13,8 @@
 
 namespace EnvoyLib;
 
+$envoy_apilib_version = "1.0";
+
 class Api
 {
 	public function __construct($endpoint, $api_id, $api_key)
@@ -29,6 +31,8 @@ class Api
 	
 	public function DoRequest($method, $path, $arguments)
 	{
+		global $envoy_apilib_version;
+		
 		if(!starts_with($path, "/"))
 		{
 			$path = "/" . $path;
@@ -69,7 +73,14 @@ class Api
 		
 		if($result = curl_exec($curl))
 		{
+			echo($result);
 			$json = json_decode($result, true);
+			
+			if(json_last_error() != JSON_ERROR_NONE)
+			{
+				throw new ApiException("The response returned by the API was not valid JSON.", $result);
+			}
+			
 			$status = curl_getinfo($curl, CURLINFO_HTTP_CODE);
 			
 			switch($status)

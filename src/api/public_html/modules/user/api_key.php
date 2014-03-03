@@ -48,9 +48,20 @@ try
 	                               ":Username" => $_GET['username'], ":Fqdn" => $_GET['fqdn']), 10, true);
 	$user_found = true;
 	
-	if($sApiKeypair->sUser->sId === $sUser->sId)
+	try
 	{
-		$authenticated = true;
+		if($sApiKeypair->sUser->sId === $sUser->sId)
+		{
+			$authenticated = true;
+		}
+	}
+	catch (NotFoundException $e)
+	{
+		/* This can happen if the API keypair used for this request, is the
+		 * master key or otherwise does not belong to a user. We'll assume
+		 * that this means the user is not authenticated. To avoid interfering
+		 * with a possible previously set authentication flag, we'll simply not
+		 * touch the authentication flag at all.*/
 	}
 }
 catch (NotFoundException $e)
@@ -62,13 +73,13 @@ catch (NotFoundException $e)
 
 if($authenticated === false)
 {
-	throw NotAuthorizedException("You do not have administrative FQDN read access, and cannot retrieve API keys for another user.");
+	throw new NotAuthorizedException("You do not have administrative FQDN read access, and cannot retrieve API keys for another user.");
 }
 else
 {
 	try
 	{
-		$sKeypair = ApiKeypair::CreateFromQuery("SELECT * FROM api_keypairs WHERE `UserId` = :UserId AND `Description` = :Description", array("UserId" => $sUser->sId, "Description" => $_GET["description"]), 0, true)
+		$sKeypair = ApiKeypair::CreateFromQuery("SELECT * FROM api_keys WHERE `UserId` = :UserId AND `Description` = :Description", array("UserId" => $sUser->sId, "Description" => $_GET["description"]), 0, true);
 	}
 	catch (NotFoundException $e)
 	{
@@ -81,7 +92,7 @@ else
 				 * write access to the FQDN as well. 
 				 * TODO: Also allow write access for users to their own API keys;
 				 * this needs more looking into wrt security first. */
-				$sApiKeypair->RequireAdministrativeAccess();
+				$sApiKeypair->RequireAdministrativeAccess($_GET["fqdn"]);
 			}
 			catch (NotAuthorizedException $e)
 			{
@@ -89,16 +100,17 @@ else
 				throw NotAuthorizedException("The requested API key does not exist, and you do not have the administrative write access required to create it.");
 			}
 			
-			$sKeypair = new ApiKeypair();
-			$sKeypair->uUserId = $sUser->sId;
-			$sKeypair->uType = ApiKeypair::USER;
-			$sKeypair->GenerateKeypair();
-			$sKeypair->uDescription = $_GET["description"];
-			$sKeypair->InsertIntoDatabase();
+			/* We will rely on the user access restriction to prevent unprivileged users
+			 * from accessing administrative functionality. The API keypair is assigned
+			 * administrative permissions by default so that, even if the user itself does
+			 * not currently have administrative access, the keypair won't need to be
+			 * updated if it ever gains that access - after all, an administrative user would
+			 * always need to have administrative access through the panel anyway. */
+			$sKeypair = $sUser->CreateApiKeypair($_GET["fqdn"], $_GET["description"], ApiPermission::ADMINISTRATIVE);
 		}
 		else
 		{
-			throw NotFoundException("The requested API key was not found.");
+			throw new NotFoundException("The requested API key was not found.");
 		}
 	}
 	

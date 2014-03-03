@@ -67,4 +67,24 @@ class User extends CPHPDatabaseRecordClass
 	{
 		return ($this->uHash == $this->CreateHash($input));
 	}
+	
+	public function CreateApiKeypair($fqdn, $description, $access_level)
+	{
+		$sFqdn = Fqdn::GetByFqdn($fqdn);
+		
+		$sKeypair = new ApiKeypair();
+		$sKeypair->uUserId = $this->sId;
+		$sKeypair->uType = ApiKeypair::USER;
+		$sKeypair->GenerateKeypair();
+		$sKeypair->uDescription = $description;
+		$sKeypair->InsertIntoDatabase();
+		
+		$sPermission = new ApiPermission();
+		$sPermission->uApiKeyId = $sKeypair->sId;
+		$sPermission->uFqdnId = $sFqdn->sId;
+		$sPermission->uType = $access_level;
+		$sPermission->InsertIntoDatabase();
+		
+		return $sKeypair;
+	}
 }

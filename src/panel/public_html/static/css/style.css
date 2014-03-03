@@ -2,4 +2,8 @@
   border-bottom: 1px solid silver; }
 
 .contents {
-  padding: 16px 12px; }
+  padding: 8px 12px; }
+
+.logout-form {
+  float: right;
+  margin: 1px; }

@@ -62,12 +62,12 @@ class ApiKeypair extends CPHPDatabaseRecordClass
 			return 200;
 		}
 		
-		$sFqdn = Fqdn::CreateFromQuery("SELECT * FROM fqdns WHERE `Fqdn` = :Fqdn", array(":Fqdn" => $fqdn), 60, true);
+		$sFqdn = Fqdn::GetByFqdn($fqdn);
 		
 		try
 		{
 			$sApiPermission = ApiPermission::CreateFromQuery("SELECT * FROM api_permissions WHERE `FqdnId` = :FqdnId AND `ApiKeyId` = :ApiKeyId",
-			                               array(":FqdnId" => $sFqdn->sId, ":ApiKeyId" => $this->sId));
+			                               array(":FqdnId" => $sFqdn->sId, ":ApiKeyId" => $this->sId), 5, true);
 		}
 		catch (NotFoundException $e)
 		{
@@ -79,8 +79,8 @@ class ApiKeypair extends CPHPDatabaseRecordClass
 		{
 			try
 			{
-				UserPermission::CreateFromQuery("SELECT * FROM user_permissions WHERE `FqdnId` = :FqdnId AND `UserId` = :UserId",
-							       array(":FqdnId" => $sFqdn->sId, ":UserId" => $this->sUser->sId));
+				$sUserPermission = UserPermission::CreateFromQuery("SELECT * FROM user_permissions WHERE `FqdnId` = :FqdnId AND `UserId` = :UserId",
+							       array(":FqdnId" => $sFqdn->sId, ":UserId" => $this->sUser->sId), 5, true);
 			}
 			catch (NotFoundException $e)
 			{

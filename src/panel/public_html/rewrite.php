@@ -38,6 +38,12 @@ $router->routes = array(
 		"^/login$" => array(
 			"target" => "modules/login.php"
 		),
+		"^/logout$" => array(
+			"target" => "modules/logout.php",
+			"methods" => "post",
+			"authenticator" => "authenticators/logged_in.php",
+			"auth_error" => "modules/error/not_logged_in.php"
+		),
 	)
 );
 
