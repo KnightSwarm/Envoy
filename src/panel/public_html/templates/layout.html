@@ -7,18 +7,32 @@
 	</head>
 	<body>
 		<div class="pure-menu pure-menu-open pure-menu-horizontal">
-			<form method="post" action="/logout" class="logout-form">
-				<button type="submit" class="pure-button">Log out</button>
-			</form>
+			{%if access-level > 0}
+				<form method="post" action="/logout" class="logout-form">
+					<button type="submit" class="pure-button">Log out</button>
+				</form>
+			{%/if}
 			
 			<div class="pure-menu-heading">Envoy</div>
 			
 			<ul>
-				<li><a href="#">Dashboard</a></li>
-				<li><a href="#">FQDNs</a></li>
-				<li><a href="#">Rooms</a></li>
-				<li><a href="#">Users</a></li>
-				<li><a href="#">Logs</a></li>
+				{%if access-level > 0}
+					<li><a href="#">Dashboard</a></li>
+				{%/if}
+				
+				{%if access-level >= 150}
+					<li><a href="#">FQDNs</a></li>
+				{%/if}
+				
+				{%if access-level >= 75}
+					<li><a href="#">Rooms</a></li>
+					<li><a href="#">Users</a></li>
+				{%/if}
+				
+				{%if access-level > 0}
+					<li><a href="#">Logs</a></li>
+					<li><a href="#">My profile</a></li>
+				{%/if}
 			</ul>
 		</div>
 		

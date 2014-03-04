@@ -23,6 +23,17 @@ require("include/base.php");
 $sPageTitle = "";
 $sPageContents = "";
 
+/* This global templater variable is only used for display purposes; actual
+ * functional access control is taken care of in the API. */
+if(!empty($_SESSION["access_level"]))
+{
+	NewTemplater::SetGlobalVariable("access-level", $_SESSION["access_level"]);
+}
+else
+{
+	NewTemplater::SetGlobalVariable("access-level", 0);
+}
+
 $router = new CPHPRouter();
 
 $router->allow_slashes = true;

@@ -55,19 +55,49 @@ class ApiKeypair extends CPHPDatabaseRecordClass
 		}
 	}
 	
+	public function HasServiceAdministrativeAccess()
+	{
+		try
+		{
+			$this->RequireServiceAdministrativeAccess();
+			return true;
+		}
+		catch (NotAuthorizedException $e)
+		{
+			return false;
+		}
+	}
+	
 	public function GetAccessLevel($fqdn)
 	{
+		/* Both master and service-administrative permissions will automatically grant
+		 * full access to all FQDNs - the access levels, however, still differ.
+		 * TODO: Perhaps combine this into a GetFqdnIndependentAccessLevel method,
+		 * to avoid code duplication? */
 		if($this->HasMasterAccess())
 		{
 			return 200;
 		}
 		
-		$sFqdn = Fqdn::GetByFqdn($fqdn);
+		if($this->HasServiceAdministrativeAccess())
+		{
+			return 150;
+		}
+		
+		if(is_null($fqdn) === false)
+		{
+			$sFqdn = Fqdn::GetByFqdn($fqdn);
+			$sFqdnId = $sFqdn->sId;
+		}
+		else
+		{
+			$sFqdnId = 0;
+		}
 		
 		try
 		{
 			$sApiPermission = ApiPermission::CreateFromQuery("SELECT * FROM api_permissions WHERE `FqdnId` = :FqdnId AND `ApiKeyId` = :ApiKeyId",
-			                               array(":FqdnId" => $sFqdn->sId, ":ApiKeyId" => $this->sId), 5, true);
+			                               array(":FqdnId" => $sFqdnId, ":ApiKeyId" => $this->sId), 5, true);
 		}
 		catch (NotFoundException $e)
 		{
@@ -80,7 +110,7 @@ class ApiKeypair extends CPHPDatabaseRecordClass
 			try
 			{
 				$sUserPermission = UserPermission::CreateFromQuery("SELECT * FROM user_permissions WHERE `FqdnId` = :FqdnId AND `UserId` = :UserId",
-							       array(":FqdnId" => $sFqdn->sId, ":UserId" => $this->sUser->sId), 5, true);
+							       array(":FqdnId" => $sFqdnId, ":UserId" => $this->sUser->sId), 5, true);
 			}
 			catch (NotFoundException $e)
 			{
@@ -123,6 +153,39 @@ class ApiKeypair extends CPHPDatabaseRecordClass
 				/* Disallowed by API key access restriction */
 				throw new NotAuthorizedException("You do not have master access.");
 			}
+		}
+	}
+	
+	public function RequireServiceAdministrativeAccess()
+	{
+		/* This is a permission that is set for 'service administrators'; that is, the
+		 * administrators of the server that Envoy runs on. It is not related to a
+		 * particular FQDN, and is the only user-attainable access level that
+		 * allows for creation and deletion of FQDNs. Internally, the FqdnId for a
+		 * service-administrative permission is set to 0. */
+		if($this->sType == ApiKeypair::USER)
+		{
+			try
+			{
+				ApiPermission::CreateFromQuery("SELECT * FROM user_permissions WHERE `FqdnId` = 0 AND `UserId` = :UserId AND `Type` >= 150",
+							       array(":UserId" => $this->sUser->sId));
+			}
+			catch (NotFoundException $e)
+			{
+				/* Disallowed by user access restriction */
+				throw new NotAuthorizedException("You do not have service-administrative access.");
+			}
+		}
+		
+		try
+		{
+			ApiPermission::CreateFromQuery("SELECT * FROM api_permissions WHERE `FqdnId` = 0 AND `ApiKeyId` = :ApiKeyId AND `Type` >= 150",
+						       array(":ApiKeyId" => $this->sId));
+		}
+		catch (NotFoundException $e)
+		{
+			/* Disallowed by API key access restriction */
+			throw new NotAuthorizedException("You do not have service-administrative access.");
 		}
 	}
 	

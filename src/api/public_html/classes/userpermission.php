@@ -38,6 +38,7 @@ class UserPermission extends CPHPDatabaseRecordClass
 		)
 	);
 	
+	const SERVICE_ADMINISTRATIVE = 150;
 	const ADMINISTRATIVE = 100;
 	const ADMINISTRATIVE_READ = 75;
 	const WRITE = 50;
