@@ -40,6 +40,7 @@ class AlreadyExistsException extends ApiException {}
 class InvalidArgumentException extends ApiException {}
 
 require("util.php");
+require("signing.php");
 
 require("api.php");
 require("apiobject.php");

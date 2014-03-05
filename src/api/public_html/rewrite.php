@@ -20,7 +20,7 @@ $_APP = true;
 
 require("include/base.php");
 
-if(empty($_SERVER['HTTP_ENVOY_API_ID']) || empty($_SERVER['HTTP_ENVOY_API_KEY']))
+if(empty($_SERVER['HTTP_ENVOY_API_ID']) || empty($_SERVER['HTTP_ENVOY_API_SIGNATURE']))
 {
 	header('WWW-Authenticate: EnvoyAPIKey realm="Envoy API"');
 	http_status_code(401);
@@ -29,13 +29,20 @@ if(empty($_SERVER['HTTP_ENVOY_API_ID']) || empty($_SERVER['HTTP_ENVOY_API_KEY'])
 }
 
 $uApiId = $_SERVER['HTTP_ENVOY_API_ID'];
-$uApiKey = $_SERVER['HTTP_ENVOY_API_KEY'];
+$uApiSignature = $_SERVER['HTTP_ENVOY_API_SIGNATURE'];
 
 try
 {
-	$sApiKeypair = ApiKeypair::CreateFromQuery("SELECT * FROM api_keys WHERE `ApiId` = :ApiId AND `ApiKey` = :ApiKey", array(":ApiId" => $uApiId, ":ApiKey" => $uApiKey), 60, true);
+	$sApiKeypair = ApiKeypair::CreateFromQuery("SELECT * FROM api_keys WHERE `ApiId` = :ApiId", array(":ApiId" => $uApiId), 60, true);
+	list($requestpath, $bogus) = explode("?", $_SERVER['REQUEST_URI'], 2);
+	$authorized = verify_request($uApiSignature, $sApiKeypair->uApiKey, strtoupper($_SERVER['REQUEST_METHOD']), $requestpath, $_GET, $_POST);
 }
 catch (NotFoundException $e)
+{
+	$authorized = false;
+}
+
+if($authorized === false)
 {
 	header('WWW-Authenticate: EnvoyAPIKey realm="Envoy API"');
 	http_status_code(401);

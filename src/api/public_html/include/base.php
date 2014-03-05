@@ -74,4 +74,5 @@ $logger->pushProcessor(new Processor\UidProcessor());
 ErrorHandler::register($logger); /* Sets this logger as the default target for uncaught exceptions and errors */
 
 require("include/exceptions.php");
+require("include/signing.php");
 require("lib/pbkdf2.php");

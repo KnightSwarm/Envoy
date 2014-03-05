@@ -38,6 +38,13 @@ class Api
 			$path = "/" . $path;
 		}
 		
+		/* Start request signing code */
+		$get_data = (strtolower($method) == "get") ? $arguments : array();
+		$post_data = (strtolower($method) == "post") ? $arguments : array();
+		
+		$signature = sign_request($this->key, strtoupper($method), $path, $get_data, $post_data);
+		/* End request signing code */
+		
 		if(strtolower($method) == "get" && !empty($arguments))
 		{
 			$fields = array();
@@ -59,7 +66,7 @@ class Api
 			CURLOPT_USERAGENT	=> "Envoy PHP API Library/{$envoy_apilib_version}",
 			CURLOPT_HTTPHEADER	=> array(
 				"Envoy-API-Id: {$this->id}",
-				"Envoy-API-Key: {$this->key}"
+				"Envoy-API-Signature: {$signature}"
 			)
 		));
 		
