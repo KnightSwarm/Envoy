@@ -36,6 +36,40 @@ function autoload_class($class_name)
 
 spl_autoload_register('autoload_class');
 
+/* Adapted from: https://github.com/php-fig/fig-standards/blob/master/accepted/PSR-0.md */
+function autoload_psr0($className)
+{
+	$className = ltrim($className, '\\');
+	$fileName  = '';
+	$namespace = '';
+	
+	if ($lastNsPos = strrpos($className, '\\'))
+	{
+		$namespace = substr($className, 0, $lastNsPos);
+		$className = substr($className, $lastNsPos + 1);
+		$fileName  = str_replace('\\', DIRECTORY_SEPARATOR, $namespace) . DIRECTORY_SEPARATOR;
+	}
+	
+	$fileName .= str_replace('_', DIRECTORY_SEPARATOR, $className) . '.php';
+
+	include_once("lib" . DIRECTORY_SEPARATOR . $fileName);
+}
+
+spl_autoload_register('autoload_psr0');
+
+use Monolog\Logger;
+use Monolog\ErrorHandler;
+use Monolog\Handler\StreamHandler;
+use Monolog\Processor;
+
+$log_level = empty($cphp_config->debug) ? Logger::INFO : Logger::DEBUG;
+
+$logger = new Logger("panel");
+$logger->pushHandler(new StreamHandler("/etc/envoy/panel.log", $log_level));
+$logger->pushProcessor(new Processor\WebProcessor());
+$logger->pushProcessor(new Processor\UidProcessor());
+ErrorHandler::register($logger); /* Sets this logger as the default target for uncaught exceptions and errors */
+
 /* Load the Envoy PHP API library... */
 require("lib/envoylib/base.php");
 

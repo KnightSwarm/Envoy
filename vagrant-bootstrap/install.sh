@@ -31,7 +31,7 @@ apt-get upgrade -y >/dev/null
 
 # Get htop and such
 echo "Installing tools..."
-apt-get install -y htop iftop iotop git highlight > /dev/null
+apt-get install -y htop iftop iotop git highlight multitail > /dev/null
 
 # Get Python and pip
 echo "Installing Python..."
@@ -120,6 +120,8 @@ chmod -R ug=rwx /etc/envoy >/dev/null
 chmod -R o=rx /etc/envoy >/dev/null
 #-- Hide configuration from others
 chmod o-rwx /etc/prosody/prosody.cfg.lua >/dev/null
+#-- Add the httpd user to the envoy group
+usermod -a -G envoy www-data
 
 # Set /etc/hosts
 echo "Configuring /etc/hosts..."

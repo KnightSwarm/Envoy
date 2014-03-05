@@ -58,6 +58,14 @@ $router->routes = array(
 	)
 );
 
-$router->RouteRequest();
+try
+{
+	$router->RouteRequest();
+}
+catch (RouterException $e)
+{
+	http_status_code(404);
+	die("HTTP 404 Not Found");
+}
 
 echo(NewTemplater::Render("layout", $locale->strings, array("title" => $sPageTitle, "contents" => $sPageContents)));
