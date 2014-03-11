@@ -34,7 +34,14 @@ $uApiSignature = $_SERVER['HTTP_ENVOY_API_SIGNATURE'];
 try
 {
 	$sApiKeypair = ApiKeypair::CreateFromQuery("SELECT * FROM api_keys WHERE `ApiId` = :ApiId", array(":ApiId" => $uApiId), 60, true);
-	list($requestpath, $bogus) = explode("?", $_SERVER['REQUEST_URI'], 2);
+	
+	/* Remove query string from URI for signing. */
+	$requestpath = $_SERVER['REQUEST_URI'];
+	if(strpos($requestpath, "?") !== false)
+	{
+		list($requestpath, $bogus) = explode("?", $requestpath, 2);
+	}
+	
 	$authorized = verify_request($uApiSignature, $sApiKeypair->uApiKey, strtoupper($_SERVER['REQUEST_METHOD']), $requestpath, $_GET, $_POST);
 }
 catch (NotFoundException $e)
@@ -101,6 +108,12 @@ $router->routes = array(
 			"authenticator"	=> "authenticators/fqdn_exists.php",
 			"auth_error"	=> ""
 		),
+		"^/room$"		=> array(
+			"methods"	=> "get",
+			"target"	=> "modules/room/list.php",
+			"authenticator"	=> "authenticators/fqdn_exists.php",
+			"auth_error"	=> ""
+		),
 		"^/room/lookup$"	=> array(
 			"methods"	=> "get",
 			"target"	=> "modules/room/lookup.php",
@@ -112,6 +125,10 @@ $router->routes = array(
 			"target"	=> "modules/room/create.php",
 			"authenticator"	=> "authenticators/fqdn_exists.php",
 			"auth_error"	=> ""
+		),
+		"^/fqdn$"		=> array(
+			"methods"	=> "get",
+			"target"	=> "modules/fqdn/list.php"
 		),
 		"^/fqdn/create$"	=> array(
 			"methods"	=> "post",

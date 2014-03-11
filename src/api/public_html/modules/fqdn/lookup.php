@@ -35,6 +35,7 @@ $sResponse = array(
 	"description"	=> $sFqdn->uDescription,
 	"owner"		=> array(
 		"id"		=> $sFqdn->sOwner->sId,
-		"username"	=> $sFqdn->sOwner->uUsername
+		"username"	=> $sFqdn->sOwner->uUsername,
+		"name" => $sFqdn->sOwner->uFullName
 	)
 );

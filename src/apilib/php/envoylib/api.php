@@ -29,7 +29,26 @@ class Api
 		$this->key = $api_key;
 	}
 	
-	public function DoRequest($method, $path, $arguments)
+	public function SetupMonolog($handlers)
+	{
+		$this->logger = new \Monolog\Logger("envoylib");
+		$this->logger->pushProcessor(new \Monolog\Processor\WebProcessor());
+		$this->logger->pushProcessor(new \Monolog\Processor\UidProcessor());
+		
+		if(is_array($handlers))
+		{
+			foreach($handlers as $handler)
+			{
+				$this->logger->pushHandler($handler);
+			}
+		}
+		else
+		{
+			$this->logger->pushHandler($handlers);
+		}
+	}
+	
+	public function DoRequest($method, $path, $arguments = array())
 	{
 		global $envoy_apilib_version;
 		
@@ -44,6 +63,8 @@ class Api
 		
 		$signature = sign_request($this->key, strtoupper($method), $path, $get_data, $post_data);
 		/* End request signing code */
+		
+		if(isset($this->logger)) { $this->logger->addDebug("Request", array("method" => $method, "path" => $path, "post_data" => $post_data, "get_data" => $get_data, "signature" => $signature)); }
 		
 		if(strtolower($method) == "get" && !empty($arguments))
 		{
@@ -80,11 +101,14 @@ class Api
 		
 		if($result = curl_exec($curl))
 		{
-			echo($result);
 			$json = json_decode($result, true);
+			
+			if(isset($this->logger)) { $this->logger->addDebug("Response", array("response" => $result)); }
 			
 			if(json_last_error() != JSON_ERROR_NONE)
 			{
+				if(isset($this->logger)) { $this->logger->addError("The response returned by the API was not valid JSON.", array("response" => $result)); }
+				
 				throw new ApiException("The response returned by the API was not valid JSON.", $result);
 			}
 			
@@ -134,12 +158,17 @@ class Api
 	
 	public function User($username, $fqdn)
 	{
-		return new User($username, $fqdn, $this);
+		return User::FromUsernameFqdn($username, $fqdn, $this);
 	}
 	
-	public function Fqdn($fqdn)
+	public function Room($roomname, $fqdn)
 	{
-		return new Fqdn($fqdn, $this);
+		return Room::FromRoomnameFqdn($roomname, $fqdn, $this);
+	}
+	
+	public function Fqdn($fqdn, $id=null)
+	{
+		return Fqdn::FromFqdn($fqdn, $this, $id);
 	}
 	
 	public function CreateUser($username, $fqdn, $password)
@@ -164,5 +193,18 @@ class Api
 		));
 		
 		return $this->Fqdn($fqdn);
+	}
+	
+	public function ListFqdns()
+	{
+		$result = $this->DoRequest("get", "/fqdn");
+		$fqdn_list = array();
+		
+		foreach($result as $fqdn)
+		{
+			$fqdn_list[] = $this->Fqdn($fqdn["fqdn"], $fqdn["id"]);
+		}
+		
+		return $fqdn_list;
 	}
 }

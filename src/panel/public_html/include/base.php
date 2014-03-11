@@ -86,3 +86,5 @@ else
 	/* Master keypair */
 	$sAPI = new EnvoyLib\API($cphp_config->api->endpoint, $cphp_config->api->id, $cphp_config->api->key);
 }
+
+$sAPI->SetupMonolog(new StreamHandler("/etc/envoy/panel.log", $log_level));

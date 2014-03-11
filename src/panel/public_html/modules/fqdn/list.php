@@ -18,8 +18,11 @@
 
 if(!isset($_APP)) { die("Unauthorized."); }
 
-if(!empty($_SESSION["user_id"]))
+$sFqdns = array();
+
+foreach($sAPI->ListFqdns() as $sFqdn)
 {
-	$sApiUser = $sAPI->User($_SESSION["username"], $_SESSION["fqdn"]);
-	$sRouterAuthenticated = true;
+	$sFqdns[] = array("id" => $sFqdn->id, "fqdn" => htmlspecialchars($sFqdn->fqdn));
 }
+
+$sPageContents = NewTemplater::Render("fqdns/list", $locale->strings, array("fqdns" => $sFqdns));

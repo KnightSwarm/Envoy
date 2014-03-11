@@ -18,8 +18,11 @@
 
 if(!isset($_APP)) { die("Unauthorized."); }
 
-if(!empty($_SESSION["user_id"]))
-{
-	$sApiUser = $sAPI->User($_SESSION["username"], $_SESSION["fqdn"]);
-	$sRouterAuthenticated = true;
-}
+$sFqdn = $sAPI->Fqdn($router->uParameters[1]);
+
+$sPageContents = NewTemplater::Render("fqdns/lookup", $locale->strings, array(
+	"fqdn" => htmlspecialchars($sFqdn->fqdn),
+	"name" => htmlspecialchars($sFqdn->name),
+	"description" => htmlspecialchars($sFqdn->description),
+	"owner" => htmlspecialchars($sFqdn->owner_username),
+));

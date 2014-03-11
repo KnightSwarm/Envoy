@@ -17,10 +17,15 @@ class Fqdn extends ApiObject
 {
 	protected $has_lookup = true;
 	
-	public function __construct($fqdn, $api)
+	public static function FromFqdn($fqdn, $api, $id=null)
 	{
-		$this->api = $api;
-		$this->fqdn = $fqdn;
+		$obj = new Fqdn($fqdn, $api);
+		$obj->fqdn = $fqdn;
+		if(!is_null($id))
+		{
+			$obj->id = $id;
+		}
+		return $obj;
 	}
 	
 	protected function FetchLookupData()
@@ -41,5 +46,11 @@ class Fqdn extends ApiObject
 			case "owner_username":
 				return $this->lookup_data["owner"]["username"];
 		}
+	}
+	
+	public function ListRooms()
+	{
+		$room_list = $this->DoGetRequest("/room", array("fqdn" => $this->fqdn));
+		return $this->ReturnAsObjects($room_list, "\EnvoyLib\Room"); /* Really, PHP? I need to specify the namespace? REALLY? */
 	}
 }

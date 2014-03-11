@@ -1,0 +1,33 @@
+<p><strong>FQDN:</strong> {%?fqdn}</p>
+
+<p><strong>Room JID:</strong> {%?jid}</p>
+
+<p><strong>Created on:</strong> {%?creation-date}</p>
+
+<p><strong>Name:</strong> {%?name}</p>
+
+<p>
+	<strong>Private:</strong>
+	{%if private == true}
+		Yes
+	{%else}
+		No
+	{%/if}
+</p>
+
+<p>
+	<strong>Archived:</strong>
+	{%if archived == true}
+		Yes
+	{%else}
+		No
+	{%/if}
+</p>
+
+<p><strong>Owner:</strong> {%?owner} ({%?owner-jid})</p>
+
+<p>
+	<strong>Current users:</strong> TODO
+</p>
+
+<a class="pure-button" href="/fqdns/{%?fqdn}/rooms/{%?roomname}/affiliations">Affiliations</a>

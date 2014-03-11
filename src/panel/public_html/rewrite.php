@@ -55,6 +55,69 @@ $router->routes = array(
 			"authenticator" => "authenticators/logged_in.php",
 			"auth_error" => "modules/error/not_logged_in.php"
 		),
+		"^/rooms$" => array(
+			"target" => "modules/room/redirect_own.php",
+			"methods" => "get",
+			"authenticator" => "authenticators/logged_in.php",
+			"auth_error" => "modules/error/not_logged_in.php"
+		),
+		"^/users$" => array(
+			"target" => "modules/user/redirect_own.php",
+			"methods" => "get",
+			"authenticator" => "authenticators/logged_in.php",
+			"auth_error" => "modules/error/not_logged_in.php"
+		),
+		"^/fqdns$" => array(
+			"target" => "modules/fqdn/list.php",
+			"authenticator" => "authenticators/logged_in.php",
+			"auth_error" => "modules/error/not_logged_in.php"
+		),
+		"^/fqdns/([^/]+)$" => array(
+			"target" => "modules/fqdn/lookup.php",
+			"authenticator" => "authenticators/logged_in.php",
+			"auth_error" => "modules/error/not_logged_in.php"
+		),
+		"^/fqdns/([^/]+)/rooms$" => array(
+			"target" => "modules/room/list.php",
+			"authenticator" => "authenticators/logged_in.php",
+			"auth_error" => "modules/error/not_logged_in.php"
+		),
+		"^/fqdns/([^/]+)/rooms/([^/]+)$" => array(
+			"target" => "modules/room/lookup.php",
+			"authenticator" => "authenticators/logged_in.php",
+			"auth_error" => "modules/error/not_logged_in.php"
+		),
+		"^/fqdns/([^/]+)/rooms/([^/]+)/affiliations$" => array(
+			"target" => "modules/room/affiliations/list.php",
+			"authenticator" => "authenticators/logged_in.php",
+			"auth_error" => "modules/error/not_logged_in.php"
+		),
+		"^/fqdns/([^/]+)/rooms/([^/]+)/affiliations/add$" => array(
+			"target" => "modules/room/affiliations/add.php",
+			"authenticator" => "authenticators/logged_in.php",
+			"auth_error" => "modules/error/not_logged_in.php"
+		),
+		"^/fqdns/([^/]+)/rooms/([^/]+)/affiliations/([0-9]+)$" => array(
+			"target" => "modules/room/affiliations/edit.php",
+			"authenticator" => "authenticators/logged_in.php",
+			"auth_error" => "modules/error/not_logged_in.php"
+		),
+		"^/fqdns/([^/]+)/rooms/([^/]+)/affiliations/([0-9]+)/delete$" => array(
+			"target" => "modules/room/affiliations/delete.php",
+			"methods" => "post",
+			"authenticator" => "authenticators/logged_in.php",
+			"auth_error" => "modules/error/not_logged_in.php"
+		),
+		"^/fqdns/([^/]+)/users$" => array(
+			"target" => "modules/user/list.php",
+			"authenticator" => "authenticators/logged_in.php",
+			"auth_error" => "modules/error/not_logged_in.php"
+		),
+		"^/fqdns/([^/]+)/users/([^/]+)$" => array(
+			"target" => "modules/user/lookup.php",
+			"authenticator" => "authenticators/logged_in.php",
+			"auth_error" => "modules/error/not_logged_in.php"
+		),
 	)
 );
 

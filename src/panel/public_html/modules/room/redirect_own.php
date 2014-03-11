@@ -1,5 +1,5 @@
 <?php
-/* Copyright 2013 by Sven Slootweg <admin@cryto.net>
+/* Copyright 2014 by Sven Slootweg <admin@cryto.net>
  * 
  * This file is part of Envoy.
  * 
@@ -18,8 +18,5 @@
 
 if(!isset($_APP)) { die("Unauthorized."); }
 
-if(!empty($_SESSION["user_id"]))
-{
-	$sApiUser = $sAPI->User($_SESSION["username"], $_SESSION["fqdn"]);
-	$sRouterAuthenticated = true;
-}
+/* We just redirect to the normal URL for the current FQDN. */
+redirect("/fqdns/{$_SESSION['fqdn']}/rooms");

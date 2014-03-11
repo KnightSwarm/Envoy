@@ -1,0 +1,14 @@
+<table class="pure-table pure-table-bordered fill">
+	<thead>
+		<tr>
+			<th>FQDN</th>
+			<th></th>
+		</tr>
+	</thead>
+	{%foreach fqdn in fqdns}
+		<tr>
+			<td><a href="/fqdns/{%?fqdn[fqdn]}">{%?fqdn[fqdn]}</a></td>
+			<td><!-- delete button will go here...? --></td>
+		</tr>
+	{%/foreach}
+</table>

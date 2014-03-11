@@ -23,6 +23,8 @@ if(empty($_POST['fqdn']) || empty($_POST['name']) || empty($_POST['admin_usernam
 	throw new MissingParameterException("Missing one or more required fields.");
 }
 
+$sApiKeypair->RequireServiceAdministrativeAccess();
+
 try
 {
 	$sExistingFqdn = Fqdn::CreateFromQuery("SELECT * FROM fqdns WHERE `Fqdn` = :Fqdn", array(

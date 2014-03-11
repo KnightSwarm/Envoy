@@ -45,4 +45,5 @@ require("signing.php");
 require("api.php");
 require("apiobject.php");
 require("user.php");
+require("room.php");
 require("fqdn.php");

@@ -1,0 +1,19 @@
+<table class="pure-table pure-table-bordered fill">
+	<thead>
+		<tr>
+			<th>Name</th>
+			<th>JID</th>
+			<th>Owner</th>
+			<!-- user count, public/private, archived, etc... -->
+			<th></th>
+		</tr>
+	</thead>
+	{%foreach room in rooms}
+		<tr>
+			<td><a href="/fqdns/{%?fqdn}/rooms/{%?room[roomname]}">{%?room[name]}</a></td>
+			<td>{%?room[jid]}</td>
+			<td>{%?room[owner]} ({%?room[owner_jid]})</td>
+			<td><!-- delete button will go here...? --></td>
+		</tr>
+	{%/foreach}
+</table>

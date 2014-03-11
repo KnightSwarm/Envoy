@@ -17,11 +17,12 @@ class User extends ApiObject
 {
 	protected $has_lookup = true;
 	
-	public function __construct($username, $fqdn, $api)
+	public static function FromUsernameFqdn($username, $fqdn, $api)
 	{
-		$this->api = $api;
-		$this->username = $username;
-		$this->fqdn = $fqdn;
+		$obj = new User("{$username}@{$fqdn}", $api);
+		$obj->username = $username;
+		$obj->fqdn = $fqdn;
+		return $obj;
 	}
 	
 	protected function FetchLookupData()

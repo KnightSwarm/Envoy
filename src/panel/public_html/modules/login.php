@@ -69,6 +69,8 @@ if($router->uMethod == "post")
 			 * have to reimplement access controls, and can just rely on the
 			 * access control in the API itself. */
 			$result = $sUser->GetKeypair("Envoy Panel");
+			$_SESSION["username"] = $uUsername;
+			$_SESSION["fqdn"] = $uFqdn;
 			$_SESSION["user_id"] = $result["user_id"];
 			$_SESSION["keypair_id"] = $result["keypair_id"];
 			$_SESSION["access_level"] = $result["access_level"];

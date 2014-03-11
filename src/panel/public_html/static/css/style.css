@@ -7,3 +7,6 @@
 .logout-form {
   float: right;
   margin: 1px; }
+
+table.fill {
+  width: 100%; }

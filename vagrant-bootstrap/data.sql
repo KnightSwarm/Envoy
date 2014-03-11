@@ -11,8 +11,8 @@ INSERT INTO `fqdns` (`Id`, `UserId`, `Fqdn`, `Name`, `Description`) VALUES
 (1, 32, 'envoy.local', 'Envoy', 'Local Envoy testing FQDN.');
 
 INSERT INTO `rooms` (`Id`, `Node`, `Description`, `OwnerId`, `FqdnId`, `LastUserCount`, `IsPrivate`, `IsArchived`, `CreationDate`, `ArchivalDate`, `Name`) VALUES
-(1, 'testingroom13', 'Testing room.', 1, 1, 0, 0, 0, '2013-10-08 19:11:16', NULL, 'TestingRoom13'),
-(2, 'sometest', '', 0, 1, 0, 1, 0, '2013-10-15 13:13:27', NULL, 'Some Testing Room'),
+(1, 'testingroom13', 'Testing room.', 32, 1, 0, 0, 0, '2013-10-08 19:11:16', NULL, 'TestingRoom13'),
+(2, 'sometest', '', 33, 1, 0, 1, 0, '2013-10-15 13:13:27', NULL, 'Some Testing Room'),
 (3, 'sometest2', '', 32, 1, 0, 1, 0, '2013-10-15 14:46:59', NULL, 'Some Testing Room'),
 (4, 'sometest3', 'Testing description for this newly created room...', 32, 1, 0, 0, 0, '2013-10-15 14:47:37', NULL, 'Another testing room!'),
 (5, 'sometest4', 'Testing description for this newly created room...', 32, 1, 0, 1, 0, '2013-10-15 19:10:41', NULL, 'Some Testing Room'),

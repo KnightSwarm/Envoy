@@ -1,5 +1,5 @@
 <?php
-/* Copyright 2013 by Sven Slootweg <admin@cryto.net>
+/* Copyright 2014 by Sven Slootweg <admin@cryto.net>
  * 
  * This file is part of Envoy.
  * 
@@ -18,8 +18,19 @@
 
 if(!isset($_APP)) { die("Unauthorized."); }
 
-if(!empty($_SESSION["user_id"]))
+$sRooms = array();
+
+$sFqdn = $sAPI->Fqdn($router->uParameters[1]);
+
+foreach($sFqdn->ListRooms() as $sRoom)
 {
-	$sApiUser = $sAPI->User($_SESSION["username"], $_SESSION["fqdn"]);
-	$sRouterAuthenticated = true;
+	$sRooms[] = array(
+		"jid" => htmlspecialchars($sRoom->jid), 
+		"name" => htmlspecialchars($sRoom->friendly_name), 
+		"owner" => htmlspecialchars($sRoom->owner_name),
+		"owner_jid" => htmlspecialchars($sRoom->owner_jid),
+		"roomname" => htmlspecialchars($sRoom->roomname)
+	);
 }
+
+$sPageContents = NewTemplater::Render("rooms/list", $locale->strings, array("rooms" => $sRooms, "fqdn" => $sFqdn->fqdn));

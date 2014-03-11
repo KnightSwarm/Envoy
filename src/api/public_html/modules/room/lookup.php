@@ -35,13 +35,21 @@ catch (NotFoundException $e)
 	throw new ResourceNotFoundException("The specified room does not exist.");
 }
 
+$sRoomJid = "{$sRoom->uNode}@{$sCurrentFqdn->sFqdn}";
+
 $sResponse = array(
+	"id" => $sRoomJid, /* alias for 'jid', to make client libraries happy */ 
+	"jid" => $sRoomJid,
 	"roomname"	=> $sRoom->uNode,
 	"friendlyname"	=> $sRoom->uName,
 	"description"	=> $sRoom->uDescription,
 	"private"	=> $sRoom->sIsPrivate,
 	"archived"	=> $sRoom->sIsArchived,
-	"owner"		=> $sRoom->uOwnerId,
+	"owner"		=> array(
+		"id" => $sRoom->sOwner->sId,
+		"username" => $sRoom->sOwner->uUsername,
+		"name" => $sRoom->sOwner->uFullName
+	),
 	"creationdate"	=> $sRoom->sCreationDate,
 	"archivaldate"	=> $sRoom->sArchivalDate,
 	"usercount"	=> $sRoom->uLastUserCount

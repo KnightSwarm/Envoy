@@ -48,6 +48,17 @@ class User extends CPHPDatabaseRecordClass
 		)
 	);
 	
+	public function __get($varname)
+	{
+		switch($varname)
+		{
+			case "uFullName":
+				return trim("{$this->uFirstName} {$this->uLastName}");
+			default:
+				return parent::__get($varname);
+		}
+	}
+	
 	public function CreateHash($input)
 	{
 		return base64_encode(pbkdf2("sha256", $input, base64_decode($this->uSalt), 30000, 32, true));

@@ -18,8 +18,30 @@
 
 if(!isset($_APP)) { die("Unauthorized."); }
 
-if(!empty($_SESSION["user_id"]))
+if($sApiKeypair->HasServiceAdministrativeAccess())
 {
-	$sApiUser = $sAPI->User($_SESSION["username"], $_SESSION["fqdn"]);
-	$sRouterAuthenticated = true;
+	/* Return a list of all the FQDNs. */
+	$result = Fqdn::CreateFromQuery("SELECT * FROM fqdns");
+	$sFqdns = array();
+	
+	foreach($result as $sFqdn)
+	{
+		$sFqdns[] = array(
+			"id" => $sFqdn->sId,
+			"fqdn" => $sFqdn->sFqdn /* The FQDN 'hostname' */
+		);
+	}
+	
+	$sResponse = $sFqdns;
+}
+else
+{
+	/* The user does not have administrative access. We'll only return
+	 * the FQDN that the user belongs to himself. */
+	$sResponse = array(
+		array(
+			"id" => $sApiKeypair->sUser->sFqdn->sId,
+			"fqdn" => $sApiKeypair->sUser->sFqdn->sFqdn
+		)
+	);
 }
