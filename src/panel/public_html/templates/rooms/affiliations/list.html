@@ -1,0 +1,18 @@
+<table class="pure-table pure-table-bordered fill">
+	<thead>
+		<tr>
+			<th>JID</th>
+			<th>Affiliation</th>
+			<th></th>
+		</tr>
+	</thead>
+	{%foreach affiliation in affiliations}
+		<tr>
+			<!-- CURPOS: Add roomname and fqdn to data, and add correct info... -->
+			<td><a href="/fqdns/{%?fqdn}/rooms/{%?room[roomname]}">{%?room[name]}</a></td>
+			<td>{%?room[jid]}</td>
+			<td>{%?room[owner]} ({%?room[owner_jid]})</td>
+			<td><!-- delete button will go here...? --></td>
+		</tr>
+	{%/foreach}
+</table>

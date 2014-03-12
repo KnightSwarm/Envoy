@@ -44,8 +44,26 @@ class Room extends CPHPDatabaseRecordClass
 			"IsArchived"		=> "IsArchived" /* Whether the room is set to moderated (without anyone having voice) */
 		),
 		'user' => array(
-			"Owner"			=> "OwnerId",
+			"Owner"			=> "OwnerId"
+		),
+		"fqdn" => array(
 			"Fqdn"			=> "FqdnId"
 		)
 	);
+	
+	public function __get($varname)
+	{
+		switch($varname)
+		{
+			case "uJid":
+				return "{$this->uNode}@{$this->sFqdn->uFqdn}";
+			default:
+				return parent::__get($varname);
+		}
+	}
+	
+	public static function GetByRoomname($roomname, $expiry = 60)
+	{
+		return Room::CreateFromQuery("SELECT * FROM rooms WHERE `Node` = :Roomname", array("Roomname" => $roomname), $expiry, true);
+	}
 }

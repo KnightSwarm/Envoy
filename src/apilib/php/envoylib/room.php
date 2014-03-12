@@ -60,4 +60,10 @@ class Room extends ApiObject
 				}
 		}
 	}
+	
+	public function ListAffiliations()
+	{
+		$affiliation_list = $this->DoGetRequest("affiliation"), array("fqdn" => $this->fqdn, "roomname" => $this->roomname));
+		return $this->ReturnAsObjects($affiliation_list, "\EnvoyLib\Affiliation");
+	}
 }

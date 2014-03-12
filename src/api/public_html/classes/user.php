@@ -54,6 +54,8 @@ class User extends CPHPDatabaseRecordClass
 		{
 			case "uFullName":
 				return trim("{$this->uFirstName} {$this->uLastName}");
+			case "uJid":
+				return "{$this->uUsername}@{$this->sFqdn->uFqdn}";
 			default:
 				return parent::__get($varname);
 		}

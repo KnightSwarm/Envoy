@@ -61,11 +61,9 @@ $sRoomList = array();
 
 foreach($sRooms as $sRoom)
 {
-	$sRoomJid = "{$sRoom->uNode}@{$sCurrentFqdn->sFqdn}";
-	
 	$sRoomList[] = array(
-		"id" => $sRoomJid, /* alias for 'jid', to make client libraries happy */ 
-		"jid" => $sRoomJid,
+		"id" => $sRoom->uJid, /* alias for 'jid', to make client libraries happy */ 
+		"jid" => $sRoom->uJid,
 		"roomname"	=> $sRoom->uNode,
 		"friendlyname"	=> $sRoom->uName,
 		"description"	=> $sRoom->uDescription,

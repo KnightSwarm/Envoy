@@ -1,0 +1,456 @@
+{
+	"types": [],
+	"enums": {
+		"status_enum": {
+			"unknown": 0,
+			"available": 1,
+			"away": 2,
+			"xa": 3,
+			"dnd": 4,
+			"chat": 5,
+			"unavailable": 6
+		},
+		"affiliation_enum": {
+			"unknown": 0,
+			"owner": 1,
+			"admin": 2,
+			"member": 3,
+			"outcast": 4,
+			"none": 5
+		},
+		"role_enum": {
+			"unknown": 0,
+			"moderator": 1,
+			"none": 2,
+			"participant": 3,
+			"visitor": 4
+		},
+		"api_key_type_enum": {
+			"server": 0,
+			"user": 1
+		},
+		"access_level_enum": {
+			"master": 200,
+			"service_administrative": 150,
+			"administrative": 100,
+			"administrative_read": 75,
+			"write": 50,
+			"read": 10,
+			"disabled": 0
+		}
+	},
+	"resources": {
+		"fqdn": {
+			"table": "fqdns",
+			"identifier": "fqdn",
+			"authenticator": "fqdn",
+			"subresources": {
+				"room": {
+					"type": "room",
+					"filter": "FqdnId",
+					"identifier": "roomname"
+				},
+				"user": {
+					"type": "user",
+					"filter": "FqdnId",
+					"identifier": "username"
+				},
+				"setting": {
+					"type": "fqdn_setting".
+					"filter": "FqdnId",
+					"identifier": "key"
+				},
+				"affiliation": {
+					"type": "affiliation",
+					"filter": "FqdnId"
+				},
+				"presence": {
+					"type": "presence",
+					"filter": "FqdnId"
+				},
+				"api_permission": {
+					"type": "api_permission",
+					"filter": "FqdnId"
+				},
+				"user_permission": {
+					"type": "user_permission",
+					"filter": "FqdnId"
+				},
+			},
+			"attributes": {
+				"id": {
+					"field": "Id",
+					"type": "numeric"
+				},
+				"fqdn": {
+					"field": "Fqdn",
+					"type": "string"
+				},
+				"name": {
+					"field": "Name",
+					"type": "string"
+				},
+				"description": {
+					"field": "Description",
+					"type": "string"
+				},
+				"owner": {
+					"field": "UserId",
+					"type": "user"
+				}
+			}
+		},
+		"room": {
+			"table": "rooms",
+			"identifier": "jid",
+			"authenticator": "room",
+			"subresources": {
+				"affiliation": {
+					"type": "affiliation",
+					"filter": "RoomId"
+				},
+				"presence": {
+					"type": "presence",
+					"filter": "RoomId",
+					"identifier": "nickname"
+				}
+			},
+			"attributes": {
+				"id": {
+					"field": "Id",
+					"type": "numeric"
+				},
+				"jid": {
+					"type": "custom"
+				},
+				"roomname": {
+					"field": "Node",
+					"type": "string"
+				},
+				"name": {
+					"field": "Name",
+					"type": "string"
+				},
+				"description": {
+					"field": "Description",
+					"type": "string"
+				},
+				"owner": {
+					"field": "OwnerId",
+					"type": "user"
+				},
+				"fqdn": {
+					"field": "FqdnId",
+					"type": "fqdn"
+				},
+				"usercount": {
+					"field": "LastUserCount",
+					"type": "numeric"
+				},
+				"is_private": {
+					"field": "IsPrivate",
+					"type": "boolean"
+				},
+				"is_archived": {
+					"field": "IsArchived",
+					"type": "boolean"
+				},
+				"creation_date": {
+					"field": "CreationDate",
+					"type": "timestamp"
+				},
+				"archival_date": {
+					"field": "ArchivalDate",
+					"type": "timestamp"
+				}
+			}
+		},
+		"user": {
+			"table": "users",
+			"identifier": "jid",
+			"authenticator": "user",
+			"subresources": {
+				"affiliation": {
+					"type": "affiliation",
+					"filter": "UserId"
+				},
+				"presence": {
+					"type": "presence",
+					"filter": "UserId"
+				},
+				"api_key": {
+					"type": "api_key",
+					"filter": "UserId"
+				},
+				"setting": {
+					"type": "user_setting".
+					"filter": "UserId",
+					"identifier": "key"
+				},
+				"permission": {
+					"type": "user_permission".
+					"filter": "UserId",
+					"identifier": "fqdn"
+				}
+			},
+			"list_handlers": {
+				"authenticate": "authenticate"
+			},
+			"item_handlers": {
+				"api_key": "get_api_key"
+			},
+			"attributes": {
+				"id": {
+					"field": "Id",
+					"type": "numeric"
+				},
+				"jid": {
+					"type": "custom"
+				},
+				"username": {
+					"field": "Username",
+					"type": "string"
+				},
+				"fqdn": {
+					"field": "FqdnId",
+					"type": "fqdn"
+				},
+				"is_active": {
+					"field": "Active",
+					"type": "boolean"
+				},
+				"nickname": {
+					"field": "Nickname",
+					"type": "string"
+				},
+				"email_address": {
+					"field": "EmailAddress",
+					"type": "string"
+				},
+				"first_name": {
+					"field": "FirstName",
+					"type": "string"
+				},
+				"last_name": {
+					"field": "LastName",
+					"type": "string"
+				},
+				"full_name": {
+					"type": "custom"
+				},
+				"job_title": {
+					"field": "JobTitle",
+					"type": "string"
+				},
+				"mobile_number": {
+					"field": "MobileNumber",
+					"type": "string"
+				},
+				"status_message": {
+					"field": "StatusMessage",
+					"type": "string"
+				},
+				"status": {
+					"field": "Status",
+					"type": "status_enum"
+				},
+			}
+		},
+		"affiliation": {
+			"table": "affiliations",
+			"identifier": "id",
+			"authenticator": "affiliation",
+			"attributes": {
+				"id": {
+					"field": "Id",
+					"type": "numeric"
+				},
+				"user": {
+					"field": "UserId",
+					"type": "user"
+				},
+				"room": {
+					"field": "RoomId",
+					"type": "room"
+				},
+				"affiliation": {
+					"field": "Affiliation",
+					"type": "affiliation_enum"
+				}
+			}
+		},
+		"api_key": {
+			"table": "api_keys",
+			"identifier": "id",
+			"authenticator": "api_key",
+			"subresources": {
+				"permission": {
+					"type": "api_permission".
+					"filter": "ApiKeyId",
+					"identifier": "fqdn"
+				}
+			},
+			"attributes": {
+				"id": {
+					"field": "Id",
+					"type": "numeric"
+				},
+				"user": {
+					"field": "UserId",
+					"type": "user"
+				},
+				"type": {
+					"field": "Type",
+					"type": "api_key_type_enum"
+				},
+				"description": {
+					"field": "Description",
+					"type": "string"
+				},
+				"api_id": {
+					"field": "ApiId",
+					"type": "string"
+				},
+				"api_key": {
+					"field": "ApiKey",
+					"type": "string"
+				}
+			}
+		},
+		"api_permission": {
+			"table": "api_permissions",
+			"identifier": "id",
+			"authenticator": "api_permission",
+			"attributes": {
+				"id": {
+					"field": "Id",.
+					"type": "numeric"
+				},
+				"api_key": {
+					"field": "ApiKeyId",
+					"type": "apikey"
+				},
+				"fqdn": {
+					"field": "FqdnId",
+					"type": "fqdn"
+				},
+				"access_level": {
+					"field": "Type",
+					"type": "access_level_enum"
+				}
+			}
+		},
+		"user_permission": {
+			"table": "user_permissions",
+			"identifier": "id",
+			"authenticator": "user_permission",
+			"attributes": {
+				"id": {
+					"field": "Id",.
+					"type": "numeric"
+				},
+				"user": {
+					"field": "UserId",
+					"type": "user"
+				},
+				"fqdn": {
+					"field": "FqdnId",
+					"type": "fqdn"
+				},
+				"access_level": {
+					"field": "Type",
+					"type": "access_level_enum"
+				}
+			}
+		},
+		"presence": {
+			"table": "presences",
+			"identifier": "id",
+			"authenticator": "presence",
+			"attributes": {
+				"id": {
+					"field": "Id",
+					"type": "numeric"
+				},
+				"user": {
+					"field": "UserId",
+					"type": "user"
+				},
+				"resource": {
+					"field": "Resource",
+					"type": "string"
+				},
+				"room": {
+					"field": "RoomId",
+					"type": "room"
+				},
+				"nickname": {
+					"field": "Nickname",
+					"type": "string"
+				},
+				"role": {
+					"field": "Role",
+					"type": "role_enum"
+				},
+				"fqdn": {
+					"field": "FqdnId",
+					"type": "fqdn"
+				}
+			}
+		},
+		"fqdn_setting": {
+			"table": "fqdn_settings",
+			"identifier": "id",
+			"authenticator": "fqdn_setting",
+			"attributes": {
+				"id": {
+					"field": "Id",
+					"type": "numeric"
+				},
+				"fqdn": {
+					"field": "FqdnId",
+					"type": "fqdn"
+				},
+				"key": {
+					"field": "Key",
+					"type": "string"
+				},
+				"value": {
+					"field": "Value",
+					"type": "string"
+				},
+				"last_modified": {
+					"field": "LastModified",
+					"type": "timestamp"
+				}
+			}
+		},
+		"user_setting": {
+			"table": "user_settings",
+			"identifier": "id",
+			"authenticator": "user_setting",
+			"attributes": {
+				"id": {
+					"field": "Id",
+					"type": "numeric"
+				},
+				"user": {
+					"field": "UserId",
+					"type": "user"
+				},
+				"key": {
+					"field": "Key",
+					"type": "string"
+				},
+				"value": {
+					"field": "Value",
+					"type": "string"
+				},
+				"last_modified": {
+					"field": "LastModified",
+					"type": "timestamp"
+				}
+			}
+		}
+	}
+}
