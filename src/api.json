@@ -1,4 +1,11 @@
 {
+	"authentication_methods": {
+		"keypair": {
+			"resource": "api_key",
+			"id_field": "api_id",
+			"key_field": "api_key"
+		}
+	},
 	"types": [],
 	"enums": {
 		"status_enum": {
@@ -43,38 +50,39 @@
 		"fqdn": {
 			"table": "fqdns",
 			"identifier": "fqdn",
+			"primary_key": "id",
 			"authenticator": "fqdn",
 			"subresources": {
 				"room": {
 					"type": "room",
-					"filter": "FqdnId",
+					"filter": "fqdn",
 					"identifier": "roomname"
 				},
 				"user": {
 					"type": "user",
-					"filter": "FqdnId",
+					"filter": "fqdn",
 					"identifier": "username"
 				},
 				"setting": {
 					"type": "fqdn_setting".
-					"filter": "FqdnId",
+					"filter": "fqdn",
 					"identifier": "key"
 				},
 				"affiliation": {
 					"type": "affiliation",
-					"filter": "FqdnId"
+					"filter": "fqdn"
 				},
 				"presence": {
 					"type": "presence",
-					"filter": "FqdnId"
+					"filter": "fqdn"
 				},
 				"api_permission": {
 					"type": "api_permission",
-					"filter": "FqdnId"
+					"filter": "fqdn"
 				},
 				"user_permission": {
 					"type": "user_permission",
-					"filter": "FqdnId"
+					"filter": "fqdn"
 				},
 			},
 			"attributes": {
@@ -107,11 +115,11 @@
 			"subresources": {
 				"affiliation": {
 					"type": "affiliation",
-					"filter": "RoomId"
+					"filter": "room"
 				},
 				"presence": {
 					"type": "presence",
-					"filter": "RoomId",
+					"filter": "room",
 					"identifier": "nickname"
 				}
 			},
@@ -168,36 +176,35 @@
 		"user": {
 			"table": "users",
 			"identifier": "jid",
+			"primary_key": "id",
 			"authenticator": "user",
 			"subresources": {
 				"affiliation": {
 					"type": "affiliation",
-					"filter": "UserId"
+					"filter": "user"
 				},
 				"presence": {
 					"type": "presence",
-					"filter": "UserId"
+					"filter": "user"
 				},
 				"api_key": {
 					"type": "api_key",
-					"filter": "UserId"
+					"filter": "user"
 				},
 				"setting": {
 					"type": "user_setting".
-					"filter": "UserId",
+					"filter": "user",
 					"identifier": "key"
 				},
 				"permission": {
 					"type": "user_permission".
-					"filter": "UserId",
+					"filter": "user",
 					"identifier": "fqdn"
 				}
 			},
-			"list_handlers": {
-				"authenticate": "authenticate"
-			},
 			"item_handlers": {
-				"api_key": "get_api_key"
+				"api_key": "get_api_key",
+				"authenticate": "authenticate"
 			},
 			"attributes": {
 				"id": {
@@ -259,6 +266,7 @@
 		"affiliation": {
 			"table": "affiliations",
 			"identifier": "id",
+			"primary_key": "id",
 			"authenticator": "affiliation",
 			"attributes": {
 				"id": {
@@ -282,11 +290,12 @@
 		"api_key": {
 			"table": "api_keys",
 			"identifier": "id",
+			"primary_key": "id",
 			"authenticator": "api_key",
 			"subresources": {
 				"permission": {
 					"type": "api_permission".
-					"filter": "ApiKeyId",
+					"filter": "api_key",
 					"identifier": "fqdn"
 				}
 			},
@@ -320,6 +329,7 @@
 		"api_permission": {
 			"table": "api_permissions",
 			"identifier": "id",
+			"primary_key": "id",
 			"authenticator": "api_permission",
 			"attributes": {
 				"id": {
@@ -366,6 +376,7 @@
 		"presence": {
 			"table": "presences",
 			"identifier": "id",
+			"primary_key": "id",
 			"authenticator": "presence",
 			"attributes": {
 				"id": {
@@ -401,6 +412,7 @@
 		"fqdn_setting": {
 			"table": "fqdn_settings",
 			"identifier": "id",
+			"primary_key": "id",
 			"authenticator": "fqdn_setting",
 			"attributes": {
 				"id": {
@@ -428,6 +440,7 @@
 		"user_setting": {
 			"table": "user_settings",
 			"identifier": "id",
+			"primary_key": "id",
 			"authenticator": "user_setting",
 			"attributes": {
 				"id": {
