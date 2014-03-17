@@ -18,6 +18,7 @@ class Component(ComponentXMPP):
 		self.conference_host = "conference.%s" % host
 		#self.identifier = id(self)
 		self.host = host
+		self.joined_rooms = [] # Internal cache for state keeping of own (component) room presences
 		
 		self.add_event_handler("forwarded_stanza", StanzaHandler.Instance(self.identifier).process)
 		self.add_event_handler("groupchat_joined", MucHandler.Instance(self.identifier).process_join)

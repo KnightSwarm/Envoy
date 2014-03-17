@@ -226,7 +226,17 @@ class OverrideHandler(LocalSingletonBase):
 			except NotFoundException, e:
 				return False
 		else:
-			return True
+			# Originally, it always returned True for this case; however, unexpectly
+			# it turned out to break MUC join detection. Since SleekXMPP relies on
+			# this function to determine presence in a room, it was convinced that
+			# the join by the component was a fake or mistake; after all, this method
+			# would state that it was already joined. SleekXMPP therefore ignored
+			# the join event, never registered it, and thus caused a timeout. It now
+			# keeps an internal cache of joined rooms instead. It does not have to be
+			# stored in the database, because the runtime cache is consistent with
+			# the component state; if the cache disappears because the component
+			# quits, it also implicitly leaves all channels.
+			return (node in component.joined_rooms)
 	
 	def get_joined(self, jid, node, ifrom, data):
 		# Override for the _get_joined_rooms method.
@@ -240,7 +250,7 @@ class OverrideHandler(LocalSingletonBase):
 			except NotFoundException, e:
 				return []
 		else:
-			return [] # FIXME: Might need to return all rooms?
+			return component.joined_rooms
 		
 	def add_joined(self, jid, node, ifrom, data):
 		# Override for the _add_joined_room method.
@@ -249,6 +259,8 @@ class OverrideHandler(LocalSingletonBase):
 		component = Component.Instance(self.identifier)
 		if jid != component.boundjid:
 			user_provider.get(jid).register_join(node)
+		else:
+			component.joined_rooms.append(node)
 		
 	def delete_joined(self, jid, node, ifrom, data):
 		# Override for the _del_joined_room method.
@@ -257,6 +269,8 @@ class OverrideHandler(LocalSingletonBase):
 		component = Component.Instance(self.identifier)
 		if jid != component.boundjid:
 			user_provider.get(jid).register_leave(node)
+		else:
+			component.joined_rooms.remove(node)
 
 @LocalSingleton
 class LogRequestHandler(LocalSingletonBase):
