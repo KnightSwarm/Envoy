@@ -1,6 +1,7 @@
 from .util import Singleton, LocalSingleton, LocalSingletonBase, LazyLoadingObject
 
 import json
+from datetime import datetime
 from sleekxmpp.jid import JID
 
 @LocalSingleton
@@ -775,9 +776,6 @@ class Presence(LazyLoadingObject):
 	def load_row(self, row):
 		presence_provider = PresenceProvider.Instance(self.identifier)
 		
-		logger = ApplicationLogger.Instance(self.identifier)
-		logger.warning(row._data)
-		
 		self.id = row["Id"]
 		self._user = row["UserId"]
 		self._room = row["RoomId"]
@@ -838,8 +836,25 @@ class UserSettingProvider(LocalSingletonBase):
 		
 	def get(self, user, key, default=None):
 		user_provider = UserProvider.Instance(self.identifier)
+		database = Database.Instance(self.identifier)
+		
 		user = user_provider.normalize_user(user)
-		return self.get_from_query("SELECT * FROM user_settings WHERE `UserId` = ? AND `Key` = ? LIMIT 1", (user.id, key))[0]
+		
+		try:
+			return self.get_from_query("SELECT * FROM user_settings WHERE `UserId` = ? AND `Key` = ? LIMIT 1", (user.id, key))[0]
+		except NotFoundException, e:
+			if default is None:
+				raise # Just throw an exception
+			else:
+				# A default setting was specified; generate a new object and
+				# insert it into the database, then return it.
+				row = Row()
+				row["UserId"] = user.id
+				row["Key"] = key
+				row["Value"] = default
+				row["LastModified"] = datetime.now()
+				database["user_settings"].append(row)
+				return self.wrap(row)
 		
 	def find_by_user(self, user):
 		user_provider = UserProvider.Instance(self.identifier)

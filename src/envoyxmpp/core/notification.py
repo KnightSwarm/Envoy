@@ -77,14 +77,18 @@ class Notifier(LocalSingletonBase):
 		
 	def notify(self, sender, recipient, room, body, highlight):
 		user_provider = UserProvider.Instance(self.identifier)
+		settings_provider = UserSettingProvider.Instance(self.identifier)
+		logger = ApplicationLogger.Instance(self.identifier)
 		
 		user = user_provider.normalize_user(recipient)
 		
-		if user.status != "dnd":
+		if user.status != "dnd" or int(settings_provider.get(user, "notify_on_dnd", 0).value) == 1:
 			if room == "":
 				self.notify_private_message(sender, recipient, body)
 			else:
 				self.notify_highlight(sender, recipient, room, body, highlight)
+		else:
+			logger.debug("Not sending a notification %s because the user is marked Do Not Disturb, and has opted not to receive dnd notifications." % recipient.bare)
 		
 	def notify_highlight(self, sender, recipient, room, body, highlight):
 		# TODO: Cache template files! No need to reload these all the time...
@@ -204,6 +208,6 @@ class SmsSender(LocalSingletonBase):
 		else:
 			return body
 			
-from .providers import ConfigurationProvider, UserProvider, RoomProvider, PresenceProvider, AffiliationProvider
+from .providers import ConfigurationProvider, UserProvider, RoomProvider, PresenceProvider, AffiliationProvider, UserSettingProvider
 from .exceptions import NotFoundException
 from .loggers import ApplicationLogger
