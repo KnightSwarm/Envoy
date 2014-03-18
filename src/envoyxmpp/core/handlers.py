@@ -162,7 +162,7 @@ class MucHandler(LocalSingletonBase):
 					row = Row()
 					row["UserId"] = user_provider.normalize_user(user).id
 					row["RoomId"] = room_provider.normalize_room(room).id
-					row["Affiliation"] = affiliation
+					row["Affiliation"] = affiliation_provider.affiliation_number(affiliation)
 					database["affiliations"].append(row)
 					affiliation = affiliation_provider.wrap(row)
 				

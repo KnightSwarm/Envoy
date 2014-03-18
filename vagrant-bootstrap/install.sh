@@ -95,6 +95,7 @@ touch /etc/envoy/extauth/extauth.log >/dev/null
 touch /etc/envoy/extauth/extauth_err.log >/dev/null
 tar -xzf certs.tar.gz -C /etc/envoy/certs >/dev/null
 ln -s /vagrant/src/envoyxmpp /usr/lib/python2.7/envoyxmpp
+ln -s /vagrant/src/envoyxmpp/templates /etc/envoy/src/templates
 
 mkdir /etc/lighttpd/vhosts.d/
 cp /vagrant/vagrant-bootstrap/lighttpd.conf /etc/lighttpd/lighttpd.conf

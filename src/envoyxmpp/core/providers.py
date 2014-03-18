@@ -800,7 +800,7 @@ class Presence(LazyLoadingObject):
 		
 	def change_role(self, role):
 		presence_provider = PresenceProvider.Instance(self.identifier)
-		self.row["Role"] = presence_provider.role_number(affiliation)
+		self.row["Role"] = presence_provider.role_number(role)
 		self.commit()
 		
 	def delete(self):

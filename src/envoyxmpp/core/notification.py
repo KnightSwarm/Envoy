@@ -59,7 +59,7 @@ class HighlightChecker(LocalSingletonBase):
 					found_affiliation = False
 					
 				if found_presence or found_affiliation:
-					notifier.notify_if_idle(sender, JID(user.jid), JID(room), body, highlight)
+					notifier.notify_if_idle(sender, JID(affected_user.jid), JID(room), body, highlight)
 	
 @LocalSingleton
 class Notifier(LocalSingletonBase):
@@ -69,11 +69,11 @@ class Notifier(LocalSingletonBase):
 		
 		user = user_provider.normalize_user(recipient)
 		
-		if user.presence in ("away", "xa", "unavailable", "dnd"):
+		if user.status in ("away", "xa", "unavailable", "dnd"):
 			self.notify(sender, recipient, room, body, highlight)
-		elif user.presence == "unknown":
+		elif user.status == "unknown":
 			logger.warn("Unknown state detected for user %s" % recipient)
-			user.update_presence()
+			# user.update_presence() # TODO: Implement this!
 		
 	def notify(self, sender, recipient, room, body, highlight):
 		user_provider = UserProvider.Instance(self.identifier)
@@ -87,6 +87,7 @@ class Notifier(LocalSingletonBase):
 				self.notify_highlight(sender, recipient, room, body, highlight)
 		
 	def notify_highlight(self, sender, recipient, room, body, highlight):
+		# TODO: Cache template files! No need to reload these all the time...
 		sms_sender = SmsSender.Instance(self.identifier)
 		email_sender = EmailSender.Instance(self.identifier)
 		user_provider = UserProvider.Instance(self.identifier)
@@ -109,7 +110,7 @@ class Notifier(LocalSingletonBase):
 				template = template_file.read()
 			
 			email_body = template.format(first_name=receiving_user.first_name, sender=sending_user.full_name, room=room_data.name, message=body)
-			subject = "%s mentioned you in the room %s" % (sender_name, room_name)
+			subject = "%s mentioned you in the room %s" % (sending_user.full_name, room_data.name)
 			
 			email_sender.send(receiving_user.email_address, subject, email_body)
 		
@@ -134,7 +135,7 @@ class Notifier(LocalSingletonBase):
 				template = template_file.read()
 			
 			email_body = template.format(first_name=receiving_user.first_name, sender=sending_user.full_name, message=body)
-			subject = "%s sent you a private message" % (sender_name)
+			subject = "%s sent you a private message" % (sending_user.full_name)
 			
 			email_sender.send(receiving_user.email_address, subject, email_body)
 	
@@ -160,6 +161,7 @@ class EmailSender(LocalSingletonBase):
 		
 	def send(self, recipient, subject, body):
 		logger = ApplicationLogger.Instance(self.identifier)
+		configuration = ConfigurationProvider.Instance(self.identifier)
 		
 		if configuration.mock_email == False:
 			self.mailer.start()
