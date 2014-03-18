@@ -102,6 +102,9 @@ cp /vagrant/vagrant-bootstrap/api.envoy.local.conf /etc/lighttpd/vhosts.d/
 cp /vagrant/vagrant-bootstrap/panel.envoy.local.conf /etc/lighttpd/vhosts.d/
 cp /vagrant/vagrant-bootstrap/php.ini /etc/php5/cgi/php.ini
 
+# TEMPORARY: Pre-create envoy.local Prosody data directory, so that Envoy can access it.
+mkdir /var/lib/prosody/envoy.local
+
 # Restart MySQL to apply public binding changes
 /etc/init.d/mysql restart >/dev/null
 

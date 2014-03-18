@@ -117,3 +117,22 @@ class _E(object):
 		return functools.partial(self, tag)
 
 E = _E()
+
+def prosody_quote(s):
+	# Adapted from Python urllib, to match Prosody quoting. Leaving
+	# some spurious code intact, in case different 'safe' lists are
+	# needed at a later point in time.
+	safe = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+	cachekey = safe
+	try:
+		safe_map = _safemaps[cachekey]
+	except KeyError:
+		safe_map = {}
+		for i in range(256):
+			c = chr(i)
+			safe_map[c] = (c in safe) and c or ("%%%02x" % i)
+		_safemaps[cachekey] = safe_map
+	res = map(safe_map.__getitem__, s)
+	return "".join(res)
+
+_safemaps = {}

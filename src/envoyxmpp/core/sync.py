@@ -1,7 +1,7 @@
-from .util import LocalSingleton, LocalSingletonBase
+from .util import LocalSingleton, LocalSingletonBase, prosody_quote
 
 from sleekxmpp.exceptions import IqError
-import urllib, os, stat
+import os, stat
 
 @LocalSingleton
 class PresenceSyncer(LocalSingletonBase):
@@ -237,14 +237,19 @@ class VcardSyncer(LocalSingletonBase):
 			}
 			
 			username, fqdn = user.jid.split("@")
-			fqdn_target = "/var/lib/prosody/%s/default_vcard" % urllib.urlencode(fqdn)
-			target_path = "%s/%s.dat" % (fqdn_target, urllib.urlencode(username))
+			fqdn_target = "/var/lib/prosody/%s/default_vcard" % prosody_quote(fqdn)
+			target_path = "%s/%s.dat" % (fqdn_target, prosody_quote(username))
 			
-			os.makedirs(fqdn_target)
-			
-			for dirname, dirlist, filelist in os.walk("/var/lib/prosody/%s" % urllib.urlencode(fqdn)):
-				# FIXME: This is suboptimal. Figure out a better way to fix perms.
-				os.chmod(dirname, stat.S_IRWXG | stat.S_IRWXU)
+			try:
+				os.makedirs(fqdn_target)
+				
+				for dirname, dirlist, filelist in os.walk("/var/lib/prosody/%s" % prosody_quote(fqdn)):
+					# FIXME: This is suboptimal. Figure out a better way to fix perms.
+					os.chmod(dirname, stat.S_IRWXG | stat.S_IRWXU)
+			except OSError, e:
+				# Directory already exists; this doesn't really matter, and we can
+				# just ignore it.
+				pass
 			
 			with open(target_path, "w") as f:
 				f.write(generated)
