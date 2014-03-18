@@ -95,7 +95,6 @@ touch /etc/envoy/extauth/extauth.log >/dev/null
 touch /etc/envoy/extauth/extauth_err.log >/dev/null
 tar -xzf certs.tar.gz -C /etc/envoy/certs >/dev/null
 ln -s /vagrant/src/envoyxmpp /usr/lib/python2.7/envoyxmpp
-ln -s /vagrant/src/envoyxmpp/templates /etc/envoy/src/templates
 
 mkdir /etc/lighttpd/vhosts.d/
 cp /vagrant/vagrant-bootstrap/lighttpd.conf /etc/lighttpd/lighttpd.conf
@@ -141,6 +140,9 @@ mysql --user=root --password=vagrant -D envoy < data.sql
 echo "Installing SleekXMPP new_muc..."
 cd /etc/envoy
 pip install -e 'git://github.com/fritzy/SleekXMPP.git@new_muc#egg=sleekxmpp' >/dev/null
+
+# Symlink template path
+ln -s /vagrant/src/envoyxmpp/templates /etc/envoy/src/templates
 
 echo "Starting services..."
 /vagrant/vagrant-bootstrap/init.sh
