@@ -63,6 +63,7 @@ class Component(ComponentXMPP):
 		AffiliationSyncer.Instance(self.identifier).sync()
 		PresenceSyncer.Instance(self.identifier).sync()
 		StatusSyncer.Instance(self.identifier).sync()
+		VcardSyncer.Instance(self.identifier).sync()
 		
 	def get_fqdn(self):
 		fqdn_provider = FqdnProvider.Instance(self.identifier)
@@ -77,7 +78,7 @@ xmpp.process(block=True)
 from .db import Database
 from .handlers import StanzaHandler, MucHandler, OverrideHandler, LogRequestHandler
 from .providers import FqdnProvider, ConfigurationProvider
-from .sync import PresenceSyncer, AffiliationSyncer, RoomSyncer, StatusSyncer
+from .sync import PresenceSyncer, AffiliationSyncer, RoomSyncer, StatusSyncer, VcardSyncer
 from .stanzas import EnvoyQueryFlag
 
 from sleekxmpp.plugins.xep_0313 import MAM

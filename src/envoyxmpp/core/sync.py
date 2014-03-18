@@ -1,6 +1,7 @@
 from .util import LocalSingleton, LocalSingletonBase
 
 from sleekxmpp.exceptions import IqError
+import urllib, os, stat
 
 @LocalSingleton
 class PresenceSyncer(LocalSingletonBase):
@@ -206,6 +207,49 @@ class StatusSyncer(LocalSingletonBase):
 			user = user_provider.normalize_user(user)
 			stanza = component.make_presence(ptype="probe", pto=user.jid, pfrom=component.boundjid)
 			stanza.send()
+
+@LocalSingleton
+class VcardSyncer(LocalSingletonBase):
+	def sync(self):
+		# This re-generates the default vCard files for every user, to
+		# reflect the data currently in the database for those users.
+		user_provider = UserProvider.Instance(self.identifier)
+		component = Component.Instance(self.identifier)
+		logger = ApplicationLogger.Instance(self.identifier)
+		
+		with open("templates/vcard.dat", "r") as template_file:
+			template = template_file.read()
+		
+		try:
+			all_users = user_provider.find_by_fqdn(component.host)
+		except NotFoundException, e:
+			return # No users yet
+			
+		for user in all_users:
+			generated = template % {
+				"first_name": user.first_name,
+				"last_name": user.last_name, 
+				"full_name": user.full_name,
+				"mobile_number": user.phone_number,
+				"email_address": user.email_address,
+				"job_title": user.job_title,
+				"nickname": user.nickname
+			}
+			
+			username, fqdn = user.jid.split("@")
+			fqdn_target = "/var/lib/prosody/%s/default_vcard" % urllib.urlencode(fqdn)
+			target_path = "%s/%s.dat" % (fqdn_target, urllib.urlencode(username))
+			
+			os.makedirs(fqdn_target)
+			
+			for dirname, dirlist, filelist in os.walk("/var/lib/prosody/%s" % urllib.urlencode(fqdn)):
+				# FIXME: This is suboptimal. Figure out a better way to fix perms.
+				os.chmod(dirname, stat.S_IRWXG | stat.S_IRWXU)
+			
+			with open(target_path, "w") as f:
+				f.write(generated)
+				
+			logger.debug("Regenerated vCard file for %s." % user.jid)
 
 from .exceptions import NotFoundException
 from .providers import UserProvider, PresenceProvider, AffiliationProvider, RoomProvider

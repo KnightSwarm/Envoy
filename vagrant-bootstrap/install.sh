@@ -115,8 +115,10 @@ chown -R envoy:envoy /etc/envoy >/dev/null
 chown -R prosody:envoy /etc/envoy/prosody >/dev/null
 chown prosody:prosody /etc/prosody/prosody.cfg.lua >/dev/null
 chown prosody:prosody /etc/prosody/conf.d >/dev/null
+chown -R prosody:envoy /var/lib/prosody
 #-- Directory permissions 
 chmod -R ug=rwx /etc/envoy >/dev/null
+chmod -R ug=rwx /var/lib/prosody >/dev/null
 chmod -R o=rx /etc/envoy >/dev/null
 #-- Hide configuration from others
 chmod o-rwx /etc/prosody/prosody.cfg.lua >/dev/null

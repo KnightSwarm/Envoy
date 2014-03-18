@@ -1,0 +1,75 @@
+return {
+	[1] = {
+		[1] = "%(full_name)s";
+		["attr"] = {
+			["xmlns"] = "vcard-temp";
+		};
+		["name"] = "FN";
+	};
+	[2] = {
+		[1] = {
+			[1] = "%(last_name)s";
+			["attr"] = {
+				["xmlns"] = "vcard-temp";
+			};
+			["name"] = "FAMILY";
+		};
+		[2] = {
+			[1] = "%(first_name)s";
+			["attr"] = {
+				["xmlns"] = "vcard-temp";
+			};
+			["name"] = "GIVEN";
+		};
+		["name"] = "N";
+		["attr"] = {
+			["xmlns"] = "vcard-temp";
+		};
+	};
+	[3] = {
+		[1] = "%(nickname)s";
+		["attr"] = {
+			["xmlns"] = "vcard-temp";
+		};
+		["name"] = "NICKNAME";
+	};
+	[4] = {
+		[1] = {
+			[1] = "%(mobile_number)s";
+			["attr"] = {
+				["xmlns"] = "vcard-temp";
+			};
+			["name"] = "NUMBER";
+		};
+		["attr"] = {
+			["xmlns"] = "vcard-temp";
+		};
+		["name"] = "TEL";
+	};
+	[5] = {
+		[1] = {
+			[1] = "%(email_address)s";
+			["attr"] = {
+				["xmlns"] = "vcard-temp";
+			};
+			["name"] = "USERID";
+		};
+		["attr"] = {
+			["xmlns"] = "vcard-temp";
+		};
+		["name"] = "EMAIL";
+	};
+	[6] = {
+		[1] = "%(job_title)s";
+		["attr"] = {
+			["xmlns"] = "vcard-temp";
+		};
+		["name"] = "TITLE";
+	};
+	["name"] = "vCard";
+	["attr"] = {
+		["prodid"] = "-//HandGen//NONSGML vGen v1.0//EN";
+		["version"] = "2.0";
+		["xmlns"] = "vcard-temp";
+	};
+};
