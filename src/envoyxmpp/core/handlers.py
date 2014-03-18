@@ -126,8 +126,9 @@ class MucHandler(LocalSingletonBase):
 		resource = stanza["to"].resource
 		room = stanza["from"].bare
 		
-		if user != component.boundjid:
-			presence_provider.register_leave(user, room, resource) # TODO: This might be better in a separate handler
+		# This appears already taken care of in the API overrides.
+		#if user != component.boundjid:
+		#	presence_provider.register_leave(user, room, resource) # TODO: This might be better in a separate handler
 		
 	def process_presence(self, stanza):
 		affiliation_provider = AffiliationProvider.Instance(self.identifier)
