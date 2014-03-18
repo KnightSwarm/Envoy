@@ -1,16 +1,45 @@
-import oursql
+import oursql, threading
 
 from .util import Singleton, LocalSingleton, LocalSingletonBase
 
 @LocalSingleton
 class Database(LocalSingletonBase):
 	def initialize(self, host, user, passwd, db):
-		self.conn = oursql.connect(host=host, user=user, passwd=passwd, db=db, autoreconnect=True)
+		self.host = host
+		self.user = user
+		self.passwd = passwd
+		self.dbname = db
+		self.connections = {}
 		self.row_factory = Row
 		self.tables = {}
 	
+	def get_connection(self):
+		# This method returns an oursql connection object for the current
+		# thread, creating it if it doesn't exist yet.
+		logger = ApplicationLogger.Instance(self.identifier)
+		
+		thread = threading.current_thread().ident
+		
+		try:
+			return self.connections[thread]
+		except KeyError, e:
+			logger.info("Instantiating new MySQL connection for thread ID %d" % thread)
+			conn = oursql.connect(host=self.host, user=self.user, passwd=self.passwd, db=self.dbname, autoreconnect=True)
+			self.connections[thread] = conn
+			return conn
+	
+	def reap_connections(self):
+		# This method will remove the oursql connection objects for threads
+		# that no longer exist, and let the garbage collector take care of them.
+		# TODO: Add this to purging loop.
+		active_threads = [thread.ident for thread in threading.enumerate()]
+				
+		for thread in self.connections.keys():
+			if thread not in active_threads:
+				del self.connections[thread]
+	
 	def _get_cursor(self):
-		return CursorWrapper(self.conn.cursor(), self.row_factory, self)
+		return CursorWrapper(self.get_connection().cursor(), self.row_factory, self)
 		
 	def _get_table(self, name, in_memory=False, forced=False):
 		if in_memory == True:
@@ -41,7 +70,7 @@ class Database(LocalSingletonBase):
 		return self.get_database_table(key)
 		
 	def commit(self):
-		self.conn.commit()
+		self.get_connection().commit()
 		
 	def get_database_table(self, name):
 		return self._get_table(name, in_memory=False)
@@ -62,7 +91,7 @@ class Database(LocalSingletonBase):
 		cur.execute(query, params)
 		
 		if commit == True:
-			self.conn.commit()
+			self.get_connection().commit()
 			
 		return cur
 
