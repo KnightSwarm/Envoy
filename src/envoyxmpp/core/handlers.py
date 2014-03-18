@@ -105,7 +105,8 @@ class PresenceHandler(LocalSingletonBase):
 class MucHandler(LocalSingletonBase):
 	def process_join(self, stanza):
 		# EVENT: User joined room
-		presence_provider = PresenceProvider.Instance()
+		presence_provider = PresenceProvider.Instance(self.identifier)
+		component = Component.Instance(self.identifier)
 		
 		user = stanza["to"]
 		resource = stanza["to"].resource
@@ -113,26 +114,34 @@ class MucHandler(LocalSingletonBase):
 		nickname = stanza["from"].resource
 		role = stanza["muc"]["role"]
 		
-		presence_provider.register_join(user, room, resource, nickname, role) # TODO: This might be better in a separate handler
+		if user != component.boundjid:
+			presence_provider.register_join(user, room, resource, nickname, role) # TODO: This might be better in a separate handler
 		
 	def process_leave(self, stanza):
 		# EVENT: User left room
-		presence_provider = PresenceProvider.Instance()
+		presence_provider = PresenceProvider.Instance(self.identifier)
+		component = Component.Instance(self.identifier)
 		
 		user = stanza["to"]
 		resource = stanza["to"].resource
 		room = stanza["from"].bare
 		
-		presence_provider.register_leave(user, room, resource) # TODO: This might be better in a separate handler
+		if user != component.boundjid:
+			presence_provider.register_leave(user, room, resource) # TODO: This might be better in a separate handler
 		
 	def process_presence(self, stanza):
 		affiliation_provider = AffiliationProvider.Instance(self.identifier)
 		presence_provider = PresenceProvider.Instance(self.identifier)
+		user_provider = UserProvider.Instance(self.identifier)
+		room_provider = RoomProvider.Instance(self.identifier)
 		component = Component.Instance(self.identifier)
+		database = Database.Instance(self.identifier)
+		logger = ApplicationLogger.Instance(self.identifier)
 		
 		room = stanza["from"].bare
 		affiliation = stanza["muc"]["affiliation"]
 		role = stanza["muc"]["role"]
+		nickname = stanza["from"].resource
 		
 		try:
 			user = stanza["muc"]["jid"]
@@ -141,18 +150,33 @@ class MucHandler(LocalSingletonBase):
 				
 		if user != component.boundjid:
 			if str(user) != "":
-				affiliation_object = affiliation_provider.find_by_room_user(room, user)
+				try:
+					affiliation_object = affiliation_provider.find_by_room_user(room, user)
+					
+					if affiliation_object.affiliation != affiliation:
+						# EVENT: Affiliation change
+						affiliation_object.change(affiliation)
+				except NotFoundException, e:
+					# No affiliation currently registered.
+					# TODO: Perhaps abstract this.
+					row = Row()
+					row["UserId"] = user_provider.normalize_user(user).id
+					row["RoomId"] = room_provider.normalize_room(room).id
+					row["Affiliation"] = affiliation
+					database["affiliations"].append(row)
+					affiliation = affiliation_provider.wrap(row)
 				
-				if affiliation_object.affiliation != affiliation:
-					# EVENT: Affiliation change
-					affiliation_object.change(affiliation)
-				
-				presence_object = presence_provider.find_by_room_user(room, user)
+				try:
+					presence_object = presence_provider.find_by_session(user, room=room)
+				except NotFoundException, e:
+					logger.warning("We were not aware of a MUC presence, this is bad! Room is %s and user is %s. Registering as a join..." % (room, user))
+					presence_object = presence_provider.register_join(user, room, user.resource, nickname, role)
 				
 				if presence_object.role != role:
 					# EVENT: Role change
 					presence_object.change_role(role)
 			else:
+				# FIXME: This fires for the component. Does it also do so for users?
 				logger = ApplicationLogger.Instance(self.identifier)
 				logger.warning("No valid JID found in presence stanza! Stanza was %s" % stanza)
 
@@ -258,7 +282,7 @@ class OverrideHandler(LocalSingletonBase):
 		user_provider = UserProvider.Instance(self.identifier)
 		component = Component.Instance(self.identifier)
 		if jid != component.boundjid:
-			user_provider.get(jid).register_join(node)
+			user_provider.get(jid).register_join(node, jid.resource, data, "unknown")
 		else:
 			component.joined_rooms.append(node)
 		
@@ -268,7 +292,7 @@ class OverrideHandler(LocalSingletonBase):
 		user_provider = UserProvider.Instance(self.identifier)
 		component = Component.Instance(self.identifier)
 		if jid != component.boundjid:
-			user_provider.get(jid).register_leave(node)
+			user_provider.get(jid).register_leave(node, jid.resource)
 		else:
 			component.joined_rooms.remove(node)
 
@@ -432,7 +456,7 @@ class ResolveHandler(LocalSingletonBase):
 		return total_matches
 
 from .notification import HighlightChecker
-from .providers import UserProvider, PresenceProvider, AffiliationProvider, ConfigurationProvider, LogEntryProvider
+from .providers import UserProvider, PresenceProvider, AffiliationProvider, ConfigurationProvider, LogEntryProvider, RoomProvider
 from .loggers import EventLogger, ApplicationLogger
 from .component import Component
 from .senders import MessageSender

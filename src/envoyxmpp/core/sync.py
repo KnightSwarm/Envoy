@@ -108,6 +108,7 @@ class RoomSyncer(LocalSingletonBase):
 			
 			if registered == False:
 				self.register(room)
+				info = component['xep_0030'].get_info(jid=room.jid, ifrom=component.boundjid)
 			
 			needs_reconfiguration = False
 			

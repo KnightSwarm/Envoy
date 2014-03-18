@@ -1,6 +1,7 @@
 from .util import LocalSingleton, LocalSingletonBase
 
 from sleekxmpp.jid import JID
+import re
 
 @LocalSingleton
 class HighlightChecker(LocalSingletonBase):
@@ -14,6 +15,7 @@ class HighlightChecker(LocalSingletonBase):
 		sender = stanza["from"].bare
 		body = stanza["body"]
 		
+		# TODO: Cache a compiled regex?
 		highlights = re.findall("@([a-zA-Z0-9._-]+)", stanza["body"])
 		for highlight in highlights:
 			if highlight == "all":
@@ -38,7 +40,7 @@ class HighlightChecker(LocalSingletonBase):
 			else:
 				# Highlight one particular nickname
 				try:
-					affected_user = set(user_provider.find_by_nickname(highlight))
+					affected_user = user_provider.find_by_nickname(highlight)
 				except NotFoundException, e:
 					continue
 				
@@ -200,6 +202,6 @@ class SmsSender(LocalSingletonBase):
 		else:
 			return body
 			
-from .providers import ConfigurationProvider, UserProvider, RoomProvider
+from .providers import ConfigurationProvider, UserProvider, RoomProvider, PresenceProvider, AffiliationProvider
 from .exceptions import NotFoundException
 from .loggers import ApplicationLogger

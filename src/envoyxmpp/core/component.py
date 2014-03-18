@@ -36,10 +36,12 @@ class Component(ComponentXMPP):
 		self.registerPlugin('xep_0297') # Stanza forwarding
 		self.registerPlugin('xep_0313') # Message Archive Management
 		
-		self['xep_0045'].api.register(OverrideHandler.Instance(self.identifier).is_joined, 'is_joined_room')
-		self['xep_0045'].api.register(OverrideHandler.Instance(self.identifier).get_joined, 'get_joined_rooms')
-		self['xep_0045'].api.register(OverrideHandler.Instance(self.identifier).add_joined, 'add_joined_room')
-		self['xep_0045'].api.register(OverrideHandler.Instance(self.identifier).delete_joined, 'del_joined_room')
+		override_handler = OverrideHandler.Instance(self.identifier)
+		
+		self['xep_0045'].api.register(override_handler.is_joined, 'is_joined_room')
+		self['xep_0045'].api.register(override_handler.get_joined, 'get_joined_rooms')
+		self['xep_0045'].api.register(override_handler.add_joined, 'add_joined_room')
+		self['xep_0045'].api.register(override_handler.delete_joined, 'del_joined_room')
 		
 		# Log retrieval handling
 		self["xep_0030"].add_feature("urn:xmpp:mam:tmp") # Register the MAM feature as being available

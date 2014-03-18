@@ -50,7 +50,9 @@ class Database(LocalSingletonBase):
 		return self._get_table(name, in_memory=True)
 	
 	def log_query(self, query, params):
-		pass
+		logger = ApplicationLogger.Instance(self.identifier)
+		logger.debug("QUERY: %s" % query)
+		logger.debug("PARAMS: %s" % str(params))
 	
 	def query(self, query, params = [], commit=False, table=None):
 		self.log_query(query, params)
@@ -274,3 +276,5 @@ class MemoryTable(Table):
 	def refresh(self):
 		self.data = {}
 		self._retrieve_data()
+
+from .loggers import ApplicationLogger

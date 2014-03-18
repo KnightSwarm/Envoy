@@ -685,9 +685,9 @@ class PresenceProvider(LocalSingletonBase):
 		user = user_provider.normalize_user(jid)
 		
 		if room is None:
-			return self.get_from_query("SELECT * FROM presences WHERE `UserId` = ? AND `Resource` = ?", (user.id, jid.resource))
+			return self.get_from_query("SELECT * FROM presences WHERE `UserId` = ? AND `Resource` = ?", (user.id, jid.resource))[0]
 		else:
-			return self.find_by_room_user(room, user)
+			return self.find_by_room_user(room, jid)[0]
 		
 	def find_by_room_user(self, room, user):
 		room_provider = RoomProvider.Instance(self.identifier)
@@ -697,7 +697,10 @@ class PresenceProvider(LocalSingletonBase):
 		user_jid = JID(user_provider.normalize_jid(user, keep_resource=True))
 		user = user_provider.normalize_user(user)
 		
-		return self.get_from_query("SELECT * FROM presences WHERE `RoomId` = ? AND `UserId` = ? AND `Resource` = ?", (room.id, user.id, user_jid.resource))
+		if user_jid.resource == "":
+			return self.get_from_query("SELECT * FROM presences WHERE `RoomId` = ? AND `UserId` = ?", (room.id, user.id))
+		else:
+			return self.get_from_query("SELECT * FROM presences WHERE `RoomId` = ? AND `UserId` = ? AND `Resource` = ?", (room.id, user.id, user_jid.resource))
 		
 	def find_by_fqdn(self, fqdn):
 		fqdn_provider = FqdnProvider.Instance(self.identifier)
