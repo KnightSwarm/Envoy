@@ -123,6 +123,9 @@
 					"identifier": "nickname"
 				}
 			},
+			"item_handlers": {
+				"notify": "send_room_notification"
+			},
 			"attributes": {
 				"id": {
 					"field": "Id",

@@ -456,6 +456,22 @@ class ResolveHandler(LocalSingletonBase):
 				
 		return total_matches
 
+@LocalSingleton
+class ZeromqEventHandler(LocalSingletonBase):
+	def process(self, message):
+		logger = ApplicationLogger.Instance(self.identifier)
+		
+		if message["type"] == "update_fqdn":
+			# FQDN settings have been updated, Prosody configuration needs to be regenerated.
+			pass
+		elif message["type"] == "create_room":
+			# A new room was created, this needs to be announced to clients.
+			# Not implemented yet, the client currently uses polling.
+			logger.debug("create_room")
+		elif message["type"] == "update_vcard":
+			# The vCard data for a user was updated, and the vCard file needs to be regenerated.
+			jid = message["args"]["jid"]
+
 from .notification import HighlightChecker
 from .providers import UserProvider, PresenceProvider, AffiliationProvider, ConfigurationProvider, LogEntryProvider, RoomProvider
 from .loggers import EventLogger, ApplicationLogger

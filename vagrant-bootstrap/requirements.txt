@@ -4,3 +4,4 @@ oursql
 marrow.mailer
 twilio
 requests
+pyzmq

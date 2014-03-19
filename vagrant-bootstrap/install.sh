@@ -31,7 +31,7 @@ apt-get upgrade -y >/dev/null
 
 # Get htop and such
 echo "Installing tools..."
-apt-get install -y htop iftop iotop git highlight multitail > /dev/null
+apt-get install -y htop iftop iotop git highlight multitail expect pkg-config build-essential > /dev/null
 
 # Get Python and pip
 echo "Installing Python..."
@@ -46,7 +46,10 @@ apt-get install -y mysql-server mysql-client libmysql++-dev >mysql-log 2>&1
 
 # Get lighttpd and PHP (with memcached)
 echo "Installing lighttpd and PHP..."
-apt-get install -y lighttpd php5-cgi memcached php5-memcache php5-mysql php5-curl >/dev/null 2>&1
+apt-get install -y lighttpd php5-cgi memcached php5-memcache php5-mysql php5-curl php5-dev php-pear libzmq1 libzmq-dev >/dev/null 2>&1
+expect -f /vagrant/vagrant-bootstrap/zmq-beta.exp >/dev/null # This installs the ZMQ PHP plugin through PECL, auto-answering interactive prompts
+echo "extension=zmq.so" > /etc/php5/conf.d/20-zmq.ini
+chmod o+r /etc/php5/conf.d/20-zmq.ini
 
 # Install Python dependencies
 echo "Installing Python dependencies..."
@@ -103,7 +106,7 @@ cp /vagrant/vagrant-bootstrap/panel.envoy.local.conf /etc/lighttpd/vhosts.d/
 cp /vagrant/vagrant-bootstrap/php.ini /etc/php5/cgi/php.ini
 
 # TEMPORARY: Pre-create envoy.local Prosody data directory, so that Envoy can access it.
-mkdir /var/lib/prosody/envoy.local
+mkdir "/var/lib/prosody/envoy%2elocal"
 
 # Restart MySQL to apply public binding changes
 /etc/init.d/mysql restart >/dev/null

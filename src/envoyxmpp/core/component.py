@@ -24,6 +24,7 @@ class Component(ComponentXMPP):
 		self.add_event_handler("groupchat_joined", MucHandler.Instance(self.identifier).process_join)
 		self.add_event_handler("groupchat_left", MucHandler.Instance(self.identifier).process_leave)
 		self.add_event_handler("groupchat_presence", MucHandler.Instance(self.identifier).process_presence)
+		self.add_event_handler("zmq_event", ZeromqEventHandler.Instance(self.identifier).process)
 		self.add_event_handler("session_start", self.start, threaded=True)
 		
 		self.registerPlugin('xep_0030') # Service Discovery
@@ -59,6 +60,13 @@ class Component(ComponentXMPP):
 		# be necessary in an optimal scenario, as everything would stay in sync as long as the
 		# component is running.
 		#self.scheduler.add("Purge Presences", 300, self._envoy_purge_presences, repeat=True)
+		
+		# Only now that the component is connected, will we start accepting messages over the
+		# ZeroMQ event socket.
+		event_thread = ZeromqEventThread.Instance(self.identifier)
+		event_thread.start()
+		
+		# Synchronize all data...
 		RoomSyncer.Instance(self.identifier).sync()
 		AffiliationSyncer.Instance(self.identifier).sync()
 		PresenceSyncer.Instance(self.identifier).sync()
@@ -76,10 +84,11 @@ xmpp.process(block=True)
 """
 
 from .db import Database
-from .handlers import StanzaHandler, MucHandler, OverrideHandler, LogRequestHandler
+from .handlers import StanzaHandler, MucHandler, OverrideHandler, LogRequestHandler, ZeromqEventHandler
 from .providers import FqdnProvider, ConfigurationProvider
 from .sync import PresenceSyncer, AffiliationSyncer, RoomSyncer, StatusSyncer, VcardSyncer
 from .stanzas import EnvoyQueryFlag
+from .zeromq import ZeromqEventThread
 
 from sleekxmpp.plugins.xep_0313 import MAM
 
