@@ -1,0 +1,10 @@
+set timeout -1
+spawn $env(SHELL)
+match_max 100000
+expect "# "
+send -- "pecl install zmq-beta\r"
+expect "Please provide the prefix of libzmq installation"
+send -- "\r"
+expect "# "
+send -- "exit\r"
+expect eof
