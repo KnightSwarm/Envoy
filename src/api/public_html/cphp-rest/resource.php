@@ -15,7 +15,7 @@ namespace \CPHP\REST;
 
 if(!isset($_CPHP_REST)) { die("Unauthorized."); }
 
-class ResourceType
+class Resource
 {
 	function __construct($api, $type, $config)
 	{

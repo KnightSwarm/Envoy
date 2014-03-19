@@ -471,6 +471,9 @@ class ZeromqEventHandler(LocalSingletonBase):
 		elif message["type"] == "update_vcard":
 			# The vCard data for a user was updated, and the vCard file needs to be regenerated.
 			jid = message["args"]["jid"]
+		elif message["type"] == "room_notification":
+			# A third-party room notification was sent.
+			pass
 
 from .notification import HighlightChecker
 from .providers import UserProvider, PresenceProvider, AffiliationProvider, ConfigurationProvider, LogEntryProvider, RoomProvider

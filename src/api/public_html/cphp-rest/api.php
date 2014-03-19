@@ -25,6 +25,7 @@ class API
 		$this->custom_type_decoder = array();
 		$this->authenticator = array();
 		$this->column_map = array();
+		$this->resource_plurals = array();
 	}
 	
 	public function ProcessRequest()

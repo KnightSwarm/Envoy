@@ -326,6 +326,9 @@
 				"api_key": {
 					"field": "ApiKey",
 					"type": "string"
+				},
+				"access_level": {
+					"type": "custom"
 				}
 			}
 		},

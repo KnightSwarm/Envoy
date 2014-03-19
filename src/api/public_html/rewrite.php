@@ -18,6 +18,214 @@
 
 $_APP = true;
 
+use CPHP\REST;
+
+function get_fqdn_access_level($fqdn, $keypair)
+{
+	$api_permissions = $keypair->ListPermissions(array("fqdn" => $fqdn->id));
+	$user_permissions = $keypair->user->ListPermissions(array("fqdn" => $fqdn->id));
+	
+	$lowest_level = false;
+	
+	/* We can merge the arrays, since both API permissions and user permissions
+	 * expose roughly the same interface. */
+	foreach(array_merge($api_permissions, $user_permissions) as $permission)
+	{
+		/* Retrieve the original value, rather than the enum representation. *//
+		$level = $api->EnumValue("access_level_enum", $permission->access_level);
+		
+		if($lowest_level === false || $level < $lowest_level)
+		{
+			$lowest_level = $level;
+		}
+	}
+	
+	if($lowest_level === false)
+	{
+		/* No permissions were found... */
+		return 0;
+	}
+	else
+	{
+		return $lowest_level;
+	}
+}
+
+$API = new API();
+$API->LoadConfiguration("../api.json");
+
+$API->RegisterAuthenticator("fqdn", function($fqdn, $keypair, write = false) {
+	if($write === false)
+	{
+		/* The user must have read access to the FQDN. */
+		return (get_fqdn_access_level($fqdn, $keypair) >= $API->EnumValue("access_level_enum", "read"));
+	}
+	else
+	{
+		/* The owner of the keypair must have administrative write access to
+		 * the FQDN. */
+		return (get_fqdn_access_level($fqdn, $keypair) >= $API->EnumValue("access_level_enum", "administrative"));
+	}
+});
+
+$API->RegisterAuthenticator("user", function($user, $keypair, $write = false) {
+	/* The requested user must either be the owner of the keypair, or the owner
+	 * of the keypair must have access to the FQDN that the requested user
+	 * belongs to. */
+	if($write === false)
+	{
+		return (($user->id == $keypair->user->id) || (get_fqdn_access_level($user->fqdn, $keypair) >= $API->EnumValue("access_level_enum", "read")));
+	}
+	else
+	{
+		/* For write access, the owner of the keypair must either be the requested
+		 * user and have write access, or the owner of the keypair must have 
+		 * administrative write access within the FQDN. */
+		return (
+			(($user->id == $keypair->user->id) && (get_fqdn_access_level($user->fqdn, $keypair) >= $API->EnumValue("access_level_enum", "write")))
+			|| (get_fqdn_access_level($user->fqdn, $keypair) >= $API->EnumValue("access_level_enum", "administrative"))
+		);
+	}
+});
+
+$API->RegisterAuthenticator("room", function($room, $keypair, $write = false) {
+	/* Either the room must be public, or the owner of the keypair must have at
+	 * least a "member" affiliation with the room, or the owner of the keypair must
+	 * have administrative access within the FQDN. */
+	if($write === false)
+	{
+		if($room->is_public === true || get_fqdn_access_level($room->fqdn, $keypair) >= $API->EnumValue("access_level_enum", "administrative_read"))
+		{
+			return true;
+		}
+		else
+		{
+			foreach($room->ListAffiliations(array("user" => $keypair->user->id)) as $affiliation)
+			{
+				if(in_array($affiliation->affiliation, array("owner", "admin", "member")))
+				{
+					return true;
+				}
+			}
+			
+			/* If no matches... */
+			return false;
+		}
+	}
+	else
+	{
+		/* The owner of the keypair must either have an admin or owner
+		 * affiliation with the room, or have administrative write access
+		 * within the FQDN. */
+		if(get_fqdn_access_level($room->fqdn, $keypair) >= $API->EnumValue("access_level_enum", "administrative"))
+		{
+			return true;
+		}
+		else
+		{
+			foreach($room->ListAffiliations(array("user" => $keypair->user->id)) as $affiliation)
+			{
+				if(in_array($affiliation->affiliation, array("owner", "admin")))
+				{
+					return true;
+				}
+			}
+			
+			/* If no matches... */
+			return false;
+		}
+	}
+});
+
+$API->RegisterAuthenticator("affiliation", function($affiliation, $keypair, $write = false) {
+	if($write === false)
+	{
+		/* Either the affliation must belong to the owner of the keypair, or the affiliation
+		 * must belong to a public room, or the owner of the keypair must have
+		 * administrative access within the FQDN. */
+		return (($user->id == $keypair->user->id) || (get_fqdn_access_level($user->fqdn, $keypair) >= $API->EnumValue("access_level_enum", "read")));
+	}
+	else
+	{
+		/* Either the owner of the keypair must have an admin or owner
+		 * position in the room that the affiliation belongs to, or the owner
+		 * of the keypair must have administrative access within the FQDN. */
+		if(get_fqdn_access_level($room->fqdn, $keypair) >= $API->EnumValue("access_level_enum", "administrative"))
+		{
+			return true;
+		}
+		else
+		{
+			foreach($affiliation->room->ListAffiliations(array("user" => $keypair->user->id)) as $affiliation)
+			{
+				if(in_array($affiliation->affiliation, array("owner", "admin")))
+				{
+					return true;
+				}
+			}
+			
+			/* If no matches... */
+			return false;
+		}
+	}
+});
+
+$API->RegisterAuthenticator("api_key", function($api_key, $keypair, $write = false) {
+	if($write === false)
+	{
+		/* Either the API key must belong to the owner of the keypair, or the owner of
+		 * the keypair must have administrative access within the FQDN. */
+		return (($user->id == $keypair->user->id) || (get_fqdn_access_level($user->fqdn, $keypair) >= $API->EnumValue("access_level_enum", "read")));
+	}
+	else
+	{
+		/* Either the API key must belong to the owner of the keypair and the keypair
+		 * must have write access, or the keypair must have administrative access
+		 * within the FQDN. */
+		/* TODO */
+	}
+});
+
+$API->RegisterDecoder("room", "jid", function($resource) {
+	return $resource->roomname . "@" . $resource->fqdn->fqdn;
+});
+
+$API->RegisterDecoder("user", "jid", function($resource) {
+	return $resource->username . "@" . $resource->fqdn->fqdn;
+});
+
+$API->RegisterHandler("room", "notify", function($room) {
+	$handler = new CPHPFormHandler();
+	
+	try
+	{
+		$handler
+			->RequireNonEmpty("message")
+			->Done();
+	}
+	catch (FormValidationException $e)
+	{
+		/* FIXME: Throw HTTP error for invalid input.. 410? */
+	}
+	
+	$context = new ZMQContext();
+	$query_socket = new ZMQSocket($context, ZMQ::SOCKET_PUSH);
+	$query_socket->connect("tcp://127.0.0.1:18081");
+
+	$query_socket->send(json_encode(array(
+		"type" => "room_notification",
+		"args" => array(
+			"room" => $room->jid,
+			"color" => $handler->GetValue("color", "yellow"),
+			"message" => $handler->GetValue("message"),
+			"notify" => $handler-> GetValue("notify", "0"),
+			"message_format" => $handler->GetValue("message_format", "html")
+		)
+	)));
+});
+
+/* Old API code below */
+
 require("include/base.php");
 
 if(empty($_SERVER['HTTP_ENVOY_API_ID']) || empty($_SERVER['HTTP_ENVOY_API_SIGNATURE']))
