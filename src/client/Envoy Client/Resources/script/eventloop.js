@@ -11,6 +11,8 @@ var event_handlers = {
 			$scope.data.logged_in = true;
 			$scope.data.login_failed = false;
 			$scope.data.login_busy = false;
+			settings.setString("username", $scope.data.username);
+			settings.setString("password", $scope.data.password);
 		}
 	},
 	login_failed: {

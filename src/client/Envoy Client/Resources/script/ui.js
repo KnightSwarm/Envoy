@@ -95,12 +95,19 @@ envoyClient.controller('UiController', function UiController($scope)
 	{
 		if($scope.data.login_busy == false)
 		{
-			/* FIXME: Do actual login. */
-			console.log("username", $scope.data.username);
-			console.log("password", $scope.data.password);
 			jid = new _JID($scope.data.username);
 			$scope.data.login_busy = true;
 			start_client(jid.node, jid.fqdn, $scope.data.password);
 		}
+	}
+	
+	if(settings.getString("username") !== "")
+	{
+		$scope.data.username = settings.getString("username");
+	}
+	
+	if(settings.getString("password") !== "")
+	{
+		$scope.data.password = settings.getString("password");
 	}
 });

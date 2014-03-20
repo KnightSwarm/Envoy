@@ -1,5 +1,185 @@
 var has_tide;
 var has_python;
+var has_localstorage;
+
+try
+{
+	has_localstorage = ("localStorage" in window && window["localStorage"] !== null);
+}
+catch (e)
+{
+	has_localstorage = false;
+}
+
+var TideUserSettings = {
+	initialize: function() {
+		this.settings_file = Ti.Filesystem.getFile(Ti.API.application.dataPath, "user.properties");
+
+		if(this.settings_file.exists())
+		{
+			this.settings = Ti.App.loadProperties(this.settings_file.nativePath());
+			console.log("Loaded settings from file at", this.settings_file.nativePath());
+		}
+		else
+		{
+			this.createDefault();
+		}
+	},
+	getBoolean: function(key) {
+		try
+		{
+			return (this.settings.getString(key) == "true");
+		}
+		catch (e)
+		{
+			return undefined;
+		}
+	},
+	getString: function(key) {
+		try
+		{
+			return this.settings.getString(key);
+		}
+		catch (e)
+		{
+			return undefined;
+		}
+	},
+	getInt: function(key) {
+		try
+		{
+			return this.settings.getInt(key);
+		}
+		catch (e)
+		{
+			return undefined;
+		}
+	},
+	getDouble: function(key) {
+		try
+		{
+			return this.settings.getDouble(key);
+		}
+		catch (e)
+		{
+			return undefined;
+		}
+	},
+	setBoolean: function(key, value) {
+		if(value === false)
+		{
+			this.settings.setString(key, "false");
+		}
+		else
+		{
+			this.settings.setString(key, "true");
+		}
+	},
+	setString: function(key, value) {
+		this.settings.setString(key, value);
+		this.saveChanges();
+	},
+	setInt: function(key, value) {
+		this.settings.setInt(key, value);
+		this.saveChanges();
+	},
+	setDouble: function(key, value) {
+		this.settings.setDouble(key, value);
+		this.saveChanges();
+	},
+	createDefault: function() {
+		this.settings = Ti.App.createProperties({
+			debug: "false",
+			username: "",
+			password: ""
+		});
+		
+		console.log("Created new settings file at", this.settings_file.nativePath());
+	},
+	saveChanges: function() {
+		console.log("Saving configuration changes...");
+		this.settings.saveTo(this.settings_file.nativePath());
+	}
+};
+
+var LocalStorageUserSettings = {
+	initialize: function() {
+		if(typeof localStorage["envoy.settings_initialized"] === "undefined")
+		{
+			this.createDefault();
+		}
+	},
+	getBoolean: function(key) {
+		return (localStorage["envoy." + key] == "true");
+	},
+	getString: function(key) {
+		return localStorage["envoy." + key];
+	},
+	getInt: function(key) {
+		return parseInt(localStorage["envoy." + key]);
+	},
+	getDouble: function(key) {
+		return parseFloat(localStorage["envoy." + key]);
+	},
+	setBoolean: function(key, value) {
+		if(value === false)
+		{
+			localStorage["envoy." + key] = "false";
+		}
+		else
+		{
+			localStorage["envoy." + key] = "true";
+		}
+	},
+	setString: function(key, value) {
+		localStorage["envoy." + key] = value;
+	},
+	setInt: function(key, value) {
+		localStorage["envoy." + key] = value.toString();
+	},
+	setDouble: function(key, value) {
+		localStorage["envoy." + key] = value.toString();
+	},
+	createDefault: function() {
+		localStorage["envoy.settings_initialize"] = "true";
+		localStorage["envoy.debug"] = "false";
+		localStorage["envoy.username"] = "";
+		localStorage["envoy.password"] = "";
+	}
+};
+
+var MockUserSettings = {
+	initialize: function() {
+		return undefined;
+	},
+	getBoolean: function(key) {
+		return undefined;
+	},
+	getString: function(key) {
+		return undefined;
+	},
+	getInt: function(key) {
+		return undefined;
+	},
+	getDouble: function(key) {
+		return undefined;
+	},
+	setBoolean: function(key, value) {
+		return undefined;
+	},
+	setString: function(key, value) {
+		return undefined;
+	},
+	setInt: function(key, value) {
+		return undefined;
+	},
+	setDouble: function(key, value) {
+		return undefined;
+	},
+	createDefault: function() {
+		return undefined;
+	}
+};
 
 /* First we'll check whether the TideSDK API is available. */
 if(typeof Ti !== "undefined")
@@ -129,25 +309,10 @@ function safeApply(scope, fn) {
 /* Finally, take care of the settings file... */
 if(has_tide)
 {
-	var settings_file = Ti.Filesystem.getFile(Ti.API.application.dataPath, "user.properties");
+	var settings = TideUserSettings;
+	settings.initialize();
 	
-	if(settings_file.exists())
-	{
-		var settings = Ti.App.loadProperties(settings_file.nativePath());
-		console.log("Loaded settings from file at", settings_file.nativePath());
-	}
-	else
-	{
-		var settings = Ti.App.createProperties({
-			debug: "false"
-		});
-		
-		settings.saveTo(settings_file.nativePath());
-		
-		console.log("Created new settings file at", settings_file.nativePath());
-	}
-	
-	if(settings.getString("debug") == "true")
+	if(settings.getBoolean("debug") == true)
 	{
 		console.log("WARNING: Debug mode enabled.");
 		setInterval(function(){
@@ -162,4 +327,17 @@ if(has_tide)
 			}
 		}, 500);
 	}
+}
+else if(has_localstorage)
+{
+	var settings = LocalStorageUserSettings;
+	settings.initialize();
+}
+else
+{
+	console.log("WARNING: Not running in TideSDK, and LocalStorage not available! Cannot store or retrieve user settings...");
+	/* Setting a mock object, to make the function calls still execute; this
+	 * prevents the entire application from breaking. We simply won't be
+	 * able to store any user preferences. */
+	var settings = MockUserSettings;
 }
