@@ -44,7 +44,7 @@ function _JID(jid)
 		{
 			this.node = "";
 		}
-		console.log(subparts);
+		window.log(subparts);
 		if(subparts.length == 2)
 		{
 			this.fqdn = subparts[1];

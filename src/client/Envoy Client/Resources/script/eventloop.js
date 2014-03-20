@@ -161,7 +161,7 @@ var event_handlers = {
 q.set_callback(function(item){
 	event_loop_processing = true;
 	
-	console.log(item);
+	window.log(item);
 	
 	if(typeof event_handlers[item.type] !== "undefined")
 	{
@@ -185,7 +185,7 @@ q.set_callback(function(item){
 		}
 		else
 		{
-			console.log("WARNING: No suitable scope found for event of type '" + item.type + "'!");
+			window.log("WARNING: No suitable scope found for event of type '" + item.type + "'!");
 		}
 	}
 	

@@ -2,6 +2,69 @@ var has_tide;
 var has_python;
 var has_localstorage;
 
+window.log = function() {
+	if(typeof logging !== "undefined")
+	{
+		/* Send it to the Python logging module as well... */
+		logging.info([].join.call(arguments, " "));
+	}
+	
+	if(typeof window.log !== "undefined")
+	{
+		/* Browser console is available, send it there. */
+		console.log(Array.prototype.slice.call(arguments));
+	}
+}
+
+/* In case we need a stacktrace, despite our custom console.log wrapper...
+ * Source: http://www.eriwen.com/javascript/js-stack-trace/ (modified) */
+function printStackTrace(callback) {
+	var callstack = [];
+	var isCallstackPopulated = false;
+	try {
+		i.dont.exist+=0; //doesn't exist- that's the point
+	} catch(e) {
+		if (e.stack) { //Firefox
+			var lines = e.stack.split('\n');
+			for (var i=0, len=lines.length; i<len; i++) {
+				if (lines[i].match(/^\s*[A-Za-z0-9\-_\$]+\(/)) {
+					callstack.push(lines[i]);
+				}
+			}
+			//Remove call to printStackTrace()
+			callstack.shift();
+			isCallstackPopulated = true;
+		}
+		else if (window.opera && e.message) { //Opera
+			var lines = e.message.split('\n');
+			for (var i=0, len=lines.length; i<len; i++) {
+				if (lines[i].match(/^\s*[A-Za-z0-9\-_\$]+\(/)) {
+					var entry = lines[i];
+					//Append next line also since it has the file info
+					if (lines[i+1]) {
+						entry += ' at ' + lines[i+1];
+						i++;
+					}
+					callstack.push(entry);
+				}
+			}
+			//Remove call to printStackTrace()
+			callstack.shift();
+			isCallstackPopulated = true;
+		}
+	}
+	if (!isCallstackPopulated) { //IE and Safari
+		var currentFunction = arguments.callee.caller;
+		while (currentFunction) {
+			var fn = currentFunction.toString();
+			var fname = fn.substring(fn.indexOf("function") + 8, fn.indexOf('')) || 'anonymous';
+			callstack.push(fname);
+			currentFunction = currentFunction.caller;
+		}
+	}
+	callback(callstack);
+}
+
 try
 {
 	has_localstorage = ("localStorage" in window && window["localStorage"] !== null);
@@ -18,7 +81,7 @@ var TideUserSettings = {
 		if(this.settings_file.exists())
 		{
 			this.settings = Ti.App.loadProperties(this.settings_file.nativePath());
-			console.log("Loaded settings from file at", this.settings_file.nativePath());
+			window.log("Loaded settings from file at", this.settings_file.nativePath());
 		}
 		else
 		{
@@ -94,10 +157,10 @@ var TideUserSettings = {
 			password: ""
 		});
 		
-		console.log("Created new settings file at", this.settings_file.nativePath());
+		window.log("Created new settings file at", this.settings_file.nativePath());
 	},
 	saveChanges: function() {
-		console.log("Saving configuration changes...");
+		window.log("Saving configuration changes...");
 		this.settings.saveTo(this.settings_file.nativePath());
 	}
 };
@@ -314,14 +377,14 @@ if(has_tide)
 	
 	if(settings.getBoolean("debug") == true)
 	{
-		console.log("WARNING: Debug mode enabled.");
+		window.log("WARNING: Debug mode enabled.");
 		setInterval(function(){
 			/* Only works on *nix systems for now! */
 			var reload_trigger = Ti.Filesystem.getFile("/tmp/envoy-client-reload");
 			
 			if(reload_trigger.exists())
 			{
-				console.log("Reload trigger received, reloading the application...");
+				window.log("Reload trigger received, reloading the application...");
 				reload_trigger.deleteFile();
 				document.location.reload();
 			}
@@ -335,7 +398,7 @@ else if(has_localstorage)
 }
 else
 {
-	console.log("WARNING: Not running in TideSDK, and LocalStorage not available! Cannot store or retrieve user settings...");
+	window.log("WARNING: Not running in TideSDK, and LocalStorage not available! Cannot store or retrieve user settings...");
 	/* Setting a mock object, to make the function calls still execute; this
 	 * prevents the entire application from breaking. We simply won't be
 	 * able to store any user preferences. */

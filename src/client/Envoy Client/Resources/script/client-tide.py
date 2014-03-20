@@ -1,10 +1,32 @@
-import time, sleekxmpp
+import time, sleekxmpp, sys, os
 from sleekxmpp import ClientXMPP
 from sleekxmpp.util import Queue, QueueEmpty
 import logging, time, calendar
 from collections import defaultdict
+from sleekxmpp.plugins.xep_0048 import Conference
 
-logging.basicConfig(level=logging.DEBUG, format="%(asctime)s %(levelname)s %(message)s")
+def get_application_data_path():
+	# Source: https://stackoverflow.com/a/1088459/1332715
+	APPNAME = "EnvoyClient"
+
+	if sys.platform == 'darwin':
+		from AppKit import NSSearchPathForDirectoriesInDomains
+		# http://developer.apple.com/DOCUMENTATION/Cocoa/Reference/Foundation/Miscellaneous/Foundation_Functions/Reference/reference.html#//apple_ref/c/func/NSSearchPathForDirectoriesInDomains
+		# NSApplicationSupportDirectory = 14
+		# NSUserDomainMask = 1
+		# True for expanding the tilde into a fully qualified path
+		return os.path.join(NSSearchPathForDirectoriesInDomains(14, 1, True)[0], APPNAME)
+	elif sys.platform == 'win32':
+		return os.path.join(os.environ['APPDATA'], APPNAME)
+	else:
+		return os.path.expanduser(os.path.join("~", "." + APPNAME))
+
+try:
+	os.makedirs(get_application_data_path())
+except OSError, e:
+	pass # Already exists
+
+logging.basicConfig(level=logging.DEBUG, format="%(asctime)s %(levelname)s %(message)s", filename=os.path.join(get_application_data_path(), "client.log"))
 
 q = PyQueue()
 
@@ -26,7 +48,7 @@ class Client(ClientXMPP):
 		self.registerPlugin('xep_0030') # Service Discovery
 		self.registerPlugin('xep_0004') # Data Forms
 		self.registerPlugin('xep_0045') # MUC
-		self.registerPlugin('xep_0048') # Bookmarks
+		self.registerPlugin('xep_0048', {"auto_join": True}) # Bookmarks
 		self.registerPlugin('xep_0199') # XMPP Ping
 		self.registerPlugin('xep_0203') # Delayed delivery
 		
@@ -47,8 +69,12 @@ class Client(ClientXMPP):
 		
 		self._update_room_list()
 		
+		logging.debug("Initiating automatic channel join...")
+		self["xep_0048"]._autojoin(event)
+		logging.info("Auto-joined channels.")
+		
 		# TODO: Load bookmarks
-		## console.log(self['xep_0048'].get_bookmarks())
+		## window.log(self['xep_0048'].get_bookmarks())
 		
 	def authentication_failed(self, event):
 		self.q.put({"type": "login_failed", "data": {"error_type": "auth"}})
@@ -78,7 +104,7 @@ class Client(ClientXMPP):
 					"jid": room_jid
 				}]})
 					
-		console.log("Room list updated...")
+		window.log("Room list updated...")
 	
 	def on_groupchat_joined(self, stanza):
 		room_jid = stanza["from"].bare
@@ -210,7 +236,18 @@ class TideBackend(object):
 		#}]})
 		
 	def leave_room(self, room_jid):
+		# FIXME: Remove bookmark!
 		self.client['xep_0045'].leave(room_jid)
+		
+	def bookmark_room(self, room_jid):
+		logging.debug("Bookmarking %s..." % room_jid)
+		stanza = Conference()
+		stanza["autojoin"] = True
+		stanza["nick"] = self.username
+		stanza["name"] = room_jid
+		stanza["jid"] = room_jid
+		self.client["xep_0048"].set_bookmarks(stanza)
+		logging.debug("Bookmark for %s set." % room_jid)
 		
 	def get_vcard(self, jid):
 		pass
@@ -231,7 +268,7 @@ class TideBackend(object):
 		self.client._update_room_list()
 		
 def dom_load():
-	console.log("Initialized as TideSDK client.");
+	window.log("Initialized as TideSDK client.");
 	
 def start_client(username, fqdn, password):
 	window.backend = TideBackend(username, fqdn, password, q)

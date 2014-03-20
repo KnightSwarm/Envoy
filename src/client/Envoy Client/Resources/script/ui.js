@@ -50,6 +50,7 @@ envoyClient.controller('UiController', function UiController($scope)
 		{
 			$scope.data.joined_rooms.push(jid); /* FIXME: Is this really necessary? */
 			backend.join_room(jid)
+			backend.bookmark_room(jid);
 		}
 		
 		$scope.data.current_room = jid;
