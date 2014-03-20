@@ -37,7 +37,11 @@ envoyClient.controller('UiController', function UiController($scope)
 		joined_rooms: [],
 		users: [],
 		own_jid: "testuser@envoy.local", /* FIXME: Set to actual own JID upon connecting */
-		all_rooms: []
+		all_rooms: [],
+		logged_in: false,
+		login_busy: false,
+		login_failed: false,
+		login_error: ""
 	};
 	
 	$scope.join_room = function(jid)
@@ -85,5 +89,18 @@ envoyClient.controller('UiController', function UiController($scope)
 		return _.filter($scope.data.rooms, function(item){
 			return (item.jid == jid); }
 		)[0];
+	}
+	
+	$scope.login = function()
+	{
+		if($scope.data.login_busy == false)
+		{
+			/* FIXME: Do actual login. */
+			console.log("username", $scope.data.username);
+			console.log("password", $scope.data.password);
+			jid = new _JID($scope.data.username);
+			$scope.data.login_busy = true;
+			start_client(jid.node, jid.fqdn, $scope.data.password);
+		}
 	}
 });

@@ -23,7 +23,8 @@ var menu = new ApplicationMenu({
 });
 menu.attachToWindow(Ti.UI.getCurrentWindow());
 
-function JID(jid)
+/* Underscored to prevent conflict with SleekXMPP... */
+function _JID(jid)
 {
 	this.jid = jid;
 	
@@ -33,7 +34,7 @@ function JID(jid)
 	{
 		this.bare = parts[0];
 		
-		var subparts = this.bare.split("@", 1);
+		var subparts = this.bare.split("@", 2);
 		
 		if(subparts.length >= 1)
 		{
@@ -43,7 +44,7 @@ function JID(jid)
 		{
 			this.node = "";
 		}
-		
+		console.log(subparts);
 		if(subparts.length == 2)
 		{
 			this.fqdn = subparts[1];

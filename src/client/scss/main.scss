@@ -71,6 +71,7 @@ $input_height: 64px;
 body
 {
 	font-family: "Istok Web", sans-serif;
+	background-color: #C8C8C8;
 }
 
 .input
@@ -307,4 +308,59 @@ body
 			}
 		}
 	}
+}
+
+.login
+{
+	.loginform
+	{
+		margin: 32px auto;
+		padding: 24px;
+		width: 300px;
+		background-color: #181818;
+		
+		input
+		{
+			display: block;
+			width: 100%;
+			padding: 6px;
+			background-color: #5C5C5C;
+			color: white;
+			border: 1px solid #8A8A8A;
+			margin-bottom: 12px;
+		}
+		
+		label
+		{
+			display: block;
+			color: white;
+			font-weight: bold;
+		}
+		
+		button
+		{
+			display: block;
+			width: 120px;
+			margin: 24px auto 0px auto;
+			background-color: #52546F;
+			color: white;
+			font-weight: bold;
+			-webkit-border-radius: 1px; /* To prevent system borders */
+		}
+		
+		.in-progress
+		{
+			color: white;
+			text-align: center;
+			margin: 24px auto 0px auto;
+		}
+	}
+}
+
+.alert
+{
+	border: 1px solid #BFA51F;
+	background-color: #E5DA9F;
+	border-radius: 4px;
+	padding: 6px;
 }

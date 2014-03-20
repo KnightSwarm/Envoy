@@ -5,6 +5,23 @@
 event_loop_processing = false;
 
 var event_handlers = {
+	login_success: {
+		scope: ["ui"],
+		handler: function($scope, data) {
+			$scope.data.logged_in = true;
+			$scope.data.login_failed = false;
+			$scope.data.login_busy = false;
+		}
+	},
+	login_failed: {
+		scope: ["ui"],
+		handler: function($scope, data) {
+			$scope.data.logged_in = false;
+			$scope.data.login_failed = true;
+			$scope.data.login_error = data["error_type"];
+			$scope.data.login_busy = false;
+		}
+	},
 	roomlist_add: {
 		scope: ["ui"],
 		handler: function($scope, data) {
@@ -119,7 +136,7 @@ var event_handlers = {
 					$scope.room.participants.push(new_object)
 				}
 				
-				if(new JID(data.jid).bare == $scope.own_jid)
+				if(new _JID(data.jid).bare == $scope.own_jid)
 				{
 					/* Mark the join as finished; from this point on, joins will be displayed in the client. */
 					$scope.room.finished_join = true;

@@ -10,13 +10,19 @@ q = PyQueue()
 
 class Client(ClientXMPP):
 	def __init__(self, username, fqdn, password, queue):
-		self._jid = "%s@%s" % (username, fqdn)
-		self.conference_host = "conference.%s" % fqdn
-		ClientXMPP.__init__(self, self._jid, password)
-		
 		self.q = queue
 		
+		self._jid = "%s@%s" % (username, fqdn)
+		self.conference_host = "conference.%s" % fqdn
+		
+		try:
+			ClientXMPP.__init__(self, self._jid, password)
+		except ValueError, e:
+			# Invalid data (JID?) specified
+			self.q.put({"type": "login_failed", "data": {"error_type": "value"}})
+		
 		self.add_event_handler("session_start", self.session_start)
+		self.add_event_handler("no_auth", self.authentication_failed)
 		self.registerPlugin('xep_0030') # Service Discovery
 		self.registerPlugin('xep_0004') # Data Forms
 		self.registerPlugin('xep_0045') # MUC
@@ -37,12 +43,15 @@ class Client(ClientXMPP):
 		self.get_roster()
 		self.send_presence()
 		
-		console.log("CONNECTED!")
+		self.q.put({"type": "login_success", "data": {}})
 		
 		self._update_room_list()
 		
 		# TODO: Load bookmarks
 		## console.log(self['xep_0048'].get_bookmarks())
+		
+	def authentication_failed(self, event):
+		self.q.put({"type": "login_failed", "data": {"error_type": "auth"}})
 		
 	def _update_room_list(self):
 		rooms = self['xep_0045'].get_rooms(ifrom=self.boundjid, jid=self.conference_host)['disco_items']['items']
@@ -223,4 +232,6 @@ class TideBackend(object):
 		
 def dom_load():
 	console.log("Initialized as TideSDK client.");
-	window.backend = TideBackend("testuser", "envoy.local", "testpass", q)
+	
+def start_client(username, fqdn, password):
+	window.backend = TideBackend(username, fqdn, password, q)
