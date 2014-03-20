@@ -207,7 +207,7 @@ class TideBackend(object):
 		pass
 		
 	def send_group_message(self, message, room_jid):
-		pass
+		self.client.send_message(mto=room_jid, mbody=message, mtype="groupchat")
 		
 	def send_private_message(self, message, recipient):
 		pass

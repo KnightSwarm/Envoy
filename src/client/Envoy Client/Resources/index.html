@@ -8,6 +8,7 @@
 		<link rel="stylesheet" href="istok/stylesheet.css">
 		<!-- Base Javascript libraries -->
 		<script src="script/jquery-1.10.2.min.js"></script>
+		<script src="script/jquery.shiftenter.js"></script>
 		<script src="script/angular.min.js"></script>
 		<script src="script/angular-scrollglue.js"></script>
 		<script src="script/underscore-min.js"></script>
@@ -16,6 +17,7 @@
 		<!-- Initial configuration and Python availability detection -->
 		<script type="text/python">
 			import sys
+			# Evil hack! Needs to be replaced...
 			sys.path.insert(1, "/home/sven/projects/SleekXMPP/")
 			has_python = True;
 		</script>
@@ -35,13 +37,13 @@
 		<!-- Left-hand "joined rooms" list -->
 		<div id="room_list">
 			<!-- Lobby -->
-			<div class="room" ng-class="{selected : current_room == 'lobby'}" ng-click="current_room = 'lobby'" data-jid="lobby">
+			<div class="room" ng-class="{selected : data.current_room == 'lobby'}" ng-click="data.current_room = 'lobby'" data-jid="lobby">
 				<i class="status icon-list icon-fixed-width"></i>
 				<span class="name">Room List</span>
 				<div class="arrow"></div>
 			</div>
 			<!-- Actual rooms -->
-			<div class="room" ng-class="{selected : current_room == room.jid}" ng-repeat="room in rooms" ng-click="$parent.$parent.current_room = room.jid" data-jid="{{ room.jid }}" ng-controller="RoomController">
+			<div class="room" ng-class="{selected : data.current_room == room.jid}" ng-repeat="room in data.rooms" ng-click="data.current_room = room.jid" data-jid="{{ room.jid }}" ng-controller="RoomController">
 				<i class="status icon-{{room.icon}} icon-fixed-width"></i>
 				<span class="name">{{ room.name }}</span>
 				<a href="#" class="close" ng-click="leave_room(room.jid); $event.stopPropagation();"><i class="icon-remove"></i></a>
@@ -50,7 +52,7 @@
 		</div>
 		<!-- Per-room user list -->
 		<div id="user_list">
-			<div class="list" ng-repeat="room in rooms" ng-class="{hidden : current_room != room.jid}" ng-controller="RoomController">
+			<div class="list" ng-repeat="room in data.rooms" ng-class="{hidden : data.current_room != room.jid}" ng-controller="RoomController">
 				<div class="user" ng-repeat="user in room.all_users">
 					<i class="status {{user.status}} icon-circle"></i>
 					{{ user.fullname }}
@@ -60,16 +62,16 @@
 		<!-- Chat message area -->
 		<div id="main" scroll-glue>
 			<!-- Lobby overview page -->
-			<div class="lobby" ng-class="{hidden : current_room != 'lobby'}">
+			<div class="lobby" ng-class="{hidden : data.current_room != 'lobby'}">
 				<h1>Rooms</h1>
-				<div class="room" ng-repeat="room in all_rooms" data-jid="{{ room.jid }}">
+				<div class="room" ng-repeat="room in data.all_rooms" data-jid="{{ room.jid }}">
 					<i class="status icon-{{room.icon}} icon-fixed-width"></i>
 					<span class="name"><a href="#" ng-click="join_room(room.jid)">{{ room.name }}</a></span>
 					<span class="description">{{ room.description }}</span>
 				</div>
 			</div>
 			<!-- Actual chatroom pages -->
-			<div class="chat" ng-repeat="room in rooms"  data-jid="{{ room.jid }}" ng-class="{hidden : current_room != room.jid}" ng-controller="RoomController">
+			<div class="chat" ng-repeat="room in data.rooms"  data-jid="{{ room.jid }}" ng-class="{hidden : data.current_room != room.jid}" ng-controller="RoomController">
 				<div class="message" ng-repeat="message in room.all_messages" ng-class="{own : message.jid == own_jid}">
 					<span class="timestamp">{{ format_time(message.timestamp) }}</span>
 					<span ng-show="message.type == 'message'">
@@ -85,6 +87,12 @@
 					<div class="clear"></div>
 				</div>
 			</div>
+		</div>
+		<div class="input" ng-class="{hidden : data.current_room == 'lobby'}">
+			<form ng-submit="send_message()" id="form_message">
+				<textarea id="input_field" ng-model="data.input_message"></textarea>
+				<button type="button" class="send" ng-click="send_message()">Send</button>
+			</form>
 		</div>
 	</body>
 </html>

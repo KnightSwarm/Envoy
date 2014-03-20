@@ -10,7 +10,7 @@ var event_handlers = {
 		handler: function($scope, data) {
 			$.each(data, function(i, element)
 			{
-				$scope.all_rooms.push(element)
+				$scope.data.all_rooms.push(element)
 			});
 		}
 	},
@@ -24,7 +24,7 @@ var event_handlers = {
 				to_delete.push(element.jid);
 			});
 			
-			$scope.all_rooms = $scope.all_rooms.filter(function(x, i, a){ return to_delete.indexOf(x.jid) === -1 });
+			$scope.data.all_rooms = $scope.data.all_rooms.filter(function(x, i, a){ return to_delete.indexOf(x.jid) === -1 });
 		}
 	},
 	joinlist_add: {
@@ -32,7 +32,7 @@ var event_handlers = {
 		handler: function($scope, data) {
 			$.each(data, function(i, element)
 			{
-				$scope.rooms.push(element);
+				$scope.data.rooms.push(element);
 			});
 		}
 	},
@@ -46,8 +46,8 @@ var event_handlers = {
 				to_delete.push(element.jid);
 			});
 			
-			$scope.rooms = $scope.rooms.filter(function(x, i, a){ return to_delete.indexOf(x.jid) === -1 });
-			$scope.joined_rooms = $scope.joined_rooms.filter(function(x, i, a){ return to_delete.indexOf(x) === -1 });  // FIXME: ?!
+			$scope.data.rooms = $scope.data.rooms.filter(function(x, i, a){ return to_delete.indexOf(x.jid) === -1 });
+			$scope.data.joined_rooms = $scope.data.joined_rooms.filter(function(x, i, a){ return to_delete.indexOf(x) === -1 });  // FIXME: ?!
 		}
 	},
 	user_status: {
@@ -55,11 +55,11 @@ var event_handlers = {
 		handler: function($scope, data) {
 			if(_.contains($scope.users, data.jid))
 			{
-				$scope.users[data.jid].status = data.status;
+				$scope.data.users[data.jid].status = data.status;
 			}
 			else
 			{
-				$scope.users[data.jid] = {status: data.status};
+				$scope.data.users[data.jid] = {status: data.status};
 			}
 		}
 	},

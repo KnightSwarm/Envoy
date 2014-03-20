@@ -9,11 +9,33 @@
 body {
   font-family: "Istok Web", sans-serif; }
 
+.input {
+  position: absolute;
+  height: 64px;
+  bottom: 0px;
+  left: 225px;
+  right: 150px;
+  background-color: #F3F3F3; }
+  .input textarea {
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    bottom: 6px;
+    right: 92px;
+    padding: 4px; }
+  .input button.send {
+    position: absolute;
+    right: 6px;
+    top: 6px;
+    bottom: 6px;
+    width: 80px; }
+
 #main {
   background-color: white;
+  /*@include stretch-vertical;*/
   position: absolute;
   top: 0px;
-  bottom: 0px;
+  bottom: 64px;
   left: 225px;
   right: 150px;
   overflow: auto; }
