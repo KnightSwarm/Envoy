@@ -18,7 +18,7 @@ body {
   right: 150px;
   overflow: auto; }
   #main .chat .message {
-    border-bottom: 1px solid #d0d0d0;
+    border-bottom: 1px solid #D0D0D0;
     font-size: 14px; }
     #main .chat .message.own {
       background-color: #DFE5FF; }

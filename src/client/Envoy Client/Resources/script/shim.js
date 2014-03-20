@@ -125,3 +125,41 @@ Function.prototype.bind = Function.prototype.bind || function(to){
 function safeApply(scope, fn) {
 	(scope.$$phase || scope.$root.$$phase) ? fn() : scope.$apply(fn);
 }
+
+/* Finally, take care of the settings file... */
+if(has_tide)
+{
+	var settings_file = Ti.Filesystem.getFile(Ti.API.application.dataPath, "user.properties");
+	
+	if(settings_file.exists())
+	{
+		var settings = Ti.App.loadProperties(settings_file.nativePath());
+		console.log("Loaded settings from file at", settings_file.nativePath());
+	}
+	else
+	{
+		var settings = Ti.App.createProperties({
+			debug: "false"
+		});
+		
+		settings.saveTo(settings_file.nativePath());
+		
+		console.log("Created new settings file at", settings_file.nativePath());
+	}
+	
+	if(settings.getString("debug") == "true")
+	{
+		console.log("WARNING: Debug mode enabled.");
+		setInterval(function(){
+			/* Only works on *nix systems for now! */
+			var reload_trigger = Ti.Filesystem.getFile("/tmp/envoy-client-reload");
+			
+			if(reload_trigger.exists())
+			{
+				console.log("Reload trigger received, reloading the application...");
+				reload_trigger.deleteFile();
+				document.location.reload();
+			}
+		}, 500);
+	}
+}
