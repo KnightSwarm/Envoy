@@ -54,7 +54,14 @@ function get_fqdn_access_level($fqdn, $keypair)
 $API = new API();
 $API->LoadConfiguration("../api.json");
 
-$API->RegisterAuthenticator("fqdn", function($fqdn, $keypair, write = false) {
+/* Possible actions:
+ * get (retrieve)
+ * update (change)
+ * create (new item)
+ * delete (existing item)
+ */
+
+$API->RegisterAuthenticator("fqdn", function($fqdn, $keypair, $action) {
 	if($write === false)
 	{
 		/* The user must have read access to the FQDN. */
@@ -68,27 +75,28 @@ $API->RegisterAuthenticator("fqdn", function($fqdn, $keypair, write = false) {
 	}
 });
 
-$API->RegisterAuthenticator("user", function($user, $keypair, $write = false) {
-	/* The requested user must either be the owner of the keypair, or the owner
-	 * of the keypair must have access to the FQDN that the requested user
-	 * belongs to. */
-	if($write === false)
+$API->RegisterAuthenticator("user", function($user, $keypair, $action) {
+	$access_level = get_fqdn_access_level($user->fqdn, $keypair);
+	if($user->id == $keypair->user->id)
 	{
-		return (($user->id == $keypair->user->id) || (get_fqdn_access_level($user->fqdn, $keypair) >= $API->EnumValue("access_level_enum", "read")));
+		if($write === false || $access_level >= $API->EnumValue("access_level_enum", "write"))
+		{
+			return true;
+		}
 	}
-	else
+	elseif($write === false && $access_level >= $API->EnumValue("access_level_enum", "administrative_read"))
 	{
-		/* For write access, the owner of the keypair must either be the requested
-		 * user and have write access, or the owner of the keypair must have 
-		 * administrative write access within the FQDN. */
-		return (
-			(($user->id == $keypair->user->id) && (get_fqdn_access_level($user->fqdn, $keypair) >= $API->EnumValue("access_level_enum", "write")))
-			|| (get_fqdn_access_level($user->fqdn, $keypair) >= $API->EnumValue("access_level_enum", "administrative"))
-		);
+		return true;
 	}
+	elseif($access_level >= $API->EnumValue("access_level_enum", "administrative"))
+	{
+		return true;
+	}
+	
+	return false;
 });
 
-$API->RegisterAuthenticator("room", function($room, $keypair, $write = false) {
+$API->RegisterAuthenticator("room", function($room, $keypair, $action) {
 	/* Either the room must be public, or the owner of the keypair must have at
 	 * least a "member" affiliation with the room, or the owner of the keypair must
 	 * have administrative access within the FQDN. */
@@ -137,7 +145,7 @@ $API->RegisterAuthenticator("room", function($room, $keypair, $write = false) {
 	}
 });
 
-$API->RegisterAuthenticator("affiliation", function($affiliation, $keypair, $write = false) {
+$API->RegisterAuthenticator("affiliation", function($affiliation, $keypair, $action) {
 	if($write === false)
 	{
 		/* Either the affliation must belong to the owner of the keypair, or the affiliation
@@ -170,21 +178,48 @@ $API->RegisterAuthenticator("affiliation", function($affiliation, $keypair, $wri
 	}
 });
 
-$API->RegisterAuthenticator("api_key", function($api_key, $keypair, $write = false) {
-	if($write === false)
+$API->RegisterAuthenticator("api_key", function($api_key, $keypair, $action) {
+	$access_level = get_fqdn_access_level($api_key->user->fqdn, $keypair);
+	if($api_key->user->id == $keypair->user->id)
 	{
-		/* Either the API key must belong to the owner of the keypair, or the owner of
-		 * the keypair must have administrative access within the FQDN. */
-		return (($user->id == $keypair->user->id) || (get_fqdn_access_level($user->fqdn, $keypair) >= $API->EnumValue("access_level_enum", "read")));
+		if($write === false || $access_level >= $API->EnumValue("access_level_enum", "write"))
+		{
+			return true;
+		}
 	}
-	else
+	elseif($write === false && $access_level >= $API->EnumValue("access_level_enum", "administrative_read"))
 	{
-		/* Either the API key must belong to the owner of the keypair and the keypair
-		 * must have write access, or the keypair must have administrative access
-		 * within the FQDN. */
-		/* TODO */
+		return true;
 	}
+	elseif($access_level >= $API->EnumValue("access_level_enum", "administrative"))
+	{
+		return true;
+	}
+	
+	return false;
 });
+
+$API->RegisterAuthenticator("api_permission", function($api_key, $keypair, $action) {
+	$access_level = get_fqdn_access_level($api_key->user->fqdn, $keypair);
+	if($api_key->user->id == $keypair->user->id)
+	{
+		if($write === false || $access_level >= $API->EnumValue("access_level_enum", "write"))
+		{
+			return true;
+		}
+	}
+	elseif($write === false && $access_level >= $API->EnumValue("access_level_enum", "administrative_read"))
+	{
+		return true;
+	}
+	elseif($access_level >= $API->EnumValue("access_level_enum", "administrative"))
+	{
+		return true;
+	}
+	
+	return false;
+});
+
 
 $API->RegisterDecoder("room", "jid", function($resource) {
 	return $resource->roomname . "@" . $resource->fqdn->fqdn;
