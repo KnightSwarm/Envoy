@@ -31,12 +31,19 @@ envoyClient.controller('RoomController', function RoomController($scope){
 envoyClient.controller('UiController', function UiController($scope)
 {
 	$scope.data = {
-		input_message: "blah",
+		input_message: "",
 		current_room: "lobby",
 		rooms: [],
+		private_conversations: [{
+			"type": "user",
+			"name": "Test Conversation",
+			"jid": "testuser2@envoy.local",
+			"icon": "user"
+		}],
+		tabs: [],
 		joined_rooms: [],
 		users: [],
-		own_jid: "testuser@envoy.local", /* FIXME: Set to actual own JID upon connecting */
+		own_jid: "",
 		all_rooms: [],
 		logged_in: false,
 		login_busy: false,
@@ -59,6 +66,7 @@ envoyClient.controller('UiController', function UiController($scope)
 	$scope.leave_room = function(jid)
 	{
 		backend.leave_room(jid);
+		backend.remove_bookmark(jid)
 		/* FIXME: Switch to next closest room */
 		$scope.current_room = "lobby";
 	}
@@ -110,5 +118,11 @@ envoyClient.controller('UiController', function UiController($scope)
 	if(settings.getString("password") !== "")
 	{
 		$scope.data.password = settings.getString("password");
+	}
+	
+	if($scope.data.username !== "" && $scope.data.password !== "")
+	{
+		/* Trigger automatic login... */
+		$scope.login();
 	}
 });

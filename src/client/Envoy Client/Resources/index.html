@@ -50,6 +50,13 @@
 					<a href="#" class="close" ng-click="leave_room(room.jid); $event.stopPropagation();"><i class="icon-remove"></i></a>
 					<div class="arrow"></div>
 				</div>
+				<!-- Private conversations -->
+				<div class="room" ng-class="{selected : data.current_room == user.jid}" ng-repeat="user in data.private_conversations" ng-click="data.current_room = user.jid" data-jid="{{ user.jid }}"><!-- CURPOS: UserController -->
+					<i class="status icon-{{user.icon}} icon-fixed-width"></i>
+					<span class="name">{{ user.name }}</span>
+					<a href="#" class="close" ng-click="leave_room(user.jid); $event.stopPropagation();"><i class="icon-remove"></i></a>
+					<div class="arrow"></div>
+				</div>
 			</div>
 			<!-- Per-room user list -->
 			<div id="user_list">

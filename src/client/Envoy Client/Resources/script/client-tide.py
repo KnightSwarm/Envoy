@@ -3,7 +3,7 @@ from sleekxmpp import ClientXMPP
 from sleekxmpp.util import Queue, QueueEmpty
 import logging, time, calendar
 from collections import defaultdict
-from sleekxmpp.plugins.xep_0048 import Conference
+from sleekxmpp.plugins.xep_0048 import Bookmarks
 
 def get_application_data_path():
 	# Source: https://stackoverflow.com/a/1088459/1332715
@@ -68,10 +68,6 @@ class Client(ClientXMPP):
 		self.q.put({"type": "login_success", "data": {}})
 		
 		self._update_room_list()
-		
-		logging.debug("Initiating automatic channel join...")
-		self["xep_0048"]._autojoin(event)
-		logging.info("Auto-joined channels.")
 		
 		# TODO: Load bookmarks
 		## window.log(self['xep_0048'].get_bookmarks())
@@ -241,13 +237,24 @@ class TideBackend(object):
 		
 	def bookmark_room(self, room_jid):
 		logging.debug("Bookmarking %s..." % room_jid)
-		stanza = Conference()
-		stanza["autojoin"] = True
-		stanza["nick"] = self.username
-		stanza["name"] = room_jid
-		stanza["jid"] = room_jid
-		self.client["xep_0048"].set_bookmarks(stanza)
+		stanza = self.client["xep_0048"].get_bookmarks()
+		stanza["private"]["bookmarks"].add_conference(room_jid, self.username, autojoin=True)
+		new_iq = self.client.make_iq_set(ito=stanza["from"], iq=stanza)
+		new_iq.send()
 		logging.debug("Bookmark for %s set." % room_jid)
+		
+	def remove_bookmark(self, jid):
+		logging.debug("Removing bookmark for %s..." % jid)
+		# Since SleekXMPP appears to offer no way to remove bookmarks... we'll have
+		# to iterate over all of them, and simply create a new bookmark storage set with
+		# the ones we -don't- want to remove.
+		# TODO: Race conditions?
+		stanza = Bookmarks()
+		for bookmark in self.client["xep_0048"].get_bookmarks()["private"]["bookmarks"]:
+			if bookmark["jid"] != jid:
+				stanza.append(bookmark)
+		self.client["xep_0048"].set_bookmarks(stanza)
+		logging.debug("Bookmark for %s removed." % jid)
 		
 	def get_vcard(self, jid):
 		pass

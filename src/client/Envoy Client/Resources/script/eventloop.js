@@ -11,6 +11,7 @@ var event_handlers = {
 			$scope.data.logged_in = true;
 			$scope.data.login_failed = false;
 			$scope.data.login_busy = false;
+			$scope.data.own_jid = $scope.data.username;
 			settings.setString("username", $scope.data.username);
 			settings.setString("password", $scope.data.password);
 		}
@@ -52,6 +53,16 @@ var event_handlers = {
 			$.each(data, function(i, element)
 			{
 				$scope.data.rooms.push(element);
+				
+				jid = element["jid"];
+				
+				if(_.contains($scope.data.joined_rooms, jid) == false)
+				{
+					/* This is here to make the autojoined rooms also appear
+					 * in joined_rooms - that way we won't have issues with
+					 * the join links on the Lobby page. */
+					$scope.data.joined_rooms.push(jid);
+				}
 			});
 		}
 	},
@@ -199,7 +210,17 @@ $(function(){
 	setInterval(function(){
 		if(event_loop_processing == false)
 		{
-			q.check();
+			if(typeof q.check !== "undefined")
+			{
+				q.check();
+			}
+			else
+			{
+				/* Our backend crashed, restart the client.
+				 * TODO: Notify the user, and ask them to submit a log. */
+				console.log("CRITICAL: Backend crash detected. reloading client...");
+				location.reload();
+			}
 		}
 	}, 150); /* FIXME: This is not very efficient. Surely, there's a better way to do this? */
 });
