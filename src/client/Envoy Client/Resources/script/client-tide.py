@@ -4,6 +4,7 @@ from sleekxmpp.util import Queue, QueueEmpty
 import logging, time, calendar
 from collections import defaultdict
 from sleekxmpp.plugins.xep_0048 import Bookmarks
+from sleekxmpp.exceptions import IqError
 
 def get_application_data_path():
 	# Source: https://stackoverflow.com/a/1088459/1332715
@@ -49,6 +50,7 @@ class Client(ClientXMPP):
 		self.registerPlugin('xep_0004') # Data Forms
 		self.registerPlugin('xep_0045') # MUC
 		self.registerPlugin('xep_0048', {"auto_join": True}) # Bookmarks
+		self.registerPlugin('xep_0054') # vcard-temp
 		self.registerPlugin('xep_0199') # XMPP Ping
 		self.registerPlugin('xep_0203') # Delayed delivery
 		
@@ -56,6 +58,7 @@ class Client(ClientXMPP):
 		self.add_event_handler("groupchat_left", self.on_groupchat_left)
 		self.add_event_handler("groupchat_presence", self.on_groupchat_presence)
 		self.add_event_handler("groupchat_message", self.on_groupchat_message)
+		self.add_event_handler("message", self.on_message)
 		
 		self.all_rooms = {}
 		self.joined_rooms = []
@@ -160,7 +163,7 @@ class Client(ClientXMPP):
 		timestamp = int(calendar.timegm(stanza["delay"]["stamp"].timetuple()))
 		delayed = True
 		
-		if timestamp < (60 * 60 * 24 * 2):
+		if stanza["delay"]._get_attr("stamp") == "" or timestamp < (60 * 60 * 24 * 2):
 			timestamp = int(time.time())
 			delayed = False
 		## END HACK
@@ -181,6 +184,38 @@ class Client(ClientXMPP):
 			"jid": real_jid,
 			"nickname": nickname,
 			"fullname": nickname, # FIXME: vCard data!
+			"body": stanza["body"],
+			"timestamp": timestamp
+		}})
+		
+	def on_message(self, stanza):
+		if stanza["type"] == "groupchat":
+			return # Not interested, MUC message.
+		
+		jid = str(stanza["from"])
+			
+		'''  FIXME: This is currently broken due to a bug in the XEP-0203 plugin. As a temporary workaround,
+		     we will just check if the timestamp falls within the first 2 days of epoch; if so, replace with current time.
+		try:
+			timestamp = int(time.mktime(stanza["delay"]["stamp"].timetuple()))
+			delayed = True
+		except KeyError, e:
+			# This wasn't a delayed message
+			timestamp = int(time.time())
+			delayed = False
+		'''
+		
+		## START HACK
+		timestamp = int(calendar.timegm(stanza["delay"]["stamp"].timetuple()))
+		delayed = True
+		
+		if stanza["delay"]._get_attr("stamp") == "" or timestamp < (60 * 60 * 24 * 2):
+			timestamp = int(time.time())
+			delayed = False
+		## END HACK
+		
+		self.q.put({"type": "receive_private_message", "data": {
+			"jid": jid,
 			"body": stanza["body"],
 			"timestamp": timestamp
 		}})
@@ -257,13 +292,33 @@ class TideBackend(object):
 		logging.debug("Bookmark for %s removed." % jid)
 		
 	def get_vcard(self, jid):
-		pass
+		# This returns a limited set of vCard information, not the full vCard.
+		try:
+			vcard = self.client["xep_0054"].get_vcard(jid)
+		except IqError, e:
+			return {
+				"jid": jid,
+				"full_name": jid.split("@")[0],
+				"job_title": "",
+				"nickname": jid.split("@")[0],
+				"mobile_number": "",
+				"email_address": ""
+			} # For some reason we couldn't get vcard data. FIXME: Logging!
+		
+		return {
+			"jid": jid,
+			"full_name": vcard["vcard_temp"]["FN"],
+			"job_title": vcard["vcard_temp"]["TITLE"],
+			"nickname": vcard["vcard_temp"]["NICKNAME"],
+			"mobile_number": vcard["vcard_temp"]["TEL"]["NUMBER"],
+			"email_address": vcard["vcard_temp"]["EMAIL"]["USERID"]
+		}
 		
 	def send_group_message(self, message, room_jid):
 		self.client.send_message(mto=room_jid, mbody=message, mtype="groupchat")
 		
-	def send_private_message(self, message, recipient):
-		pass
+	def send_private_message(self, message, recipient_jid):
+		self.client.send_message(mto=recipient_jid, mbody=message)
 		
 	def change_status(self, status):
 		pass

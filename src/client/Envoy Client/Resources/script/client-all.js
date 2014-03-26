@@ -71,17 +71,8 @@ function _JID(jid)
 	}
 }
 
-$(function(){
-	$("#input_field").shiftenter({
-		metaKey: "ctrl",
-		hint: ""
-	});
-	
-	$(document).on("submit", "form", function(){
-		/* Hack because AngularJS does not seem to prevent submissions in ng-submit forms under TideSDK... */
-		return false;
-	});
-	
+function hook_autofocus()
+{
 	autofocus_enabled = true;
 	
 	/* Automatically focus on the input field when the user starts typing... hacky, but works for now. */
@@ -107,9 +98,34 @@ $(function(){
 			}
 		}
 	});
+}
+
+function unhook_autofocus()
+{
+	autofocus_enabled = false;
+	
+	$(document).off("keydown.autofocus");
+}
+
+$(function(){
+	$("#input_field").shiftenter({
+		metaKey: "ctrl",
+		hint: ""
+	});
+	
+	$(document).on("submit", "form", function(){
+		/* Hack because AngularJS does not seem to prevent submissions in ng-submit forms under TideSDK... */
+		return false;
+	});
 	
 	$("input, select, textarea, button").on("focus.autofocus", function(){ autofocus_enabled = false; });
 	$("input, select, textarea, button").on("blur.autofocus", function(){ autofocus_enabled = true; });
+	
+	/* This is to prevent the autofocus event from firing for every single keystroke, when there is already focus anyway. */
+	$("#input_field").on("focus.autofocus_hook", function(){ unhook_autofocus(); });
+	$("#input_field").on("blur.autofocus_hook", function(){ hook_autofocus(); });
+	
+	hook_autofocus();
 	
 	dom_load();
 });

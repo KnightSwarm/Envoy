@@ -27,28 +27,61 @@ envoyClient.controller('RoomController', function RoomController($scope){
 		$scope.room.all_messages = _.sortBy(_.union($scope.room.messages, $scope.room.events), function(item){ return item.timestamp; });
 	}, true);
 });
+
+envoyClient.service("vcardService", function vcardService($rootScope) {
+	this.get_user = function(jid)
+	{
+		/* This function attempts to retrieve vCard data associated
+		 * with the user. If no such data exists yet, a request for it
+		 * will be made to the XMPP server, and the results will be
+		 * stored. The built-in cacheing in SleekXMPP is not used for
+		 * two reasons: implementing this separately makes it easier
+		 * to trigger purges later on, and also makes cacheing work
+		 * universally, regardless of backend. */
+		 
+		jid = new _JID(jid).bare; /* Always operate on bare JIDs... */
+		 
+		if(typeof $rootScope.data.users[jid] !== "undefined" && typeof $rootScope.data.users[jid].vcard !== "undefined")
+		{
+			return $rootScope.data.users[jid].vcard;
+		}
+		else
+		{
+			var vcard_data = backend.get_vcard(jid);
+			console.log($rootScope.data.users);
+			$rootScope.data.users[jid].vcard = vcard_data;
+			return vcard_data;
+		}
+	}
+});
+
+envoyClient.controller("UserController", function UserController($scope, vcardService){
+	$scope.user.vcard = vcardService.get_user($scope.user.jid);
+	$scope.user.messages = [];
+});
  
-envoyClient.controller('UiController', function UiController($scope)
+envoyClient.controller('UiController', function UiController($scope, $rootScope, vcardService)
 {
 	$scope.data = {
 		input_message: "",
 		current_room: "lobby",
 		rooms: [],
-		private_conversations: [{
-			"type": "user",
-			"name": "Test Conversation",
-			"jid": "testuser2@envoy.local",
-			"icon": "user"
-		}],
+		private_conversations: [],
 		tabs: [],
 		joined_rooms: [],
-		users: [],
 		own_jid: "",
 		all_rooms: [],
 		logged_in: false,
 		login_busy: false,
 		login_failed: false,
 		login_error: ""
+	};
+	
+	/* The rootScope is shared across controllers; we use this as a
+	 * place to keep vCard data, and perhaps other application-wide
+	 * data at a later point in time. */
+	$rootScope.data = {
+		users: {}
 	};
 	
 	$scope.join_room = function(jid)
@@ -87,7 +120,38 @@ envoyClient.controller('UiController', function UiController($scope)
 	
 	$scope.send_message = function(event)
 	{
-		backend.send_group_message($scope.data.input_message, $scope.data.current_room);
+		if(_.contains(_.pluck($scope.data.private_conversations, "jid"), $scope.data.current_room))
+		{
+			/* Private conversation */
+			window.log("Sending private message");
+			backend.send_private_message($scope.data.input_message, $scope.data.current_room);
+			
+			/* We don't get the message 'echoed' back, so we need to push it onto
+			 * the message list manually. */
+			 
+			var vcard = vcardService.get_user($scope.data.own_jid);
+			
+			/* Awful hack... TODO: use broadcasts? */
+			$userScope = angular.element("#main .chat[data-jid='" + $scope.data.current_room + "']").scope();
+			
+			data = {
+				"type": "message",
+				"jid": $scope.data.own_jid,
+				"nickname": vcard.nickname,
+				"fullname": vcard.full_name,
+				"body": $scope.data.input_message,
+				"timestamp": moment().format("X")
+			}
+			
+			$userScope.user.messages.push(data);
+		}
+		else
+		{
+			/* We'll assume it's a room. */
+			window.log("Sending group message")
+			backend.send_group_message($scope.data.input_message, $scope.data.current_room);
+		}
+		
 		$scope.data.input_message = "";
 		/* Hack to keep input focused, should write a directive for this at some point... */
 		$("#input_field").focus();
@@ -110,6 +174,36 @@ envoyClient.controller('UiController', function UiController($scope)
 		}
 	}
 	
+	$scope.start_private_conversation = function(jid)
+	{
+		if(new _JID(jid).bare !== $scope.data.own_jid)
+		{
+			if(_.contains(_.pluck($scope.data.private_conversations, "jid"), jid) === false)
+			{
+				/* Create the new tab first. */
+				
+				var vcard = vcardService.get_user(jid);
+				
+				console.log(vcard);
+				
+				$scope.data.private_conversations.push({
+					"type": "user",
+					"name": vcard.full_name,
+					"jid": jid,
+					"icon": "user"
+				});
+			}
+			
+			$scope.data.current_room = jid;
+		}
+	}
+	
+	$scope.end_private_conversation = function(jid)
+	{
+		$scope.data.private_conversations = $scope.data.private_conversations.filter(function(x, i, a) { return x.jid !== jid; });
+		$scope.data.current_room = "lobby";
+	}
+	
 	if(settings.getString("username") !== "")
 	{
 		$scope.data.username = settings.getString("username");
@@ -126,3 +220,4 @@ envoyClient.controller('UiController', function UiController($scope)
 		$scope.login();
 	}
 });
+

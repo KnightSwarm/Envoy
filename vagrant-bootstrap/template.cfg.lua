@@ -29,6 +29,7 @@ modules_enabled = {
                 "announce"; -- Send announcement to all online users
                 "watchregistrations"; -- Alert admins of registrations
                 "auth_external"; -- Handles user authentication via an ejabberd extauth script.
+                "vcard_override"; -- Overrides user-specified vCard data with 'default' vCards set by the component.
                 "mam_pretend"; -- Pretends to have archived according to XEP-0313; actually just adds a UUID.
                 "forward"; -- Forwards all stanzas to an external component and relays responses.
                 "admin_probe"; -- Lets admins retrieve presences for arbitrary users.

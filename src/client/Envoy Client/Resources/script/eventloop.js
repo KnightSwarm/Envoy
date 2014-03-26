@@ -81,15 +81,17 @@ var event_handlers = {
 		}
 	},
 	user_status: {
-		scope: ["ui"],
-		handler: function($scope, data) {
-			if(_.contains($scope.users, data.jid))
+		scope: ["root"],
+		handler: function($rootScope, data) {
+			var jid = new _JID(data.jid).bare;
+			
+			if(_.contains($rootScope.users, jid))
 			{
-				$scope.data.users[data.jid].status = data.status;
+				$rootScope.data.users[jid].status = data.status;
 			}
 			else
 			{
-				$scope.data.users[data.jid] = {status: data.status};
+				$rootScope.data.users[jid] = {status: data.status};
 			}
 		}
 	},
@@ -166,6 +168,23 @@ var event_handlers = {
 			data["type"] = "message";
 			$scope.room.messages.push(data);
 		}
+	},
+	receive_private_message: {
+		scope: ["user"],
+		get_scope: function(index, item){
+			console.log(item);
+			return item.data.jid;
+		},
+		handler: function($scope, data) {
+			/* We need the vcardService here... */
+			var vcardService = angular.element("html").injector().get("vcardService");
+			var vcard = vcardService.get_user(data.jid);
+			console.log("service", vcardService);
+			data["type"] = "message";
+			data["fullname"] = vcard.full_name;
+			data["nickname"] = vcard.nickname;
+			$scope.user.messages.push(data);
+		}
 	}
 }
 
@@ -181,15 +200,19 @@ q.set_callback(function(item){
 		
 		switch(hdl.scope[0])
 		{
+			case "root":
+				scope = angular.element("[ng-app]").scope();
+				break;
 			case "ui":
 				scope = angular.element("[ng-controller=UiController]").scope();
 				break;
 			case "room":
+			case "user":
 				scope = angular.element("#main .chat[data-jid='" + hdl.get_scope(0, item) + "']").scope();
 				break;
 		}
 		
-		if(typeof scope !== undefined)
+		if(typeof scope !== "undefined")
 		{
 			hdl.handler(scope, item.data);
 			scope.$apply();

@@ -15,7 +15,7 @@ body {
   height: 64px;
   bottom: 0px;
   left: 225px;
-  right: 150px;
+  right: 210px;
   background-color: #F3F3F3; }
   .input textarea {
     position: absolute;
@@ -38,7 +38,7 @@ body {
   top: 0px;
   bottom: 64px;
   left: 225px;
-  right: 150px;
+  right: 210px;
   overflow: auto; }
   #main .chat .message {
     border-bottom: 1px solid #D0D0D0;
@@ -134,7 +134,7 @@ body {
   top: 0px;
   bottom: 0px;
   right: 0px;
-  width: 150px; }
+  width: 210px; }
   #user_list .user {
     background-color: #DCDCDC;
     padding: 6px 8px;
@@ -154,6 +154,14 @@ body {
         color: #B2AC19; }
       #user_list .user i.status.unavailable {
         color: #848484; }
+  #user_list .vcard {
+    padding: 8px;
+    font-size: 13px; }
+    #user_list .vcard .name {
+      font-weight: bold; }
+    #user_list .vcard .job-title {
+      font-style: italic;
+      margin-bottom: 4px; }
 
 .login .loginform {
   margin: 32px auto;

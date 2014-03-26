@@ -1,5 +1,5 @@
 $roomlist_width: 225px;
-$userlist_width: 150px;
+$userlist_width: 210px;
 $input_height: 64px;
 
 @mixin clearfix
@@ -306,6 +306,23 @@ body
 			{
 				color: #848484;
 			}
+		}
+	}
+	
+	.vcard
+	{
+		padding: 8px;
+		font-size: 13px;
+		
+		.name
+		{
+			font-weight: bold;
+		}
+		
+		.job-title
+		{
+			font-style: italic;
+			margin-bottom: 4px;
 		}
 	}
 }

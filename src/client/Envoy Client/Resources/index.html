@@ -1,5 +1,5 @@
 <!doctype html>
-<html>
+<html ng-app="envoyClient">
 	<head>
 		<!-- Stylesheets -->
 		<link rel="stylesheet" href="css/pure-min.css">
@@ -33,7 +33,7 @@
 		<script src="script/client-all.js"></script>
 		<script src="script/eventloop.js"></script>
 	</head>
-	<body ng-app="envoyClient" ng-controller="UiController">
+	<body ng-controller="UiController">
 		<div class="application" ng-show="data.logged_in == true">
 			<!-- Left-hand "joined rooms" list -->
 			<div id="room_list">
@@ -51,20 +51,26 @@
 					<div class="arrow"></div>
 				</div>
 				<!-- Private conversations -->
-				<div class="room" ng-class="{selected : data.current_room == user.jid}" ng-repeat="user in data.private_conversations" ng-click="data.current_room = user.jid" data-jid="{{ user.jid }}"><!-- CURPOS: UserController -->
+				<div class="room" ng-class="{selected : data.current_room == user.jid}" ng-repeat="user in data.private_conversations" ng-click="data.current_room = user.jid" data-jid="{{ user.jid }}" ng-controller="UserController">
 					<i class="status icon-{{user.icon}} icon-fixed-width"></i>
 					<span class="name">{{ user.name }}</span>
-					<a href="#" class="close" ng-click="leave_room(user.jid); $event.stopPropagation();"><i class="icon-remove"></i></a>
+					<a href="#" class="close" ng-click="end_private_conversation(user.jid); $event.stopPropagation();"><i class="icon-remove"></i></a>
 					<div class="arrow"></div>
 				</div>
 			</div>
 			<!-- Per-room user list -->
 			<div id="user_list">
 				<div class="list" ng-repeat="room in data.rooms" ng-class="{hidden : data.current_room != room.jid}" ng-controller="RoomController">
-					<div class="user" ng-repeat="user in room.all_users">
+					<div class="user" ng-repeat="user in room.all_users" ng-click="start_private_conversation(user.jid)">
 						<i class="status {{user.status}} icon-circle"></i>
 						{{ user.fullname }}
 					</div>
+				</div>
+				<div class="vcard" ng-repeat="user in data.private_conversations" ng-class="{hidden : data.current_room != user.jid}" ng-controller="UserController">
+					<div class="name">{{ user.vcard.full_name }}</div>
+					<div class="job-title">{{ user.vcard.job_title }}</div>
+					<div class="email"><i class="icon-envelope-alt"></i> {{ user.vcard.email_address }}</div>
+					<div class="phone" ng-show="user.vcard.mobile_number != ''"><i class="icon-phone"></i> {{ user.vcard.mobile_number }}</div>
 				</div>
 			</div>
 			<!-- Chat message area -->
@@ -91,6 +97,17 @@
 						</span>
 						<span class="event" ng-show="message.type == 'event' && message.event == 'leave'">
 							{{ message.fullname }} left the room.
+						</span>
+						<div class="clear"></div>
+					</div>
+				</div>
+				<!-- Private conversation pages -->
+				<div class="chat" ng-repeat="user in data.private_conversations"  data-jid="{{ user.jid }}" ng-class="{hidden : data.current_room != user.jid}" ng-controller="UserController">
+					<div class="message" ng-repeat="message in user.messages" ng-class="{own : message.jid == own_jid}">
+						<span class="timestamp">{{ format_time(message.timestamp) }}</span>
+						<span ng-show="message.type == 'message'">
+							<span class="author">{{ message.fullname }}</span>
+							<span class="body">{{ message.body }}</span>
 						</span>
 						<div class="clear"></div>
 					</div>
