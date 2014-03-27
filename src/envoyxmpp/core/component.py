@@ -2,7 +2,7 @@
 from .util import Singleton, LocalSingleton
 
 # SleekXMPP
-from sleekxmpp import Iq
+from sleekxmpp import Iq, Message
 from sleekxmpp.componentxmpp import ComponentXMPP
 from sleekxmpp.xmlstream import register_stanza_plugin
 from sleekxmpp.xmlstream.matcher.xpath import MatchXPath
@@ -25,6 +25,7 @@ class Component(ComponentXMPP):
 		self.add_event_handler("groupchat_left", MucHandler.Instance(self.identifier).process_leave)
 		self.add_event_handler("groupchat_presence", MucHandler.Instance(self.identifier).process_presence)
 		self.add_event_handler("zmq_event", ZeromqEventHandler.Instance(self.identifier).process)
+		self.add_event_handler("resolve_finished", ResolveHandler.Instance(self.identifier).callback)
 		self.add_event_handler("session_start", self.start, threaded=True)
 		
 		self.registerPlugin('xep_0030') # Service Discovery
@@ -60,11 +61,18 @@ class Component(ComponentXMPP):
 		# be necessary in an optimal scenario, as everything would stay in sync as long as the
 		# component is running.
 		#self.scheduler.add("Purge Presences", 300, self._envoy_purge_presences, repeat=True)
+		logger = ApplicationLogger.Instance(self.identifier)
 		
 		# Only now that the component is connected, will we start accepting messages over the
 		# ZeroMQ event socket.
 		event_thread = ZeromqEventThread.Instance(self.identifier)
 		event_thread.start()
+		
+		# ... and here we start the preview resolver queue; or rather, the thread for it.
+		queue = ResolverQueue.Instance(self.identifier)
+		queue.start()
+		
+		logger.debug("Launched ResolverQueue thread")
 		
 		# Synchronize all data...
 		RoomSyncer.Instance(self.identifier).sync()
@@ -84,13 +92,17 @@ xmpp.process(block=True)
 """
 
 from .db import Database
-from .handlers import StanzaHandler, MucHandler, OverrideHandler, LogRequestHandler, ZeromqEventHandler
+from .handlers import StanzaHandler, MucHandler, OverrideHandler, LogRequestHandler, ZeromqEventHandler, ResolveHandler
 from .providers import FqdnProvider, ConfigurationProvider
 from .sync import PresenceSyncer, AffiliationSyncer, RoomSyncer, StatusSyncer, VcardSyncer
-from .stanzas import EnvoyQueryFlag
+from .stanzas import EnvoyQueryFlag, ResolverResponse, ResolverResponseData
 from .zeromq import ZeromqEventThread
+from .queues import ResolverQueue
+from .loggers import ApplicationLogger
 
 from sleekxmpp.plugins.xep_0313 import MAM
 
 #register_stanza_plugin(Iq, Query)
 register_stanza_plugin(MAM, EnvoyQueryFlag)
+register_stanza_plugin(Message, ResolverResponse)
+register_stanza_plugin(ResolverResponse, ResolverResponseData)

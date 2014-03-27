@@ -34,6 +34,8 @@ class MessageHandler(LocalSingletonBase):
 	
 	def group_message(self, stanza):
 		# EVENT: Group/room message received
+		resolve_handler = ResolveHandler.Instance(self.identifier)
+		
 		room = stanza["to"].bare
 		user = stanza["from"].bare
 		body = stanza["body"]
@@ -41,16 +43,21 @@ class MessageHandler(LocalSingletonBase):
 		HighlightChecker.Instance(self.identifier).check(stanza)
 		EventLogger.Instance(self.identifier).log_message(user, room, "message", body, stanza) # TODO: Move parsing logic to event logger?
 		
+		resolve_handler.resolve(body, stanza)
+		
 	def private_message(self, stanza):
 		# EVENT: Private message received
 		component = Component.Instance(self.identifier)
 		dev_handler = DevelopmentCommandHandler.Instance(self.identifier)
+		resolve_handler = ResolveHandler.Instance(self.identifier)
 		
 		sender = stanza["from"].bare
 		recipient = stanza["to"].bare
 		body = stanza["body"]
 		
 		EventLogger.Instance(self.identifier).log_message(sender, recipient, "pm", body, stanza)
+		
+		resolve_handler.resolve(body, stanza)
 		
 		if recipient == component.boundjid:
 			dev_handler.process(stanza)
@@ -416,6 +423,9 @@ class LogRequestHandler(LocalSingletonBase):
 class ResolveHandler(LocalSingletonBase):
 	def resolve(self, message, stanza):
 		queue = ResolverQueue.Instance(self.identifier)
+		logger = ApplicationLogger.Instance(self.identifier)
+		
+		logger.debug("Checking message for resolver matches...")
 		
 		# IDEA: Perhaps have a qualifying string for each category of regexes; don't try to match regex until
 		# qualifying string is present as a substring in the message. This should help performance.
@@ -446,15 +456,59 @@ class ResolveHandler(LocalSingletonBase):
 		total_matches = 0
 		
 		for regex, resolver in resolver_map.iteritems():
-			# IDEA: Store compiled regexes separately rather than rebuilding them every time, to improve performance.
+			# TODO: Store compiled regexes separately rather than rebuilding them every time, to improve performance.
 			result = re.search("%s(?:\s|!|$)" % regex, message, re.IGNORECASE)
 			
 			if result is not None:
+				logger.debug("Resolver match found! Resolver is %s" % resolver)
 				# (resolver, matches, message, stanza)
 				queue.add((resolver, result.groupdict(), message, stanza))
 				total_matches += 1
 				
 		return total_matches
+		
+	def callback(self, response):
+		component = Component.Instance(self.identifier)
+		logger = ApplicationLogger.Instance(self.identifier)
+		
+		result, stanza = response
+		html, json = result
+		
+		# Quick and dirty conversion to XHTML-IM compliant XHTML...
+		xhtml_im = re.sub("<div[^>]*>", "", html).replace("</div>", "<br />").replace("<br /><br />", "<br />")
+		plaintext = re.sub("<[^>]*>", "", xhtml_im.replace("<br />", "\n"))
+		
+		logger.debug("XHTML-IM: %s" % xhtml_im)
+		
+		response_stanza = component.Message()
+		response_stanza['to'] = stanza["to"]
+		response_stanza['from'] = component.boundjid
+		response_stanza['type'] = stanza["type"]
+		response_stanza["html"]["body"] = xhtml_im
+		response_stanza["body"] = plaintext
+		response_stanza["resolver_response"]["html"] = html
+		response_stanza["resolver_response"]["ref"] = stanza["id"]
+		
+		try:
+			response_stanza["resolver_response"]["data"]["title"] = json["title"]
+		except KeyError, e:
+			pass
+		
+		try:
+			response_stanza["resolver_response"]["data"]["image"] = json["image"]
+		except KeyError, e:
+			pass
+		
+		try:
+			response_stanza["resolver_response"]["data"]["description"] = json["description"]
+		except KeyError, e:
+			pass
+		try:
+			response_stanza["resolver_response"]["data"]["statistics"] = json["statistics"]
+		except KeyError, e:
+			pass
+		
+		response_stanza.send()
 
 @LocalSingleton
 class ZeromqEventHandler(LocalSingletonBase):
@@ -483,5 +537,6 @@ from .senders import MessageSender
 from .db import Database, Row
 from .sync import RoomSyncer, AffiliationSyncer, PresenceSyncer, StatusSyncer
 from .exceptions import NotFoundException
-from .queue import ResolverQueue
+from .queues import ResolverQueue
 from .resolvers import *
+from .stanzas import ResolverResponse, ResolverResponseData

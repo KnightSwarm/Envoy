@@ -28,7 +28,7 @@ function _JID(jid)
 {
 	this.jid = jid;
 	
-	var parts = jid.split("/", 1);
+	var parts = jid.split("/", 2);
 	
 	if(parts.length >= 1)
 	{
@@ -61,7 +61,7 @@ function _JID(jid)
 		this.fqdn = "";
 	}
 	
-	if(parts.length == 2)
+	if(parts.length >= 2)
 	{
 		this.resource = parts[1];
 	}

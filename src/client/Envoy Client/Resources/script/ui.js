@@ -28,6 +28,12 @@ envoyClient.controller('RoomController', function RoomController($scope){
 	}, true);
 });
 
+envoyClient.filter("trusted", function($sce) {
+	return function(text) {
+		return $sce.trustAsHtml(text);
+	}
+});
+
 envoyClient.service("vcardService", function vcardService($rootScope) {
 	this.get_user = function(jid)
 	{
@@ -134,13 +140,17 @@ envoyClient.controller('UiController', function UiController($scope, $rootScope,
 			/* Awful hack... TODO: use broadcasts? */
 			$userScope = angular.element("#main .chat[data-jid='" + $scope.data.current_room + "']").scope();
 			
+			/* FIXME: Preview resolution? */
+			/* FIXME: Generate message ID */
+			
 			data = {
 				"type": "message",
 				"jid": $scope.data.own_jid,
 				"nickname": vcard.nickname,
 				"fullname": vcard.full_name,
 				"body": $scope.data.input_message,
-				"timestamp": moment().format("X")
+				"timestamp": moment().format("X"),
+				"preview": ""
 			}
 			
 			$userScope.user.messages.push(data);

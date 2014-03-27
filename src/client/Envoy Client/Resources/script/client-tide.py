@@ -1,10 +1,13 @@
 import time, sleekxmpp, sys, os
-from sleekxmpp import ClientXMPP
+from sleekxmpp import ClientXMPP, Message
 from sleekxmpp.util import Queue, QueueEmpty
 import logging, time, calendar
 from collections import defaultdict
 from sleekxmpp.plugins.xep_0048 import Bookmarks
 from sleekxmpp.exceptions import IqError
+from sleekxmpp.xmlstream import ElementBase, register_stanza_plugin
+from sleekxmpp.xmlstream.matcher.xpath import MatchXPath
+from sleekxmpp.xmlstream.handler.callback import Callback
 
 def get_application_data_path():
 	# Source: https://stackoverflow.com/a/1088459/1332715
@@ -30,6 +33,23 @@ except OSError, e:
 logging.basicConfig(level=logging.DEBUG, format="%(asctime)s %(levelname)s %(message)s", filename=os.path.join(get_application_data_path(), "client.log"))
 
 q = PyQueue()
+
+class ResolverResponse(ElementBase):
+	namespace = "urn:envoy:resolver:response"
+	name = "response"
+	plugin_attrib = "resolver_response"
+	interfaces = set(["html", "ref"])
+	sub_interfaces = set(["html"])
+
+class ResolverResponseData(ElementBase):
+	namespace = "urn:envoy:resolver:response"
+	name = "data"
+	plugin_attrib = "data"
+	interfaces = set(["title", "image", "description", "statistics"])
+	sub_interfaces = set(["title", "image", "description", "statistics"])
+
+register_stanza_plugin(Message, ResolverResponse)
+register_stanza_plugin(ResolverResponse, ResolverResponseData)
 
 class Client(ClientXMPP):
 	def __init__(self, username, fqdn, password, queue):
@@ -59,6 +79,9 @@ class Client(ClientXMPP):
 		self.add_event_handler("groupchat_presence", self.on_groupchat_presence)
 		self.add_event_handler("groupchat_message", self.on_groupchat_message)
 		self.add_event_handler("message", self.on_message)
+		
+		self.register_handler(Callback("Resolver Response", MatchXPath("{%s}message/{urn:envoy:resolver:response}response" % self.default_ns), self._on_preview))
+		logging.debug("{%s}message/{urn:envoy:resolver:response}response" % self.default_ns)
 		
 		self.all_rooms = {}
 		self.joined_rooms = []
@@ -105,6 +128,21 @@ class Client(ClientXMPP):
 					
 		window.log("Room list updated...")
 	
+	def _on_preview(self, stanza):
+		# A resolver preview was received. We will only process it if the
+		# origin is the component, to prevent third-party XSS attacks.
+		logging.debug("PREVIEW START")
+		logging.debug(str(stanza["from"]))
+		if str(stanza["from"]) != "component.envoy.local" and stanza["from"].resource != "Envoy_Component": #FIXME: This should not be hardcoded.
+			logging.warning("Received resolver preview from entity that is not the Envoy component; ignoring.")
+			return
+		logging.debug("PREVIEW")
+		logging.debug(stanza)
+		self.q.put({"type": "preview", "data": {
+			"html": stanza["resolver_response"]["html"],
+			"message_id": stanza["resolver_response"]["ref"]
+		}})
+	
 	def on_groupchat_joined(self, stanza):
 		room_jid = stanza["from"].bare
 		self.signal_join(room_jid)
@@ -147,6 +185,7 @@ class Client(ClientXMPP):
 	def on_groupchat_message(self, stanza):
 		room_jid = stanza["from"].bare
 		nickname = stanza["from"].resource
+		message_id = stanza["id"]
 			
 		'''  FIXME: This is currently broken due to a bug in the XEP-0203 plugin. As a temporary workaround,
 		     we will just check if the timestamp falls within the first 2 days of epoch; if so, replace with current time.
@@ -178,14 +217,19 @@ class Client(ClientXMPP):
 			else:
 				logging.error("No known real JID for %s!" % stanza["from"])
 				return
+				
+		if real_jid == "component.envoy.local":
+			return
 			
 		self.q.put({"type": "receive_message", "data": {
+			"id": message_id,
 			"room_jid": room_jid,
 			"jid": real_jid,
 			"nickname": nickname,
 			"fullname": nickname, # FIXME: vCard data!
 			"body": stanza["body"],
-			"timestamp": timestamp
+			"timestamp": timestamp,
+			"preview": ""
 		}})
 		
 	def on_message(self, stanza):
@@ -193,7 +237,11 @@ class Client(ClientXMPP):
 			return # Not interested, MUC message.
 		
 		jid = str(stanza["from"])
-			
+		message_id = stanza["id"]
+		
+		if jid == "component.envoy.local":
+			return
+		
 		'''  FIXME: This is currently broken due to a bug in the XEP-0203 plugin. As a temporary workaround,
 		     we will just check if the timestamp falls within the first 2 days of epoch; if so, replace with current time.
 		try:
@@ -215,9 +263,11 @@ class Client(ClientXMPP):
 		## END HACK
 		
 		self.q.put({"type": "receive_private_message", "data": {
+			"id": message_id,
 			"jid": jid,
 			"body": stanza["body"],
-			"timestamp": timestamp
+			"timestamp": timestamp,
+			"preview": ""
 		}})
 		
 	def signal_join(self, room_jid):
@@ -318,7 +368,7 @@ class TideBackend(object):
 		self.client.send_message(mto=room_jid, mbody=message, mtype="groupchat")
 		
 	def send_private_message(self, message, recipient_jid):
-		self.client.send_message(mto=recipient_jid, mbody=message)
+		self.client.send_message(mto=recipient_jid, mbody=message, mtype="chat")
 		
 	def change_status(self, status):
 		pass

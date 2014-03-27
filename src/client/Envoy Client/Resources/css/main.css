@@ -66,6 +66,16 @@ body {
       display: block;
       padding: 4px 10px;
       color: gray; }
+    #main .chat .message .preview {
+      clear: both;
+      background-color: #F3F5F5;
+      padding: 9px 9px 9px 17px; }
+      #main .chat .message .preview img {
+        max-height: 125px; }
+      #main .chat .message .preview .title {
+        font-size: 17px;
+        font-weight: bold;
+        margin-bottom: 3px; }
   #main .lobby {
     padding: 12px; }
     #main .lobby h1 {

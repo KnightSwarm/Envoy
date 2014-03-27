@@ -165,25 +165,40 @@ var event_handlers = {
 			return item.data.room_jid;
 		},
 		handler: function($scope, data) {
-			data["type"] = "message";
-			$scope.room.messages.push(data);
+			if(data.jid !== "component.envoy.local")
+			{
+				data["type"] = "message";
+				$scope.room.messages.push(data);
+			}
 		}
 	},
 	receive_private_message: {
 		scope: ["user"],
 		get_scope: function(index, item){
-			console.log(item);
 			return item.data.jid;
 		},
 		handler: function($scope, data) {
-			/* We need the vcardService here... */
-			var vcardService = angular.element("html").injector().get("vcardService");
-			var vcard = vcardService.get_user(data.jid);
-			console.log("service", vcardService);
-			data["type"] = "message";
-			data["fullname"] = vcard.full_name;
-			data["nickname"] = vcard.nickname;
-			$scope.user.messages.push(data);
+			if(data.jid !== "component.envoy.local")
+			{
+				/* We need the vcardService here... */
+				var vcardService = angular.element("html").injector().get("vcardService");
+				var vcard = vcardService.get_user(data.jid);
+				console.log("service", vcardService);
+				data["type"] = "message";
+				data["fullname"] = vcard.full_name;
+				data["nickname"] = vcard.nickname;
+				$scope.user.messages.push(data);
+			}
+		}
+	},
+	preview: {
+		scope: ["ui"],
+		handler: function($scope, data) {
+			$messageScope = angular.element(".message[data-message-id='" + data.message_id + "']").scope();
+			if(typeof $messageScope !== "undefined")
+			{
+				$messageScope.message.preview = data.html;
+			}
 		}
 	}
 }

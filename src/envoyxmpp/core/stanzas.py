@@ -14,3 +14,18 @@ class EnvoyQueryFlag(ElementBase):
 	def get_extended_support(self):
 		print self.parent().xml.find('{%s}%s' % (self.namespace, self.name))
 		return self.parent().xml.find('{%s}%s' % (self.namespace, self.name)) is not None
+
+class ResolverResponse(ElementBase):
+	namespace = "urn:envoy:resolver:response"
+	name = "response"
+	plugin_attrib = "resolver_response"
+	interfaces = set(["html", "ref"])
+	sub_interfaces = set(["html"])
+
+class ResolverResponseData(ElementBase):
+	namespace = "urn:envoy:resolver:response"
+	name = "data"
+	plugin_attrib = "data"
+	interfaces = set(["title", "image", "description", "statistics"])
+	sub_interfaces = set(["title", "image", "description", "statistics"])
+

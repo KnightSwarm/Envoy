@@ -39,7 +39,7 @@ class ImageResolver(LocalSingletonBase):
 		
 		html = ET.tostring((
 			E.img(src=match["url"])
-		), method="html")
+		), method="xml")
 		
 		return (html, json)
 	
@@ -120,7 +120,7 @@ class GitHubResolver(LocalSingletonBase):
 				),
 				class_="github-user"
 			)
-		), method="html")
+		), method="xml")
 		
 		return (html, json)
 		
@@ -164,7 +164,7 @@ class GitHubResolver(LocalSingletonBase):
 				),
 				class_="github-organization"
 			)
-		), method="html")
+		), method="xml")
 		
 		return (html, json)
 		
@@ -194,7 +194,7 @@ class GitHubResolver(LocalSingletonBase):
 				),
 				class_="github-repository"
 			)
-		), method="html")
+		), method="xml")
 		
 		return (html, json)
 		
@@ -228,7 +228,7 @@ class GitHubResolver(LocalSingletonBase):
 				),
 				class_="github-branch"
 			)
-		), method="html")
+		), method="xml")
 		
 		return (html, json)
 		
@@ -265,7 +265,7 @@ class GitHubResolver(LocalSingletonBase):
 				),
 				class_="github-issue"
 			)
-		), method="html")
+		), method="xml")
 		
 		return (html, json)
 		
@@ -302,7 +302,7 @@ class GitHubResolver(LocalSingletonBase):
 				),
 				class_="github-pullreq"
 			)
-		), method="html")
+		), method="xml")
 		
 		return (html, json)
 		
@@ -337,7 +337,7 @@ class GitHubResolver(LocalSingletonBase):
 				E.div(commit.commit.message, class_="description"),
 				class_="github-commit"
 			)
-		), method="html")
+		), method="xml")
 		
 		return (html, json)
 		
@@ -370,7 +370,7 @@ class GitHubResolver(LocalSingletonBase):
 				),
 				class_="github-comparison"
 			)
-		), method="html")
+		), method="xml")
 		
 		return (html, json)
 		
@@ -405,7 +405,7 @@ class GitHubResolver(LocalSingletonBase):
 				),
 				class_="github-gist"
 			)
-		), method="html")
+		), method="xml")
 		
 		return (html, json)
 		
@@ -438,7 +438,7 @@ class ImgurResolver(LocalSingletonBase):
 				E.img(src=image.link_small_thumbnail),
 				class_="imgur-image"
 			)
-		), method="html")
+		), method="xml")
 		
 		return (html, json)
 		
@@ -512,7 +512,7 @@ class BeanstalkResolver(LocalSingletonBase):
 					),
 					class_="beanstalk-repository"
 				)
-			), method="html")
+			), method="xml")
 			
 			return (html, json)
 		else:
@@ -553,7 +553,7 @@ class BeanstalkResolver(LocalSingletonBase):
 					E.div(changeset["message"], class_="description"),
 					class_="beanstalk-changeset"
 				)
-			), method="html")
+			), method="xml")
 				
 			return (html, json)
 		else:
@@ -596,7 +596,7 @@ class TrelloResolver(LocalSingletonBase):
 				),
 				class_="trello-board"
 			)
-		), method="html")
+		), method="xml")
 		
 		return (html, json)
 		
@@ -628,7 +628,7 @@ class TrelloResolver(LocalSingletonBase):
 				),
 				class_="trello-card"
 			)
-		), method="html")
+		), method="xml")
 		
 		return (html, json)
 		
@@ -660,7 +660,7 @@ class TrelloResolver(LocalSingletonBase):
 				E.div(organization["desc"], class_="description"),
 				class_="trello-organization"
 			)
-		), method="html")
+		), method="xml")
 		
 		return (html, json)
 				
@@ -682,7 +682,7 @@ class TrelloResolver(LocalSingletonBase):
 				E.div(description, class_="description"),
 				class_="trello-user"
 			)
-		), method="html")
+		), method="xml")
 		
 		return (html, json)
 

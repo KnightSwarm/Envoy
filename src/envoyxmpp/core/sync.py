@@ -101,15 +101,15 @@ class RoomSyncer(LocalSingletonBase):
 			logger.warning("No rooms found for FQDN %s during sync!" % component.get_fqdn().fqdn)
 			
 		for room in all_rooms:
+			# Always join all rooms.
+			component['xep_0045'].join(room.jid, "Envoy_Component")
+			
 			try:
 				info = component['xep_0030'].get_info(jid=room.jid, ifrom=component.boundjid)
 				registered = True
 			except IqError, e:
 				registered = False
-			
-			if registered == False:
-				self.register(room)
-				info = component['xep_0030'].get_info(jid=room.jid, ifrom=component.boundjid)
+				# FIXME: Log an error.
 			
 			needs_reconfiguration = False
 			
@@ -146,16 +146,6 @@ class RoomSyncer(LocalSingletonBase):
 			if needs_reconfiguration:
 				logger.debug("Room configuration for %s incorrect; attempting reconfiguration" % room.jid)
 				self.configure(room)
-		
-	def register(self, room):
-		# EVENT: Room registration
-		room_provider = RoomProvider.Instance(self.identifier)
-		component = Component.Instance(self.identifier)
-		logger = ApplicationLogger.Instance(self.identifier)
-		
-		room = room_provider.normalize_room(room)
-		component['xep_0045'].join(room.jid, "Envoy_Component")
-		logger.debug("Room %s created." % room.jid)
 		
 	def configure(self, room):
 		# EVENT: Room (re-)configuration
