@@ -64,7 +64,7 @@
 					"identifier": "username"
 				},
 				"setting": {
-					"type": "fqdn_setting".
+					"type": "fqdn_setting",
 					"filter": "fqdn",
 					"identifier": "key"
 				},
@@ -83,7 +83,7 @@
 				"user_permission": {
 					"type": "user_permission",
 					"filter": "fqdn"
-				},
+				}
 			},
 			"attributes": {
 				"id": {
@@ -111,6 +111,7 @@
 		"room": {
 			"table": "rooms",
 			"identifier": "jid",
+			"primary_key": "id",
 			"authenticator": "room",
 			"subresources": {
 				"affiliation": {
@@ -195,12 +196,12 @@
 					"filter": "user"
 				},
 				"setting": {
-					"type": "user_setting".
+					"type": "user_setting",
 					"filter": "user",
 					"identifier": "key"
 				},
 				"permission": {
-					"type": "user_permission".
+					"type": "user_permission",
 					"filter": "user",
 					"identifier": "fqdn"
 				}
@@ -223,6 +224,10 @@
 				},
 				"fqdn": {
 					"field": "FqdnId",
+					"type": "fqdn"
+				},
+				"fqdn_string": {
+					"field": "Fqdn",
 					"type": "fqdn"
 				},
 				"is_active": {
@@ -263,7 +268,7 @@
 				"status": {
 					"field": "Status",
 					"type": "status_enum"
-				},
+				}
 			}
 		},
 		"affiliation": {
@@ -297,7 +302,7 @@
 			"authenticator": "api_key",
 			"subresources": {
 				"permission": {
-					"type": "api_permission".
+					"type": "api_permission",
 					"filter": "api_key",
 					"identifier": "fqdn"
 				}
@@ -339,7 +344,7 @@
 			"authenticator": "api_permission",
 			"attributes": {
 				"id": {
-					"field": "Id",.
+					"field": "Id",
 					"type": "numeric"
 				},
 				"api_key": {
@@ -362,7 +367,7 @@
 			"authenticator": "user_permission",
 			"attributes": {
 				"id": {
-					"field": "Id",.
+					"field": "Id",
 					"type": "numeric"
 				},
 				"user": {

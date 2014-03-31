@@ -11,7 +11,7 @@
  * licensing text.
  */
 
-namespace \CPHP\REST;
+namespace CPHP\REST;
 
 require("api.php");
 require("resource.php");

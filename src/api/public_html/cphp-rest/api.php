@@ -11,7 +11,7 @@
  * licensing text.
  */
 
-namespace \CPHP\REST;
+namespace CPHP\REST;
 
 if(!isset($_CPHP_REST)) { die("Unauthorized."); }
 
@@ -30,7 +30,100 @@ class API
 	
 	public function ProcessRequest()
 	{
+		/* Discard the leading slash */
+		$path = substr(trim($_SERVER['REQUEST_URI']), 1);
 		
+		if(strpos($path, "?") !== false)
+		{
+			list($path, $bogus) = explode("?", $path, 2);
+		}
+		
+		$segments = explode("/", $path);
+		$queries = array_chunk($segments, 2);
+		$last = null;
+		$chain = array();
+		
+		foreach($queries as $query)
+		{
+			$filters = array();
+			
+			if(count($query) == 0)
+			{
+				/* This should never happen!
+				 * FIXME: Logging. */
+			}
+			
+			if($last === null)
+			{
+				/* Top-level resource. */
+				$type_name = array_search($query[0], $this->resource_plurals);
+				
+				if($type_name === false)
+				{
+					throw new \Exception("Resource type for '{$query[0]}' not found.");
+				}
+				
+				$resource_type = $this->config["resources"][$type_name];
+			}
+			else
+			{
+				/* Subresource. */
+				
+				$type_name = array_search($query[0], $last->subresource_plurals);
+				
+				if($type_name === false)
+				{
+					throw new \Exception("Resource type for '{$query[0]}' not found.");
+				}
+				
+				$subresource_type = $last->config["subresources"][$type_name];
+				$resource_type = $this->config["resources"][$subresource_type["type"]];
+				
+				$last_id_field = $subresource_type["filter"];
+				$last_key = $last->config["primary_key"];
+				$last_id_value = $last->$last_key;
+				
+				$filters[$last_id_field] = $last_id_value;
+			}
+			
+			if(count($query) == 2)
+			{
+				/* Specific object was requested. */
+				$current_id_field = (isset($subresource_type) && isset($subresource_type["identifier"])) ? $subresource_type["identifier"] : $resource_type["identifier"];
+				$current_id_value = $query[1];
+				
+				$filters[$current_id_field] = $current_id_value;
+				
+				pretty_dump(array(
+					"WHOO" => "FILTERS",
+					"type" => $type_name,
+					"filters" => $filters
+				));
+				
+				$resource = $this->ObtainResource($type_name, $filters);
+				$resource->chain = $chain;
+				
+				$chain[] = $resource;
+				$last = $resource;
+			}
+			elseif(count($query) == 1)
+			{
+				/* List of objects or custom handler was requested. */
+				// FIXME: Custom handlers
+				pretty_dump(array(
+					"WHOO" => "FILTERS",
+					"type" => $type_name,
+					"filters" => $filters
+				));
+				
+				$resources = $this->ObtainResourceList($type_name, $filters);
+				
+				foreach($resources as $resource)
+				{
+					$resource->chain = $chain;
+				}
+			}
+		}
 	}
 	
 	public function Capitalize($name)
@@ -61,9 +154,9 @@ class API
 	{
 		$config = json_decode(file_get_contents($path), true);
 		
-		if(json_last_error !== JSON_ERROR_NONE)
+		if(json_last_error() !== JSON_ERROR_NONE)
 		{
-			throw new Exception("The supplied configuration is not valid JSON.");
+			throw new \Exception("The supplied configuration is not valid JSON.");
 		}
 		
 		$this->config = $config;
@@ -81,10 +174,14 @@ class API
 				{
 					$this->resource_plurals[$type] = $data["plural"];
 				}
+				else
+				{
+					$this->resource_plurals[$type] = "{$type}s";
+				}
 				
 				if(empty($data["identifier"]))
 				{
-					throw new Exception("No identifier specified for resource type {$type}.");
+					throw new \Exception("No identifier specified for resource type {$type}.");
 				}
 				
 				$this->default_identifiers[$type] = $data["identifier"];
@@ -104,22 +201,30 @@ class API
 		$map = $this->config["resources"][$type]["attributes"];
 		$predicates = array();
 		$values = array();
+		$table = $this->config["resources"][$type]["table"];
 		
 		foreach($filters as $attribute => $value)
 		{
-			if($map[$attribute][$type] == "custom")
+			if($map[$attribute]["type"] == "custom")
 			{
-				$decoded_filters = $this->custom_decoder[$type][$attribute]($value, $filters);
+				$function_name = $this->custom_decoder[$type][$attribute];
+				
+				if($function_name === null)
+				{
+					throw new \Exception("Custom decoder function expected, but not registered for '{$attribute}' attribute on '{$type}' resource.");
+				}
+				
+				$decoded_filters = $function_name($value, $filters);
 				
 				foreach($decoded_filters as $sub_attribute => $sub_value)
 				{
-					$field = $map[$subattribute]["field"];
+					$field = $map[$sub_attribute]["field"];
 					
 					/* Don't let the custom decoder override a normally-set filter */
 					if(!isset($values[$field]))
 					{						
 						$predicates[] = "{$field} = :{$field}";
-						$values[$field] = $subvalue;
+						$values[$field] = $sub_value;
 					}
 				}
 			}
@@ -157,7 +262,7 @@ class API
 			{
 				if(!isset($settings["field"]))
 				{
-					throw new Exception("No field name specified for non-custom attribute {$attribute} on {$type} resource.");
+					throw new \Exception("No field name specified for non-custom attribute {$attribute} on {$type} resource.");
 				}
 				
 				$field = $settings["field"];
@@ -191,7 +296,14 @@ class API
 		 * basic-typed values. */
 		foreach($custom_attributes as $attribute)
 		{
-			$attributes[$attribute] = $this->custom_encoder[$type][$attribute]($attributes);
+			$function_name = $this->custom_encoder[$type][$attribute];
+			
+			if($function_name === null)
+			{
+				throw new \Exception("Custom encoder function expected, but not registered for '{$attribute}' attribute on '{$type}' resource.");
+			}
+			
+			$attributes[$attribute] = $function_name($attributes);
 		}
 		
 		return $attributes;
@@ -219,7 +331,7 @@ class API
 		else
 		{
 			/* Not found... */
-			throw new Exception("No results for query.");
+			throw new \Exception("No results for query.");
 		}
 	}
 	
@@ -240,13 +352,13 @@ class API
 		else
 		{
 			/* Not found... */
-			throw new Exception("No results for query.");
+			throw new \Exception("No results for query.");
 		}
 	}
 	
 	public function BlankResource($type)
 	{
-		$obj = new Resource($this, $type, $this->config["resources"][$type]);
+		return new Resource($this, $type, $this->config["resources"][$type]);
 	}
 	
 	/* RegisterEncoder and RegisterDecoder are used to register methods
@@ -402,6 +514,6 @@ class API
 	
 	public function VerifySignature($signature, $signing_key, $verb, $uri, $get_data, $post_data, $nonce)
 	{
-		return ($signature === $this->CreateSignature($signing_key, $verb, $uri, $get_data, $post_data, $nonce))
+		return ($signature === $this->CreateSignature($signing_key, $verb, $uri, $get_data, $post_data, $nonce));
 	}
 }

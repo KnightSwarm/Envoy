@@ -11,7 +11,7 @@
  * licensing text.
  */
 
-namespace \CPHP\REST;
+namespace CPHP\REST;
 
 if(!isset($_CPHP_REST)) { die("Unauthorized."); }
 
@@ -19,24 +19,21 @@ class Resource
 {
 	function __construct($api, $type, $config)
 	{
+		$this->api = $api;
 		$this->type = $type;
 		$this->config = $config;
 		$this->item_methods = array();
 		$this->list_methods = array();
 		$this->subresource_plurals = array();
 		$this->identifiers = array();
+		
+		$this->ProcessConfiguration($config);
 	}
 	
 	public function PluralizeSubresourceName($name)
 	{
-		if(isset($this->subresource_plurals[$name]))
-		{
-			return $this->subresource_plurals[$name];
-		}
-		else
-		{
-			return "{$name}s";
-		}
+		/* TODO: Is this necessary? */
+		return $this->subresource_plurals[$name];
 	}
 	
 	function ProcessConfiguration($config)
@@ -52,6 +49,10 @@ class Resource
 				if(isset($data["plural"]))
 				{
 					$this->subresource_plurals[$name] = $data["plural"];
+				}
+				else
+				{
+					$this->subresource_plurals[$name] = "{$name}s";
 				}
 				
 				if(empty($data["identifier"]))
@@ -100,7 +101,7 @@ class Resource
 			{
 				/* FIXME: Move this to root of function for both Resource and API? */
 				$name = $this->item_methods[$method];
-				$type = $this->types$name];
+				$type = $this->types[$name];
 				
 				$filters = array();
 				$filters[$this->identifiers[$name]] = $arguments[0];
