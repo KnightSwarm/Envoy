@@ -43,85 +43,132 @@ class API
 		$last = null;
 		$chain = array();
 		
+		$primary_key = !empty($_GET["_primary_key"]);
+		
 		foreach($queries as $query)
-		{
-			$filters = array();
-			
-			if(count($query) == 0)
+		{	
+			if(count($query) == 2)
+			{
+				$result = $this->ResolveResource($query[0], $query[1], $last, $primary_key);
+				$last = $result;
+			}
+			elseif(count($query) == 1)
+			{
+				$result = $this->ResolveResource($query[0], null, $last, $primary_key);
+			}
+			else
 			{
 				/* This should never happen!
 				 * FIXME: Logging. */
 			}
-			
-			if($last === null)
+		}
+		
+		//pretty_dump($result[0]->room);
+		pretty_dump($result);
+	}
+	
+	public function ResolveResource($type, $id = null, $last = null, $primary_key = false, $filters = array())
+	{
+		/* The $last argument holds either null (if the resource is top-level) or the
+		 * object representing the resource that the requested resource is a child
+		 * of. The $primary_key argument specifies whether the specified resource
+		 * identifier is a primary key, rather than a regular identifier. Specify null
+		 * for the $id to retrieve a list of resources, rather than a single item. */
+		
+		if($last === null)
+		{
+			/* Top-level resource. */
+			if(array_key_exists($type, $this->config["resources"]))
 			{
-				/* Top-level resource. */
-				$type_name = array_search($query[0], $this->resource_plurals);
-				
-				if($type_name === false)
-				{
-					throw new \Exception("Resource type for '{$query[0]}' not found.");
-				}
-				
-				$resource_type = $this->config["resources"][$type_name];
+				/* This is a direct type specification. */
+				$type_name = $type;
 			}
 			else
 			{
-				/* Subresource. */
-				
-				$type_name = array_search($query[0], $last->subresource_plurals);
+				/* This is a plural form (as used in a URL). */
+				$type_name = array_search($type, $this->resource_plurals);
 				
 				if($type_name === false)
 				{
-					throw new \Exception("Resource type for '{$query[0]}' not found.");
+					throw new NotFoundException("Resource type for '{$type}' not found.");
 				}
-				
-				$subresource_type = $last->config["subresources"][$type_name];
-				$resource_type = $this->config["resources"][$subresource_type["type"]];
-				
-				$last_id_field = $subresource_type["filter"];
-				$last_key = $last->config["primary_key"];
-				$last_id_value = $last->$last_key;
-				
-				$filters[$last_id_field] = $last_id_value;
 			}
 			
-			if(count($query) == 2)
+			$resource_type = $this->config["resources"][$type_name];
+		}
+		else
+		{
+			/* Subresource. */
+			
+			$type_name = array_search($type, $last->subresource_plurals);
+			
+			if($type_name === false)
 			{
-				/* Specific object was requested. */
-				$current_id_field = (isset($subresource_type) && isset($subresource_type["identifier"])) ? $subresource_type["identifier"] : $resource_type["identifier"];
-				$current_id_value = $query[1];
-				
-				$filters[$current_id_field] = $current_id_value;
-				
-				pretty_dump(array(
-					"WHOO" => "FILTERS",
-					"type" => $type_name,
-					"filters" => $filters
-				));
-				
-				$resource = $this->ObtainResource($type_name, $filters);
-				$resource->chain = $chain;
-				
-				$chain[] = $resource;
-				$last = $resource;
+				throw new NotFoundException("Resource type for '{$type}' not found.");
 			}
-			elseif(count($query) == 1)
+			
+			$subresource_type = $last->config["subresources"][$type_name];
+			$resource_type = $this->config["resources"][$subresource_type["type"]];
+			
+			$last_id_field = $subresource_type["filter"];
+			$last_key = $last->config["primary_key"];
+			$last_id_value = $last->$last_key;
+			
+			$filters[$last_id_field] = $last_id_value;
+		}
+		
+		if($last === null)
+		{
+			$chain = array();
+		}
+		else
+		{
+			$chain = $last->chain;
+			$chain[] = $last; /* Add the last item itself.. */
+		}
+		
+		if($id !== null)
+		{
+			/* Specific object was requested. */
+			if($primary_key === true)
 			{
-				/* List of objects or custom handler was requested. */
-				// FIXME: Custom handlers
-				pretty_dump(array(
-					"WHOO" => "FILTERS",
-					"type" => $type_name,
-					"filters" => $filters
-				));
-				
+				$current_id_field = $resource_type["primary_key"];
+			}
+			else
+			{
+				$current_id_field = (isset($subresource_type) && isset($subresource_type["identifier"])) ? $subresource_type["identifier"] : $resource_type["identifier"];
+			}
+			
+			$current_id_value = $id;
+			
+			$filters[$current_id_field] = $current_id_value;
+			
+			$resource = $this->ObtainResource($type_name, $filters);
+			$resource->chain = $chain;
+			
+			$last = $resource;
+			
+			return $resource;
+		}
+		else
+		{
+			/* List of objects or custom handler was requested. */
+			// FIXME: Custom handlers
+			try
+			{
 				$resources = $this->ObtainResourceList($type_name, $filters);
 				
 				foreach($resources as $resource)
 				{
 					$resource->chain = $chain;
 				}
+				
+				return $resources;
+			}
+			catch (NotFoundException $e)
+			{
+				/* No such resource exists, FIXME: check custom handlers. */
+				throw $e;
 			}
 		}
 	}
@@ -156,7 +203,7 @@ class API
 		
 		if(json_last_error() !== JSON_ERROR_NONE)
 		{
-			throw new \Exception("The supplied configuration is not valid JSON.");
+			throw new ConfigurationException("The supplied configuration is not valid JSON.");
 		}
 		
 		$this->config = $config;
@@ -181,7 +228,7 @@ class API
 				
 				if(empty($data["identifier"]))
 				{
-					throw new \Exception("No identifier specified for resource type {$type}.");
+					throw new ConfigurationException("No identifier specified for resource type {$type}.");
 				}
 				
 				$this->default_identifiers[$type] = $data["identifier"];
@@ -198,6 +245,11 @@ class API
 	
 	private function BuildQuery($type, $filters, $single = false)
 	{
+		if(!is_array($filters))
+		{
+			throw new \Exception("The 'filters' argument was not an array.");
+		}
+		
 		$map = $this->config["resources"][$type]["attributes"];
 		$predicates = array();
 		$values = array();
@@ -205,16 +257,20 @@ class API
 		
 		foreach($filters as $attribute => $value)
 		{
-			if($map[$attribute]["type"] == "custom")
+			$attribute_type = $map[$attribute]["type"];
+			
+			if($attribute_type == "custom")
 			{
-				$function_name = $this->custom_decoder[$type][$attribute];
-				
-				if($function_name === null)
+				if(array_key_exists($type, $this->custom_decoder) && array_key_exists($attribute, $this->custom_decoder[$type]))
 				{
-					throw new \Exception("Custom decoder function expected, but not registered for '{$attribute}' attribute on '{$type}' resource.");
+					$function_name = $this->custom_decoder[$type][$attribute];
+				}
+				else
+				{
+					throw new ConfigurationException("Custom decoder function expected, but not registered for '{$attribute}' attribute on '{$type}' resource.");
 				}
 				
-				$decoded_filters = $function_name($value, $filters);
+				$decoded_filters = $function_name($this, $value, $filters);
 				
 				foreach($decoded_filters as $sub_attribute => $sub_value)
 				{
@@ -232,11 +288,33 @@ class API
 			{
 				$field = $map[$attribute]["field"];
 				$predicates[] = "{$field} = :{$field}";
-				$values[$field] = $value;
+				
+				if(array_key_exists("enums", $this->config) && array_key_exists($attribute_type, $this->config["enums"]))
+				{
+					if(array_key_exists($value, $this->config["enums"][$attribute_type]))
+					{
+						$values[$field] = $this->config["enums"][$attribute_type][$value];
+					}
+					else
+					{
+						throw new ConfigurationException("Found enum value '{$data[$field]}' for type '{$attribute_type}', which is not specified in the API configuration!");
+					}
+				}
+				else
+				{
+					$values[$field] = $value;
+				}
 			}
 		}
 		
-		$query = "SELECT * FROM {$table} WHERE  " . implode(" AND ", $predicates);
+		if(empty($predicates))
+		{
+			$query = "SELECT * FROM {$table}";
+		}
+		else
+		{
+			$query = "SELECT * FROM {$table} WHERE  " . implode(" AND ", $predicates);
+		}
 		
 		 if($single === true)
 		 {
@@ -246,7 +324,7 @@ class API
 		return array($query, $values);
 	}
 	
-	public function ResultsToAttributes($type, $data)
+	public function ResultsToSerialized($type, $data)
 	{
 		$attributes = array();
 		$custom_attributes = array();
@@ -262,12 +340,13 @@ class API
 			{
 				if(!isset($settings["field"]))
 				{
-					throw new \Exception("No field name specified for non-custom attribute {$attribute} on {$type} resource.");
+					throw new ConfigurationException("No field name specified for non-custom attribute {$attribute} on {$type} resource.");
 				}
 				
 				$field = $settings["field"];
+				$attribute_type = $settings["type"];
 				
-				switch($settings["type"])
+				switch($attribute_type)
 				{
 					case "string":
 						$value = $data[$field];
@@ -278,13 +357,27 @@ class API
 						$value = (string) $data[$field];
 						break;
 					case "timestamp":
-						$value = unix_from_mysql($data[$field]);
+						$value = (string) unix_from_mysql($data[$field]);
 						break;
 					default:
-						/* Likely a resource type. Just return the numeric value and let the client
-						 * library resolve it to a resource. Again, return as string. */
-						$value = (string) $data[$field];
-						break;
+						/* Check if the specified type is a known enum. */
+						if(array_key_exists("enums", $this->config) && array_key_exists($attribute_type, $this->config["enums"]))
+						{
+							$value = array_search($data[$field], $this->config["enums"][$attribute_type]);
+							
+							if($value === false)
+							{
+								throw new ConfigurationException("Found enum key '{$data[$field]}' for type '{$attribute_type}', which is not specified in the API configuration!");
+							}
+						}
+						else
+						{
+							/* Likely a resource type. Just return the numeric value and let the client
+							 * library resolve it to a resource. Again, return as string.
+							 * TODO: Check this on the server side, for error logging purposes? */
+							$value = (string) $data[$field];
+							break;
+						}
 				}
 				
 				$attributes[$attribute] = $value;
@@ -296,14 +389,56 @@ class API
 		 * basic-typed values. */
 		foreach($custom_attributes as $attribute)
 		{
-			$function_name = $this->custom_encoder[$type][$attribute];
-			
-			if($function_name === null)
+			if(array_key_exists($type, $this->custom_encoder) && array_key_exists($attribute, $this->custom_encoder[$type]))
 			{
-				throw new \Exception("Custom encoder function expected, but not registered for '{$attribute}' attribute on '{$type}' resource.");
+				$function_name = $this->custom_encoder[$type][$attribute];
+			}
+			else
+			{
+				throw new ConfigurationException("Custom encoder function expected, but not registered for '{$attribute}' attribute on '{$type}' resource.");
 			}
 			
-			$attributes[$attribute] = $function_name($attributes);
+			$attributes[$attribute] = $function_name($this, $attributes);
+		}
+		
+		return $attributes;
+	}
+	
+	public function SerializedToAttributes($type, $data)
+	{
+		$attributes = array();
+		
+		foreach($this->config["resources"][$type]["attributes"] as $attribute => $settings)
+		{
+			if($settings["type"] == "custom")
+			{
+				/* This was already processed in the results -> serialized step, just treat it as a string. */
+				$attributes[$attribute] = $data[$attribute];
+			}
+			else
+			{
+				switch($settings["type"])
+				{
+					case "string":
+						$value = $data[$attribute];
+						break;
+					case "numeric":
+						/* Cast back to a float. */
+						$value = (float) $data[$attribute];
+						break;
+					case "timestamp":
+						/* Cast back to an int. */
+						$value = (int) $data[$attribute];
+						break;
+					default:
+						/* This is a resource identifier. We'll just set it as a string value, and
+						 * let the Resource object resolve it when requested through __get. */
+						$value = $data[$attribute];
+						break;
+				}
+				
+				$attributes[$attribute] = $value;
+			}
 		}
 		
 		return $attributes;
@@ -322,7 +457,7 @@ class API
 			{
 				$data = $result->data[0];
 				$resource = $this->BlankResource($type);
-				$resource->PopulateData($this->ResultsToAttributes($type, $data));
+				$resource->PopulateData($this->SerializedToAttributes($type, $this->ResultsToSerialized($type, $data)));
 				$return_objects[] = $resource;
 			}
 			
@@ -331,7 +466,7 @@ class API
 		else
 		{
 			/* Not found... */
-			throw new \Exception("No results for query.");
+			throw new NotFoundException("No results for query.");
 		}
 	}
 	
@@ -346,13 +481,13 @@ class API
 		{
 			$data = $result->data[0];
 			$resource = $this->BlankResource($type);
-			$resource->PopulateData($this->ResultsToAttributes($type, $data));
+			$resource->PopulateData($this->SerializedToAttributes($type, $this->ResultsToSerialized($type, $data)));
 			return $resource;
 		}
 		else
 		{
 			/* Not found... */
-			throw new \Exception("No results for query.");
+			throw new NotFoundException("No results for query.");
 		}
 	}
 	

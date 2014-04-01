@@ -15,3 +15,7 @@ namespace CPHP\REST;
 
 require("api.php");
 require("resource.php");
+
+class NotFoundException extends \Exception {};
+class NotAuthorizedException extends \Exception {};
+class ConfigurationException extends \Exception {};

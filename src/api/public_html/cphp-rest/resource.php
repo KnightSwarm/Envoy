@@ -26,6 +26,8 @@ class Resource
 		$this->list_methods = array();
 		$this->subresource_plurals = array();
 		$this->identifiers = array();
+		$this->types = array();
+		$this->chain = array();
 		
 		$this->ProcessConfiguration($config);
 	}
@@ -81,12 +83,14 @@ class Resource
 		{
 			/* FIXME: Won't this break __set? Perhaps just provide dynamically
 			 * using __get instead... */
-			$this->$attribute = $value;
+			//$this->$attribute = $value;
 		}
 	}
 	
 	public function __call($method, $arguments)
 	{
+		/* FIXME: All this should be merged to a common base for both API and Resource. */
+		
 		if(isset($this->item_methods[$method]))
 		{
 			/* Retrieve a single resource. */
@@ -99,15 +103,10 @@ class Resource
 			}
 			else
 			{
-				/* FIXME: Move this to root of function for both Resource and API? */
 				$name = $this->item_methods[$method];
 				$type = $this->types[$name];
 				
-				$filters = array();
-				$filters[$this->identifiers[$name]] = $arguments[0];
-				$filters[$this->config["subresources"][$name]["field"]] = $this->primary_key;
-				
-				return $this->api->ObtainResource($type, $filters);
+				return $this->api->ResolveResource($type, $arguments[0], $this);
 			}
 		}
 		elseif(isset($this->list_methods[$method]))
@@ -115,7 +114,42 @@ class Resource
 			/* Retrieve an (optionally filtered) list of resources. */
 			$type = $this->list_methods[$method];
 			$filters = (count($arguments) >= 1) ? $arguments[0] : array();
-			return $this->ObtainResourceList($type, $filters);
+			$resources = $this->api->ResolveResource($this->PluralizeSubresourceName($type), null, $this, false, $filters);
+			$new_chain = array_merge($this->chain, array($this));
+			
+			foreach($resources as $resource)
+			{
+				$resource->chain = $new_chain;
+			}
+			
+			return $resources;
 		}
+	}
+	
+	public function __get($key)
+	{
+		if(array_key_exists($key, $this->config["attributes"]))
+		{
+			$type = $this->config["attributes"][$key]["type"];
+			
+			switch($type)
+			{
+				case "string":
+				case "numeric":
+				case "timestamp":
+				case "custom":
+					return $this->data[$key];
+					break;
+				default:
+					/* This is a resource identifier; we need to lazy-load the resource. 
+					 * A special _primary_key flag is used for this; in some cases, the
+					 * root resource identifier may differ from the primary key (as it is
+					 * used in this reference). We will always want to identify referenced
+					 * resources by their primary key, rather than by their regular root
+					 * identifier. */
+					return $this->api->ResolveResource($type, $this->data[$key], null, true);
+			}
+		}
+		return $this->data[$key];
 	}
 }

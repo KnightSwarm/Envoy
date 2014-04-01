@@ -364,6 +364,7 @@
 		"user_permission": {
 			"table": "user_permissions",
 			"identifier": "id",
+			"primary_key": "id",
 			"authenticator": "user_permission",
 			"attributes": {
 				"id": {
