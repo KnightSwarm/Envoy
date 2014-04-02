@@ -15,7 +15,7 @@ namespace CPHP\REST;
 
 if(!isset($_CPHP_REST)) { die("Unauthorized."); }
 
-class API
+class API extends ResourceBase
 {
 	public function __construct()
 	{
@@ -26,45 +26,159 @@ class API
 		$this->authenticator = array();
 		$this->column_map = array();
 		$this->resource_plurals = array();
+		$this->api = $this; /* Shim to make ResourceBase functions work correctly. */
 	}
 	
 	public function ProcessRequest()
 	{
-		/* Discard the leading slash */
-		$path = substr(trim($_SERVER['REQUEST_URI']), 1);
-		
-		if(strpos($path, "?") !== false)
+		try
 		{
-			list($path, $bogus) = explode("?", $path, 2);
+			$this->RequireAuthentication();
+			
+			/* Discard the leading slash */
+			$path = substr(trim($_SERVER['REQUEST_URI']), 1);
+			
+			if(strpos($path, "?") !== false)
+			{
+				list($path, $bogus) = explode("?", $path, 2);
+			}
+			
+			$segments = explode("/", $path);
+			$queries = array_chunk($segments, 2);
+			$last = null;
+			$chain = array();
+			
+			$primary_key = !empty($_GET["_primary_key"]);
+			
+			$filters = array();
+			
+			foreach($_GET as $key => $value)
+			{
+				if(substr($key, 0, 1) !== "_") /* Ignore reserved keys; those are not filters. */
+				{
+					$filters[$key] = $value;
+				}
+			}
+			
+			foreach($queries as $query)
+			{	
+				if(count($query) == 2)
+				{
+					$result = $this->ResolveResource($query[0], $query[1], $last, $primary_key);
+					$last = $result;
+				}
+				elseif(count($query) == 1)
+				{
+					$result = $this->ResolveResource($query[0], null, $last, $primary_key, $filters);
+				}
+				else
+				{
+					/* This should never happen!
+					 * FIXME: Logging. */
+				}
+			}
+			
+			echo($this->SerializeResults($result));
 		}
-		
-		$segments = explode("/", $path);
-		$queries = array_chunk($segments, 2);
-		$last = null;
-		$chain = array();
-		
-		$primary_key = !empty($_GET["_primary_key"]);
-		
-		foreach($queries as $query)
-		{	
-			if(count($query) == 2)
+		catch (NotFoundException $e)
+		{
+			http_status_code(404);
+			echo(json_encode(array("error" => $e->getMessage())));
+		}
+		catch (NotAuthorizedException $e)
+		{
+			http_status_code(403);
+			echo(json_encode(array("error" => $e->getMessage())));
+		}
+		catch (NotAuthenticatedException $e)
+		{
+			header('WWW-Authenticate: APIKey realm="API"');
+			http_status_code(401);
+			echo(json_encode(array("error" => $e->getMessage())));
+		}
+		catch (\Exception $e)
+		{
+			switch(strtolower(ini_get('display_errors')))
 			{
-				$result = $this->ResolveResource($query[0], $query[1], $last, $primary_key);
-				$last = $result;
-			}
-			elseif(count($query) == 1)
-			{
-				$result = $this->ResolveResource($query[0], null, $last, $primary_key);
-			}
-			else
-			{
-				/* This should never happen!
-				 * FIXME: Logging. */
+				case "1":
+				case "on":
+				case "true":
+					throw $e; /* Let CPHP handle it. */
+					break;
+				default:
+					/* This is really just to be able to present a JSON-formatted error. */
+					$exception_class = get_class($e);
+					$exception_message = $e->getMessage();
+					$exception_file = $e->getFile();
+					$exception_line = $e->getLine();
+					$exception_trace = $e->getTraceAsString();
+					
+					error_log("Uncaught {$exception_class} in {$exception_file}:{$exception_line} ({$exception_message}). Traceback: {$exception_trace}");
+					
+					http_status_code(500);
+					echo(json_encode(array("error" => "An unexpected error occurred. This error has been logged.")));
+					die();
+					break;
 			}
 		}
-		
-		//pretty_dump($result[0]->room);
-		pretty_dump($result);
+	}
+	
+	public function RequireAuthentication()
+	{
+		/* TODO: Will have to reflow this code when more authentication
+		 * methods are implemented. */
+		if(array_key_exists("keypair", $this->config["authentication_methods"]))
+		{
+			$keypair_config = $this->config["authentication_methods"]["keypair"];
+			$key_field = $keypair_config["key_field"];
+			
+			if(empty($_SERVER['HTTP_API_ID']) || empty($_SERVER['HTTP_API_SIGNATURE']))
+			{
+				throw new NotAuthenticatedException("You did not provide a valid API key ID and signature.");
+			}
+			
+			$filters = array();
+			$filters[$keypair_config["id_field"]] = $_SERVER["HTTP_API_ID"];
+			
+			try
+			{
+				$keypair = $this->ObtainResource($keypair_config["resource"], $filters);
+			}
+			catch (NotFoundException $e)
+			{
+				throw new NotAuthenticatedException("The API key you specified is invalid.");
+			}
+			
+			$signature = $_SERVER['HTTP_API_SIGNATURE'];
+			$signing_key = $keypair->$key_field;
+			$verb = $_SERVER["REQUEST_METHOD"];
+			$uri = $_SERVER["REQUEST_URI"];
+			$nonce = "a"; /* FIXME! */
+						
+			if($this->VerifySignature($signature, $signing_key, $verb, $uri, $_GET, $_POST, $nonce) !== true)
+			{
+				throw new NotAuthenticatedException("The request signature was invalid.");
+			}
+		}
+	}
+	
+	public function SerializeResults($results)
+	{
+		if(is_array($results))
+		{
+			$serialized = array();
+			
+			foreach($results as $result)
+			{
+				$serialized[] = $result->serialized;
+			}
+			
+			return json_encode($serialized);
+		}
+		else
+		{
+			return json_encode($results->serialized);
+		}
 	}
 	
 	public function ResolveResource($type, $id = null, $last = null, $primary_key = false, $filters = array())
@@ -100,15 +214,16 @@ class API
 		{
 			/* Subresource. */
 			
-			$type_name = array_search($type, $last->subresource_plurals);
+			$subresource_type_name = array_search($type, $last->subresource_plurals);
 			
-			if($type_name === false)
+			if($subresource_type_name === false)
 			{
 				throw new NotFoundException("Resource type for '{$type}' not found.");
 			}
 			
-			$subresource_type = $last->config["subresources"][$type_name];
-			$resource_type = $this->config["resources"][$subresource_type["type"]];
+			$subresource_type = $last->config["subresources"][$subresource_type_name];
+			$type_name = $subresource_type["type"];
+			$resource_type = $this->config["resources"][$type_name];
 			
 			$last_id_field = $subresource_type["filter"];
 			$last_key = $last->config["primary_key"];
@@ -257,6 +372,12 @@ class API
 		
 		foreach($filters as $attribute => $value)
 		{
+			if(!array_key_exists($attribute, $map))
+			{
+				continue; /* This is not a valid filter attribute. */
+				/* TODO: Logging! */
+			}
+			
 			$attribute_type = $map[$attribute]["type"];
 			
 			if($attribute_type == "custom")
@@ -346,38 +467,51 @@ class API
 				$field = $settings["field"];
 				$attribute_type = $settings["type"];
 				
-				switch($attribute_type)
+				if($data[$field] === null)
 				{
-					case "string":
-						$value = $data[$field];
-						break;
-					case "numeric":
-						/* Numeric values are also returned as a string, to work around limitations in
-						 * how Javascript and JSON deal with real numeric values. */
-						$value = (string) $data[$field];
-						break;
-					case "timestamp":
-						$value = (string) unix_from_mysql($data[$field]);
-						break;
-					default:
-						/* Check if the specified type is a known enum. */
-						if(array_key_exists("enums", $this->config) && array_key_exists($attribute_type, $this->config["enums"]))
-						{
-							$value = array_search($data[$field], $this->config["enums"][$attribute_type]);
-							
-							if($value === false)
-							{
-								throw new ConfigurationException("Found enum key '{$data[$field]}' for type '{$attribute_type}', which is not specified in the API configuration!");
-							}
-						}
-						else
-						{
-							/* Likely a resource type. Just return the numeric value and let the client
-							 * library resolve it to a resource. Again, return as string.
-							 * TODO: Check this on the server side, for error logging purposes? */
+					/* Don't touch a null; leave it as it is. 
+					 * FIXME: Currently no nulls are returned at all, they are replaced by empty strings. */
+					$value = null;
+				}
+				else
+				{
+					switch($attribute_type)
+					{
+						case "string":
+							$value = $data[$field];
+							break;
+						case "numeric":
+							/* Numeric values are also returned as a string, to work around limitations in
+							 * how Javascript and JSON deal with real numeric values. */
 							$value = (string) $data[$field];
 							break;
-						}
+						case "timestamp":
+							$value = (string) unix_from_mysql($data[$field]);
+							break;
+						case "boolean":
+							/* Convert to boolean. */
+							$value = ($data[$field] == 1) ? true : false;
+							break;
+						default:
+							/* Check if the specified type is a known enum. */
+							if(array_key_exists("enums", $this->config) && array_key_exists($attribute_type, $this->config["enums"]))
+							{
+								$value = array_search($data[$field], $this->config["enums"][$attribute_type]);
+								
+								if($value === false)
+								{
+									throw new ConfigurationException("Found enum key '{$data[$field]}' for type '{$attribute_type}', which is not specified in the API configuration!");
+								}
+							}
+							else
+							{
+								/* Likely a resource type. Just return the numeric value and let the client
+								 * library resolve it to a resource. Again, return as string.
+								 * TODO: Check this on the server side, for error logging purposes? */
+								$value = (string) $data[$field];
+								break;
+							}
+					}
 				}
 				
 				$attributes[$attribute] = $value;
@@ -386,7 +520,13 @@ class API
 		
 		/* Now that we've populated the basic-typed attributes, allow for
 		 * custom-generated attributes to be processed with access to
-		 * basic-typed values. */
+		 * basic-typed values. We'll provide a temporary 'mock' resource
+		 * that the custom encoder functions can operate on, in a read-only
+		 * fashion. */
+		$mock_resource = $this->BlankResource($type);
+		$mock_resource->serialized = $attributes;
+		$mock_resource->PopulateData($this->SerializedToAttributes($type, $mock_resource->serialized, true));
+		 
 		foreach($custom_attributes as $attribute)
 		{
 			if(array_key_exists($type, $this->custom_encoder) && array_key_exists($attribute, $this->custom_encoder[$type]))
@@ -398,18 +538,41 @@ class API
 				throw new ConfigurationException("Custom encoder function expected, but not registered for '{$attribute}' attribute on '{$type}' resource.");
 			}
 			
-			$attributes[$attribute] = $function_name($this, $attributes);
+			try
+			{
+				$attributes[$attribute] = $function_name($this, $mock_resource);
+			}
+			catch (\Exception $e)
+			{
+				$exception_type = get_class($e);
+				$message = $e->getMessage();
+				throw new HookException("A {$exception_type} exception occurred within a custom encoder hook: {$message}", 0, $e);
+			}
 		}
 		
 		return $attributes;
 	}
 	
-	public function SerializedToAttributes($type, $data)
+	public function SerializedToAttributes($type, $data, $ignore_missing = false)
 	{
+		/* $ignore_missing is used for the creation of mock resource objects, where
+		 * not all data is available yet. */
 		$attributes = array();
 		
 		foreach($this->config["resources"][$type]["attributes"] as $attribute => $settings)
 		{
+			if(!array_key_exists($attribute, $data))
+			{
+				if($ignore_missing === false)
+				{
+					throw new \Exception("Missing attribute in dataset.");
+				}
+				else
+				{
+					continue; /* Ignore. */
+				}
+			}
+			
 			if($settings["type"] == "custom")
 			{
 				/* This was already processed in the results -> serialized step, just treat it as a string. */
@@ -430,6 +593,9 @@ class API
 						/* Cast back to an int. */
 						$value = (int) $data[$attribute];
 						break;
+					case "boolean":
+						/* Don't touch it. */
+						$value = $data[$attribute];
 					default:
 						/* This is a resource identifier. We'll just set it as a string value, and
 						 * let the Resource object resolve it when requested through __get. */
@@ -455,9 +621,10 @@ class API
 			
 			foreach($result->data as $row)
 			{
-				$data = $result->data[0];
+				$data = $row;
 				$resource = $this->BlankResource($type);
-				$resource->PopulateData($this->SerializedToAttributes($type, $this->ResultsToSerialized($type, $data)));
+				$resource->serialized = $this->ResultsToSerialized($type, $data);
+				$resource->PopulateData($this->SerializedToAttributes($type, $resource->serialized));
 				$return_objects[] = $resource;
 			}
 			
@@ -475,13 +642,15 @@ class API
 		/* $filters: A single filter for a normal identifier query, or
 		 * multiple filters if a subresource. */
 		global $database;
+		
 		list($query, $params) = $this->BuildQuery($type, $filters, true);
 		
 		if($result = $database->CachedQuery($query, $params))
 		{
 			$data = $result->data[0];
 			$resource = $this->BlankResource($type);
-			$resource->PopulateData($this->SerializedToAttributes($type, $this->ResultsToSerialized($type, $data)));
+			$resource->serialized = $this->ResultsToSerialized($type, $data);
+			$resource->PopulateData($this->SerializedToAttributes($type, $resource->serialized));
 			return $resource;
 		}
 		else
@@ -550,36 +719,7 @@ class API
 	{
 		$this->authenticator[$name] = $function;
 	}
-	
-	public function __call($method, $arguments)
-	{
-		if(isset($this->item_methods[$method]))
-		{
-			/* Retrieve a single resource. */
-			if(count($arguments) < 1)
-			{
-				/* New object... */
-				return $this->BlankResource($type);
-			}
-			else
-			{
-				$type = $this->item_methods[$method];
-				
-				$filters = array();
-				$filters[$this->config["resources"][$type]["identifier"]] = $arguments[0];
-				
-				return $this->ObtainResource($type, $filters);
-			}
-		}
-		elseif(isset($this->list_methods[$method]))
-		{
-			/* Retrieve an (optionally filtered) list of resources. */
-			$type = $this->list_methods[$method];
-			$filters = (count($arguments) >= 1) ? $arguments[0] : array();
-			return $this->ObtainResourceList($type, $filters);
-		}
-	}
-	
+		
 	/* The following functions are for cryptographical request signing as authentication
 	 * method. A unique nonce must always be provided; ideally, this is cryptographically
 	 * secure random data. */

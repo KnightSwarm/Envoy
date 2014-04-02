@@ -15,7 +15,7 @@ namespace CPHP\REST;
 
 if(!isset($_CPHP_REST)) { die("Unauthorized."); }
 
-class Resource
+class Resource extends ResourceBase
 {
 	function __construct($api, $type, $config)
 	{
@@ -34,7 +34,6 @@ class Resource
 	
 	public function PluralizeSubresourceName($name)
 	{
-		/* TODO: Is this necessary? */
 		return $this->subresource_plurals[$name];
 	}
 	
@@ -68,9 +67,11 @@ class Resource
 				
 				$this->identifiers[$name] = $identifier;
 				
-				/* Build method lookup table. */
-				$this->item_methods[$this->api->Capitalize($name)] = $type;
-				$this->list_methods["List" . $this->api->Capitalize($this->PluralizeSubresourceName($name))] = $type;
+				/* Build method lookup table. We set the subresource name rather than the
+				 * root resource name, as the subresource name is what the rest of the code
+				 * uses internally. */
+				$this->item_methods[$this->api->Capitalize($name)] = $name;
+				$this->list_methods["List" . $this->api->Capitalize($this->PluralizeSubresourceName($name))] = $name;
 			}
 		}
 	}
@@ -84,45 +85,6 @@ class Resource
 			/* FIXME: Won't this break __set? Perhaps just provide dynamically
 			 * using __get instead... */
 			//$this->$attribute = $value;
-		}
-	}
-	
-	public function __call($method, $arguments)
-	{
-		/* FIXME: All this should be merged to a common base for both API and Resource. */
-		
-		if(isset($this->item_methods[$method]))
-		{
-			/* Retrieve a single resource. */
-			if(count($arguments) < 1)
-			{
-				/* New object... */
-				$obj = $this->api->BlankResource($type);
-				/* FIXME: Set own identifier as reference in new object */
-				return $obj;
-			}
-			else
-			{
-				$name = $this->item_methods[$method];
-				$type = $this->types[$name];
-				
-				return $this->api->ResolveResource($type, $arguments[0], $this);
-			}
-		}
-		elseif(isset($this->list_methods[$method]))
-		{
-			/* Retrieve an (optionally filtered) list of resources. */
-			$type = $this->list_methods[$method];
-			$filters = (count($arguments) >= 1) ? $arguments[0] : array();
-			$resources = $this->api->ResolveResource($this->PluralizeSubresourceName($type), null, $this, false, $filters);
-			$new_chain = array_merge($this->chain, array($this));
-			
-			foreach($resources as $resource)
-			{
-				$resource->chain = $new_chain;
-			}
-			
-			return $resources;
 		}
 	}
 	

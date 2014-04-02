@@ -228,7 +228,7 @@
 				},
 				"fqdn_string": {
 					"field": "Fqdn",
-					"type": "fqdn"
+					"type": "string"
 				},
 				"is_active": {
 					"field": "Active",
@@ -357,7 +357,7 @@
 				},
 				"access_level": {
 					"field": "Type",
-					"type": "access_level_enum"
+					"type": "numeric"
 				}
 			}
 		},
@@ -381,7 +381,7 @@
 				},
 				"access_level": {
 					"field": "Type",
-					"type": "access_level_enum"
+					"type": "numeric"
 				}
 			}
 		},
