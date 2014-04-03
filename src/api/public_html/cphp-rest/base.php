@@ -86,5 +86,7 @@ class ResourceBase
 class NotFoundException extends \Exception {};
 class NotAuthorizedException extends \Exception {};
 class NotAuthenticatedException extends \Exception {};
+class MalformedRequestException extends \Exception {};
 class ConfigurationException extends \Exception {};
+class NonceException extends \Exception {};
 class HookException extends \Exception {};

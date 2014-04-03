@@ -27,6 +27,7 @@ class API extends ResourceBase
 		$this->column_map = array();
 		$this->resource_plurals = array();
 		$this->api = $this; /* Shim to make ResourceBase functions work correctly. */
+		$this->expiry = 60 * 60 * 24; /* TODO: Make this configurable. */
 	}
 	
 	public function ProcessRequest()
@@ -96,6 +97,11 @@ class API extends ResourceBase
 			http_status_code(401);
 			echo(json_encode(array("error" => $e->getMessage())));
 		}
+		catch (MalformedRequestException $e)
+		{
+			http_status_code(422);
+			echo(json_encode(array("error" => $e->getMessage())));
+		}
 		catch (\Exception $e)
 		{
 			switch(strtolower(ini_get('display_errors')))
@@ -129,6 +135,16 @@ class API extends ResourceBase
 		 * methods are implemented. */
 		if(array_key_exists("keypair", $this->config["authentication_methods"]))
 		{
+			if(empty($_SERVER['HTTP_API_EXPIRY']))
+			{
+				throw new MalformedRequestException("No expiry timestamp was specified in the request.");
+			}
+			
+			if(empty($_SERVER['HTTP_API_NONCE']))
+			{
+				throw new MalformedRequestException("No nonce was specified in the request.");
+			}
+			
 			$keypair_config = $this->config["authentication_methods"]["keypair"];
 			$key_field = $keypair_config["key_field"];
 			
@@ -153,11 +169,26 @@ class API extends ResourceBase
 			$signing_key = $keypair->$key_field;
 			$verb = $_SERVER["REQUEST_METHOD"];
 			$uri = $_SERVER["REQUEST_URI"];
-			$nonce = "a"; /* FIXME! */
-						
-			if($this->VerifySignature($signature, $signing_key, $verb, $uri, $_GET, $_POST, $nonce) !== true)
+			$nonce = $_SERVER['HTTP_API_NONCE']; /* FIXME! */
+			$expiry = $_SERVER['HTTP_API_EXPIRY'];
+			
+			if($this->VerifySignature($signature, $signing_key, $verb, $uri, $_GET, $_POST, $nonce, $expiry) !== true)
 			{
 				throw new NotAuthenticatedException("The request signature was invalid.");
+			}
+			
+			if(time() > (int) $expiry)
+			{
+				throw new NotAuthenticatedException("The request has expired.");
+			}
+			
+			try
+			{
+				$this->RegisterNonce($_SERVER["HTTP_API_ID"], $nonce);
+			}
+			catch (NonceException $e)
+			{
+				throw new NotAuthenticatedException("The specified nonce has been used before.");
 			}
 		}
 	}
@@ -724,19 +755,45 @@ class API extends ResourceBase
 	 * method. A unique nonce must always be provided; ideally, this is cryptographically
 	 * secure random data. */
 	
-	protected function RegisterNonce($nonce, $expiry)
+	protected function RegisterNonce($api_id, $nonce)
 	{
 		/* The expiry must be specified as an expiry timestamp. */
+		$safe_nonce = str_replace(".", "%2E", urlencode($nonce)); /* Sigh... */
+		$nonce_dir = sys_get_temp_dir() . "/cphp-rest-nonce/{$api_id}";
+		$nonce_path = $nonce_dir . "/" . $nonce;
+		@mkdir($nonce_dir, 0700, true);
+		$handle = @fopen($nonce_path, "x");
+		
+		if($handle === false)
+		{
+			/* Nonce was already registered. Check for expiry. */
+			$modified = stat($nonce_path)["mtime"];
+			
+			if($modified < time() - $this->expiry)
+			{
+				/* Remove and re-create the lockfile. */
+				unlink($nonce_path);
+				$handle = fopen($nonce_path, "x");
+			}
+			else
+			{
+				throw new NonceException("That nonce has already been used.");
+			}
+		}
+		
+		fclose($handle);
+		
 		/* TODO: Internal housekeeping by cleaning up expired entries
 		 * every X time? */
 		/* TODO: Attempt to register a nonce; if failure, check expiry
 		 * time to see if it can override. */
 	}
 	
-	protected function CreateSTS($verb, $uri, $get_data, $post_data, $nonce)
+	protected function CreateSTS($verb, $uri, $get_data, $post_data, $nonce, $expiry)
 	{
 		$sts = ""; /* Start out with an empty STS. */
 		$sts .= $nonce . "\n"; /* Append the nonce and a newline. */
+		$sts .= $expiry . "\n"; /* Append the expiry timestamp and a newline. */
 		$sts .= strtoupper($verb) . "\n"; /* Append the request method (HTTP verb) in uppercase, and append a newline. */
 		$uri = ends_with($uri, "/") ? substr($uri, 0, strlen($uri) - 1) : $uri; /* Remove the trailing slash from the URI if it exists. */
 		$sts .= $uri . "\n"; /* Append the requested URI, in the form /some/thing, and append a newline. */
@@ -773,22 +830,22 @@ class API extends ResourceBase
 		return $sts;
 	}
 	
-	protected function CreateSignature($signing_key, $verb, $uri, $get_data, $post_data, $nonce)
+	protected function CreateSignature($signing_key, $verb, $uri, $get_data, $post_data, $nonce, $expiry)
 	{
-		$sts = $this->CreateSTS($verb, $uri, $get_data, $post_data, $nonce);
+		$sts = $this->CreateSTS($verb, $uri, $get_data, $post_data, $nonce, $expiry);
 		
 		/* When done building the STS, we sign it and return the base64-encoded version.
 		 * HMAC + SHA512 is to be used. */
 		return base64_encode(hash_hmac("sha512", $sts, $signing_key, true));
 	}
 	
-	public function Sign($signing_key, $verb, $uri, $get_data, $post_data, $nonce)
+	public function Sign($signing_key, $verb, $uri, $get_data, $post_data, $nonce, $expiry)
 	{
-		return $this->CreateSignature($signing_key, $verb, $uri, $get_data, $post_data, $nonce);
+		return $this->CreateSignature($signing_key, $verb, $uri, $get_data, $post_data, $nonce, $expiry);
 	}
 	
-	public function VerifySignature($signature, $signing_key, $verb, $uri, $get_data, $post_data, $nonce)
+	public function VerifySignature($signature, $signing_key, $verb, $uri, $get_data, $post_data, $nonce, $expiry)
 	{
-		return ($signature === $this->CreateSignature($signing_key, $verb, $uri, $get_data, $post_data, $nonce));
+		return ($signature === $this->CreateSignature($signing_key, $verb, $uri, $get_data, $post_data, $nonce, $expiry));
 	}
 }

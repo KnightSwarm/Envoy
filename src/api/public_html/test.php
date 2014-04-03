@@ -80,11 +80,14 @@ $_SERVER["REQUEST_URI"] = "/users/testuser@envoy.local";
 $signing_key = "test";
 $verb = "GET";
 $uri = $_SERVER["REQUEST_URI"];
-$nonce = "a"; /* FIXME! */
-$_SERVER['HTTP_API_SIGNATURE'] = $API->Sign($signing_key, $verb, $uri, $_GET, $_POST, $nonce);
+$nonce = random_string(15);
+$expiry = time() + $API->expiry;
+$_SERVER['HTTP_API_SIGNATURE'] = $API->Sign($signing_key, $verb, $uri, $_GET, $_POST, $nonce, $expiry);
 /* End testing block... */
 
 $_SERVER["HTTP_API_ID"] = "test";
+$_SERVER["HTTP_API_EXPIRY"] = $expiry;
+$_SERVER["HTTP_API_NONCE"] = $nonce;
 
 $API->ProcessRequest();
 //pretty_dump($API->Room("testingroom13@envoy.local")->ListAffiliations(array("affiliation" => "owner"))[0]->user->full_name);
