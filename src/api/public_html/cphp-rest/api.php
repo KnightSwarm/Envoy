@@ -617,8 +617,15 @@ class API extends ResourceBase
 						$value = $data[$attribute];
 						break;
 					case "numeric":
-						/* Cast back to a float. */
-						$value = (float) $data[$attribute];
+						/* Cast back to a float or int. */
+						if(strpos($data[$attribute], ".") !== false)
+						{
+							$value = (float) $data[$attribute];
+						}
+						else
+						{
+							$value = (int) $data[$attribute];
+						}
 						break;
 					case "timestamp":
 						/* Cast back to an int. */
