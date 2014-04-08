@@ -28,6 +28,7 @@ class Resource extends ResourceBase
 		$this->identifiers = array();
 		$this->types = array();
 		$this->chain = array();
+		$this->custom_item_handlers = array();
 		
 		$this->ProcessConfiguration($config);
 	}
@@ -67,6 +68,14 @@ class Resource extends ResourceBase
 				
 				$this->identifiers[$name] = $identifier;
 				
+				if(!empty($data["item_handlers"]))
+				{
+					foreach($data["item_handlers"] as $handler_name => $handler_method)
+					{
+						$this->custom_item_handlers[$this->api->Capitalize($handler_name)] = $handler_method;
+					}
+				}
+				
 				/* Build method lookup table. We set the subresource name rather than the
 				 * root resource name, as the subresource name is what the rest of the code
 				 * uses internally. */
@@ -79,13 +88,6 @@ class Resource extends ResourceBase
 	public function PopulateData($data)
 	{
 		$this->data = $data;
-		
-		foreach($data as $attribute => $value)
-		{
-			/* FIXME: Won't this break __set? Perhaps just provide dynamically
-			 * using __get instead... */
-			//$this->$attribute = $value;
-		}
 	}
 	
 	public function __get($key)

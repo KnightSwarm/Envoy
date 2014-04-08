@@ -211,8 +211,6 @@ class ApiKeypair extends CPHPDatabaseRecordClass
 	
 	public function GenerateKeypair()
 	{
-		/* FIXME: CPHP should use openssl_pseudo_random_bytes or mt_rand
-		 * rather than rand(). */
 		$this->uApiId = random_string(16);
 		$this->uApiKey = random_string(24);
 	}

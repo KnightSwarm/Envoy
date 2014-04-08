@@ -41,7 +41,7 @@ class ResourceBase
 				
 				if($is_resource)
 				{
-					/* FIXME: Set own identifier as reference in new object */
+					$obj->parent_resource = $this;
 				}
 				
 				return $obj;

@@ -207,7 +207,7 @@
 				}
 			},
 			"item_handlers": {
-				"api_key": "get_api_key",
+				"get_api_key": "api_key",
 				"authenticate": "authenticate"
 			},
 			"attributes": {

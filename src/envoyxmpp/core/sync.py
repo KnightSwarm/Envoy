@@ -109,7 +109,7 @@ class RoomSyncer(LocalSingletonBase):
 				registered = True
 			except IqError, e:
 				registered = False
-				# FIXME: Log an error.
+				logger.warning("Tried to retrieve room details for %s after joining, but was denied this information!" % room.jid)
 			
 			needs_reconfiguration = False
 			

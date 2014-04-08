@@ -169,7 +169,7 @@ class API extends ResourceBase
 			$signing_key = $keypair->$key_field;
 			$verb = $_SERVER["REQUEST_METHOD"];
 			$uri = $_SERVER["REQUEST_URI"];
-			$nonce = $_SERVER['HTTP_API_NONCE']; /* FIXME! */
+			$nonce = $_SERVER['HTTP_API_NONCE'];
 			$expiry = $_SERVER['HTTP_API_EXPIRY'];
 			
 			if($this->VerifySignature($signature, $signing_key, $verb, $uri, $_GET, $_POST, $nonce, $expiry) !== true)
@@ -299,7 +299,6 @@ class API extends ResourceBase
 		else
 		{
 			/* List of objects or custom handler was requested. */
-			// FIXME: Custom handlers
 			try
 			{
 				$resources = $this->ObtainResourceList($type_name, $filters);
@@ -313,8 +312,16 @@ class API extends ResourceBase
 			}
 			catch (NotFoundException $e)
 			{
-				/* No such resource exists, FIXME: check custom handlers. */
-				throw $e;
+				if($last !== null && isset($last->custom_item_handlers[$type_name]))
+				{
+					/* FIXME: Call the custom handler method. How to handle returns from this?
+					 * Everything calling ResolveResource excepts a Resource or array of
+					 * Resources... */
+				}
+				else
+				{
+					throw $e;
+				}
 			}
 		}
 	}
@@ -501,7 +508,7 @@ class API extends ResourceBase
 				if($data[$field] === null)
 				{
 					/* Don't touch a null; leave it as it is. 
-					 * FIXME: Currently no nulls are returned at all, they are replaced by empty strings. */
+					 * TODO: Currently no nulls are returned at all, they are replaced by empty strings. */
 					$value = null;
 				}
 				else
@@ -790,10 +797,35 @@ class API extends ResourceBase
 		
 		fclose($handle);
 		
+		/* Clean up expired nonces every 5 minutes. */
+		$flag_path = sys_get_temp_dir() . "/cphp-rest-nonce-cleanup";
+		$flag_stat = @stat($flag_path);
+		
+		if($flag_stat === false || $flag_stat["mtime"] < time() - (5 * 60))
+		{
+			/* Clean-up time! */
+			foreach(new \DirectoryIterator(sys_get_temp_dir() . "/cphp-rest-nonce") as $dir)
+			{
+				if(!$dir->isDot())
+				{
+					foreach(new \DirectoryIterator($dir->getPathname()) as $nonce)
+					{
+						if(!$nonce->isDot())
+						{
+							if($nonce->getMTime() < time() - $this->expiry)
+							{
+								unlink($nonce->getPathname());
+							}
+						}
+					}
+				}
+			}
+		}
+		
+		
+		
 		/* TODO: Internal housekeeping by cleaning up expired entries
 		 * every X time? */
-		/* TODO: Attempt to register a nonce; if failure, check expiry
-		 * time to see if it can override. */
 	}
 	
 	protected function CreateSTS($verb, $uri, $get_data, $post_data, $nonce, $expiry)
@@ -853,6 +885,24 @@ class API extends ResourceBase
 	
 	public function VerifySignature($signature, $signing_key, $verb, $uri, $get_data, $post_data, $nonce, $expiry)
 	{
-		return ($signature === $this->CreateSignature($signing_key, $verb, $uri, $get_data, $post_data, $nonce, $expiry));
+		return $this->ConstantTimeCompare($signature, $this->CreateSignature($signing_key, $verb, $uri, $get_data, $post_data, $nonce, $expiry));
+	}
+	
+	public function ConstantTimeCompare($value_a, $value_b)
+	{
+		/* Adapted from Symfony. */
+	        if (strlen($value_a) !== strlen($value_b))
+	        {
+			return false;
+		}
+
+		$result = 0;
+		
+		for ($i = 0; $i < strlen($value_a); $i++)
+		{
+			$result |= ord($value_a[$i]) ^ ord($value_b[$i]);
+		}
+
+		return (0 === $result);
 	}
 }

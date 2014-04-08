@@ -69,6 +69,10 @@ $API->RegisterEncoder("api_key", "access_level", function($api, $resource){
 	return 0;
 });
 
+var_dump(random_string(17));
+var_dump(random_string(17, true));
+//die();
+
 //$_SERVER["REQUEST_URI"] = "/users/testuser@envoy.local/affiliations";
 //$_GET = array("affiliation" => "owner");
 //$_SERVER["REQUEST_URI"] = "/rooms/testingroom13@envoy.local";
