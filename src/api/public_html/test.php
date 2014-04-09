@@ -8,7 +8,7 @@ require("cphp-rest/base.php");
 
 use \CPHP\REST;
 
-$API = new \CPHP\REST\API();
+$API = new \CPHP\REST\APIServer();
 $API->LoadConfiguration("../../api.json");
 
 $API->RegisterDecoder("room", "jid", function($api, $value, $filters){
@@ -69,16 +69,50 @@ $API->RegisterEncoder("api_key", "access_level", function($api, $resource){
 	return 0;
 });
 
-var_dump(random_string(17));
-var_dump(random_string(17, true));
-//die();
+$API->RegisterHandler("room", "notify", function($room) {
+	$handler = new CPHPFormHandler($_POST, true);
+	
+	try
+	{
+		$handler
+			->RequireNonEmpty("message")
+			->Done();
+	}
+	catch (FormValidationException $e)
+	{
+		/* FIXME: Throw HTTP error for invalid input.. 410? */
+	}
+	
+	$context = new ZMQContext();
+	$query_socket = new ZMQSocket($context, ZMQ::SOCKET_PUSH);
+	$query_socket->connect("tcp://127.0.0.1:18081");
+
+	$payload = array(
+		"type" => "room_notification",
+		"args" => array(
+			"room" => $room->jid,
+			"color" => $handler->GetValue("color", "yellow"),
+			"message" => $handler->GetValue("message"),
+			"notify" => $handler-> GetValue("notify", "0"),
+			"message_format" => $handler->GetValue("message_format", "html")
+		)
+	);
+	
+	$query_socket->send(json_encode($payload));
+	
+	return true;
+});
 
 //$_SERVER["REQUEST_URI"] = "/users/testuser@envoy.local/affiliations";
 //$_GET = array("affiliation" => "owner");
 //$_SERVER["REQUEST_URI"] = "/rooms/testingroom13@envoy.local";
 //$_SERVER["REQUEST_URI"] = "/users";
 
-$_SERVER["REQUEST_URI"] = "/users/testuser@envoy.local";
+//$_SERVER["REQUEST_URI"] = "/users/testuser@envoy.local";
+$_SERVER["REQUEST_URI"] = "/rooms/testingroom13@envoy.local/notify";
+
+$_POST["message"] = "This is a sample message.";
+$_POST["color"] = "red";
 
 /* This is just for testing purposes... emulating signature generation. */
 $signing_key = "test";

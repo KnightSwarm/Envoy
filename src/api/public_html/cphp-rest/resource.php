@@ -68,19 +68,19 @@ class Resource extends ResourceBase
 				
 				$this->identifiers[$name] = $identifier;
 				
-				if(!empty($data["item_handlers"]))
-				{
-					foreach($data["item_handlers"] as $handler_name => $handler_method)
-					{
-						$this->custom_item_handlers[$this->api->Capitalize($handler_name)] = $handler_method;
-					}
-				}
-				
 				/* Build method lookup table. We set the subresource name rather than the
 				 * root resource name, as the subresource name is what the rest of the code
 				 * uses internally. */
 				$this->item_methods[$this->api->Capitalize($name)] = $name;
 				$this->list_methods["List" . $this->api->Capitalize($this->PluralizeSubresourceName($name))] = $name;
+			}
+		}
+		
+		if(!empty($config["item_handlers"]))
+		{
+			foreach($config["item_handlers"] as $handler_name)
+			{
+				$this->custom_item_handlers[] = $handler_name;
 			}
 		}
 	}
@@ -101,6 +101,7 @@ class Resource extends ResourceBase
 				case "string":
 				case "numeric":
 				case "timestamp":
+				case "boolean":
 				case "custom":
 					return $this->data[$key];
 					break;
@@ -115,5 +116,20 @@ class Resource extends ResourceBase
 			}
 		}
 		return $this->data[$key];
+	}
+}
+
+class Response extends ResourceBase
+{
+	/* Because resource-related functions are all expected to return
+	 * something resembling a resource or list of resources - that is,
+	 * an object with a 'serialized' attribute - we will have to wrap all
+	 * non-resource responses for custom handlers into an object
+	 * that *pretends* to be a resource. This wrapper should only be
+	 * used if the custom handler does not return a Resource object. */
+	 
+	public function __construct($data)
+	{
+		$this->serialized = $data;
 	}
 }

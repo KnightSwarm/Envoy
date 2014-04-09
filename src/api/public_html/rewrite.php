@@ -246,8 +246,8 @@ $API->RegisterHandler("room", "notify", function($room) {
 	$context = new ZMQContext();
 	$query_socket = new ZMQSocket($context, ZMQ::SOCKET_PUSH);
 	$query_socket->connect("tcp://127.0.0.1:18081");
-
-	$query_socket->send(json_encode(array(
+	
+	$payload = array(
 		"type" => "room_notification",
 		"args" => array(
 			"room" => $room->jid,
@@ -256,7 +256,11 @@ $API->RegisterHandler("room", "notify", function($room) {
 			"notify" => $handler-> GetValue("notify", "0"),
 			"message_format" => $handler->GetValue("message_format", "html")
 		)
-	)));
+	);
+	
+	$query_socket->send(json_encode($payload));
+	
+	return $payload;
 });
 
 /* Old API code below */

@@ -14,6 +14,8 @@
 namespace CPHP\REST;
 
 require("api.php");
+require("api-server.php");
+require("api-client.php");
 require("resource.php");
 
 class ResourceBase
@@ -79,6 +81,10 @@ class ResourceBase
 			}
 			
 			return $resources;
+		}
+		else
+		{
+			trigger_error('Call to undefined method '.__CLASS__.'::'.$method.'()', E_USER_ERROR);
 		}
 	}
 }

@@ -124,9 +124,9 @@
 					"identifier": "nickname"
 				}
 			},
-			"item_handlers": {
-				"notify": "send_room_notification"
-			},
+			"item_handlers": [
+				"notify"
+			],
 			"attributes": {
 				"id": {
 					"field": "Id",
@@ -206,10 +206,10 @@
 					"identifier": "fqdn"
 				}
 			},
-			"item_handlers": {
-				"get_api_key": "api_key",
-				"authenticate": "authenticate"
-			},
+			"item_handlers": [
+				"get_api_key",
+				"authenticate"
+			],
 			"attributes": {
 				"id": {
 					"field": "Id",
