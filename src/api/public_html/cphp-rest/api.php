@@ -49,104 +49,6 @@ class API extends ResourceBase
 		}
 	}
 	
-	public function ResolveResource($type, $id = null, $last = null, $primary_key = false, $filters = array())
-	{
-		/* The $last argument holds either null (if the resource is top-level) or the
-		 * object representing the resource that the requested resource is a child
-		 * of. The $primary_key argument specifies whether the specified resource
-		 * identifier is a primary key, rather than a regular identifier. Specify null
-		 * for the $id to retrieve a list of resources, rather than a single item. */
-		
-		if($last === null)
-		{
-			/* Top-level resource. */
-			if(array_key_exists($type, $this->config["resources"]))
-			{
-				/* This is a direct type specification. */
-				$type_name = $type;
-			}
-			else
-			{
-				/* This is a plural form (as used in a URL). */
-				$type_name = array_search($type, $this->resource_plurals);
-				
-				if($type_name === false)
-				{
-					throw new NotFoundException("Resource type for '{$type}' not found.");
-				}
-			}
-			
-			$resource_type = $this->config["resources"][$type_name];
-		}
-		else
-		{
-			/* Subresource. */
-			
-			$subresource_type_name = array_search($type, $last->subresource_plurals);
-			
-			if($subresource_type_name === false)
-			{
-				throw new NotFoundException("Resource type for '{$type}' not found.");
-			}
-			
-			$subresource_type = $last->config["subresources"][$subresource_type_name];
-			$type_name = $subresource_type["type"];
-			$resource_type = $this->config["resources"][$type_name];
-			
-			$last_id_field = $subresource_type["filter"];
-			$last_key = $last->config["primary_key"];
-			$last_id_value = $last->$last_key;
-			
-			$filters[$last_id_field] = $last_id_value;
-		}
-		
-		if($last === null)
-		{
-			$chain = array();
-		}
-		else
-		{
-			$chain = $last->chain;
-			$chain[] = $last; /* Add the last item itself.. */
-		}
-		
-		if($id !== null)
-		{
-			/* Specific object was requested. */
-			if($primary_key === true)
-			{
-				$current_id_field = $resource_type["primary_key"];
-			}
-			else
-			{
-				$current_id_field = (isset($subresource_type) && isset($subresource_type["identifier"])) ? $subresource_type["identifier"] : $resource_type["identifier"];
-			}
-			
-			$current_id_value = $id;
-			
-			$filters[$current_id_field] = $current_id_value;
-			
-			$resource = $this->ObtainResource($type_name, $filters);
-			$resource->chain = $chain;
-			
-			$last = $resource;
-			
-			return $resource;
-		}
-		else
-		{
-			/* List of objects was requested. */
-			$resources = $this->ObtainResourceList($type_name, $filters);
-			
-			foreach($resources as $resource)
-			{
-				$resource->chain = $chain;
-			}
-			
-			return $resources;
-		}
-	}
-	
 	public function Capitalize($name)
 	{
 		$capitalized_words = array();
@@ -214,6 +116,125 @@ class API extends ResourceBase
 					$this->list_methods["List" . $this->Capitalize($this->PluralizeResourceName($type))] = $type;
 				}
 			}
+		}
+	}
+	
+	public function ResolveResource($type, $id = null, $last = null, $primary_key = false, $filters = array())
+	{
+		/* The $last argument holds either null (if the resource is top-level) or the
+		 * object representing the resource that the requested resource is a child
+		 * of. The $primary_key argument specifies whether the specified resource
+		 * identifier is a primary key, rather than a regular identifier. Specify null
+		 * for the $id to retrieve a list of resources, rather than a single item. */
+		
+		if($last === null)
+		{
+			/* Top-level resource. */
+			if(array_key_exists($type, $this->config["resources"]))
+			{
+				/* This is a direct type specification. */
+				$type_name = $type;
+			}
+			else
+			{
+				/* This is a plural form (as used in a URL). */
+				$type_name = array_search($type, $this->resource_plurals);
+				
+				if($type_name === false)
+				{
+					throw new NotFoundException("Resource type for '{$type}' not found.");
+				}
+			}
+			
+			$resource_type = $this->config["resources"][$type_name];
+		}
+		else
+		{
+			/* Subresource. */
+			$subresource_type_name = array_search($type, $last->subresource_plurals);
+			
+			/* FIXME: This should be standardized more. */
+			if($subresource_type_name === false)
+			{
+				/* Perhaps it was specified in singular form? */
+				if(isset($last->config["subresources"][$type]))
+				{
+					$subresource_type_name = $type;
+				}
+				else
+				{
+					throw new NotFoundException("Resource type for '{$type}' not found.");
+				}
+			}
+			
+			$subresource_type = $last->config["subresources"][$subresource_type_name];
+			$type_name = $subresource_type["type"];
+			$resource_type = $this->config["resources"][$type_name];
+			
+			if(get_class($this) == "CPHP\REST\APIServer")
+			{
+				$last_id_field = $subresource_type["filter"];
+				$last_key = $last->config["primary_key"];
+				$last_id_value = $last->$last_key;
+				
+				$filters[$last_id_field] = $last_id_value;
+			}
+		}
+		
+		if($last === null)
+		{
+			$chain = array();
+		}
+		else
+		{
+			$chain = $last->chain;
+			$chain[] = $last; /* Add the last item itself.. */
+		}
+		
+		if($id !== null)
+		{
+			/* Specific object was requested. */
+			if($primary_key === true)
+			{
+				$current_id_field = $resource_type["primary_key"];
+			}
+			else
+			{
+				$current_id_field = (isset($subresource_type) && isset($subresource_type["identifier"])) ? $subresource_type["identifier"] : $resource_type["identifier"];
+			}
+			
+			$current_id_value = $id;
+			
+			$filters[$current_id_field] = $current_id_value;
+			
+			$resource = $this->ObtainResource($type_name, $filters, $id, $primary_key, $chain);
+			$resource->chain = $chain;
+			
+			if(isset($subresource_type_name))
+			{
+				$resource->subresource_type_name = $subresource_type_name;
+			}
+			
+			$last = $resource;
+			
+			return $resource;
+		}
+		else
+		{
+			/* List of objects was requested. */
+			$resources = $this->ObtainResourceList($type_name, $filters, $chain);
+			
+			foreach($resources as $resource)
+			{
+				$resource->chain = $chain;
+				
+				if(isset($subresource_type_name))
+				{
+					$resource->subresource_type_name = $subresource_type_name;
+				}
+			}
+			
+			return $resources;
 		}
 	}
 	
@@ -337,7 +358,7 @@ class API extends ResourceBase
 			{
 				if($ignore_missing === false)
 				{
-					throw new \Exception("Missing attribute in dataset.");
+					throw new \Exception("Missing attribute '{$attribute}' in dataset.");
 				}
 				else
 				{
@@ -490,6 +511,7 @@ class API extends ResourceBase
 		$sts .= $expiry . "\n"; /* Append the expiry timestamp and a newline. */
 		$sts .= strtoupper($verb) . "\n"; /* Append the request method (HTTP verb) in uppercase, and append a newline. */
 		$uri = ends_with($uri, "/") ? substr($uri, 0, strlen($uri) - 1) : $uri; /* Remove the trailing slash from the URI if it exists. */
+		$uri = (strpos($uri, "?") === false) ? $uri : explode("?", $uri, 2)[0]; /* Remove a GET query string if it is present. */
 		$sts .= $uri . "\n"; /* Append the requested URI, in the form /some/thing, and append a newline. */
 		
 		/* GET data is a little more complicated... We need to sort the POST data by

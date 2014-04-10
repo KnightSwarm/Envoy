@@ -124,9 +124,12 @@
 					"identifier": "nickname"
 				}
 			},
-			"item_handlers": [
-				"notify"
-			],
+			"item_handlers": {
+				"notify": {
+					"method": "POST",
+					"response": "json"
+				}
+			},
 			"attributes": {
 				"id": {
 					"field": "Id",
@@ -206,10 +209,17 @@
 					"identifier": "fqdn"
 				}
 			},
-			"item_handlers": [
-				"get_api_key",
-				"authenticate"
-			],
+			"item_handlers": {
+				"get_api_key": {
+					"method": "GET",
+					"response": "resource",
+					"type": "api_key"
+				},
+				"authenticate": {
+					"method": "POST",
+					"response": "json"
+				}
+			},
 			"attributes": {
 				"id": {
 					"field": "Id",

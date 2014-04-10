@@ -17,6 +17,8 @@ require("api.php");
 require("api-server.php");
 require("api-client.php");
 require("resource.php");
+require("handler.php");
+require("listrequest.php");
 
 class ResourceBase
 {
@@ -33,7 +35,14 @@ class ResourceBase
 			$is_resource = false;
 		}
 		
-		if(isset($this->item_methods[$method]))
+		if($is_resource && isset($this->capitalized_item_handlers[$method]))
+		{
+			$handler_name = $this->capitalized_item_handlers[$method];
+			$handler_obj = new Handler($this->api, $this, $handler_name, $arguments[0]);
+			$handler_obj->chain = array_merge($this->chain, array($this));
+			return $this->api->Execute($handler_obj); /* Immediately execute the call. */
+		}
+		elseif(isset($this->item_methods[$method]))
 		{
 			/* Retrieve a single resource. */
 			if(count($arguments) < 1)
@@ -55,8 +64,10 @@ class ResourceBase
 				if($is_resource)
 				{
 					/* A subresource is requested, so we will need to look up the actual type
-					 * name - the resource type specified is just the subresource type. */
-					$type = $this->types[$name];
+					 * name - the resource type specified is just the subresource type.
+					 * FIXME: This currently breaks, because the conversion would happen
+					 * twice in different places. Commented out for now. */
+					//$type = $this->types[$type];
 				}
 				
 				return $this->api->ResolveResource($type, $arguments[0], $last);
@@ -67,7 +78,17 @@ class ResourceBase
 			/* Retrieve an (optionally filtered) list of resources. */
 			$type = $this->list_methods[$method];
 			$filters = (count($arguments) >= 1) ? $arguments[0] : array();
-			$resources = $this->api->ResolveResource($this->PluralizeSubresourceName($type), null, $last, false, $filters);
+			
+			if($is_resource)
+			{
+				$plural = $this->PluralizeSubresourceName($type);
+			}
+			else
+			{
+				$plural = $this->PluralizeResourceName($type);
+			}
+			
+			$resources = $this->api->ResolveResource($plural, null, $last, false, $filters);
 			
 			if($is_resource)
 			{
@@ -84,15 +105,39 @@ class ResourceBase
 		}
 		else
 		{
+			throw new \Exception("boom!");
 			trigger_error('Call to undefined method '.__CLASS__.'::'.$method.'()', E_USER_ERROR);
+			return;
 		}
 	}
 }
 
-class NotFoundException extends \Exception {};
-class NotAuthorizedException extends \Exception {};
-class NotAuthenticatedException extends \Exception {};
-class MalformedRequestException extends \Exception {};
-class ConfigurationException extends \Exception {};
+class ApiException extends \Exception
+{
+	protected $api_message = "";
+	
+	public function __construct($message = "", $code = 0, $previous = null, $api_message = "")
+	{
+		$this->api_message = $api_message;
+		
+		parent::__construct($message, $code, $previous);
+	}
+	
+	public function GetApiMessage()
+	{
+		return $this->api_message;
+	}
+} 
+
+class NotFoundException extends ApiException {}
+class BadDataException extends ApiException {}
+class NotAuthorizedException extends ApiException {}
+class NotAuthenticatedException extends ApiException {}
+class UnknownException extends ApiException {}
+class AlreadyExistsException extends ApiException {}
+class InvalidArgumentException extends ApiException {}
+class MalformedRequestException extends ApiException {}
+class ConfigurationException extends ApiException {}
+
 class NonceException extends \Exception {};
 class HookException extends \Exception {};

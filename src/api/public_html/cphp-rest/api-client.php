@@ -20,16 +20,286 @@ class APIClient extends API
 	public function __construct($endpoint)
 	{
 		$this->endpoint = $endpoint;
+		$this->request_cache = array();
 		parent::__construct();
 	}
 	
-	public function ObtainResourceList($type, $filters)
+	public function Authenticate($api_id, $api_key)
 	{
-		/* FIXME: Build URI against API */
+		$this->api_id = $api_id;
+		$this->api_key = $api_key;
 	}
 	
-	public function ObtainResource($type, $filters)
+	public function BuildUrl($object)
 	{
-		/* FIXME: Build URI against API */
+		/* FIXME: List URLs... */
+		$components = array();
+		$last = null;
+		
+		foreach($object->chain as $item)
+		{
+			$components[] = $this->GenerateUrlComponent($item, $last);
+			$last = $item;
+		}
+		
+		$components[] = $this->GenerateUrlComponent($object, $last);
+		
+		return implode("/", $components);
+	}
+	
+	public function GenerateUrlComponent($object, $last)
+	{
+		if(get_class($object) === "CPHP\REST\Resource")
+		{
+			$id = $object->_api_id;
+			$type_name = isset($object->subresource_type_name) ? $object->subresource_type_name : $object->type;
+			
+			if($last !== null)
+			{
+				$plural = $last->PluralizeSubresourceName($type_name);
+			}
+			else
+			{
+				$plural = $this->PluralizeResourceName($type_name);
+			}
+			
+			return "{$plural}/{$id}";
+		}
+		elseif(get_class($object) === "CPHP\REST\Handler")
+		{
+			return $object->handler_name;
+		}
+		elseif(get_class($object) === "CPHP\REST\ListRequest")
+		{
+			if($last !== null)
+			{
+				$plural = $last->PluralizeSubresourceName($object->type);
+			}
+			else
+			{
+				$plural = $this->PluralizeResourceName($object->type);
+			}
+			
+			return $plural;
+		}
+	}
+	
+	public function ObtainResourceList($type, $filters, $chain = array())
+	{
+		$list = new ListRequest($this, $type, $filters);
+		$list->chain = $chain;
+		return $this->Execute($list);
+	}
+	
+	public function ObtainResource($type, $filters, $id, $primary_key = false, $chain = array())
+	{
+		$obj = $this->api->BlankResource($type);
+		$obj->_lazy_load = true;
+		$obj->_api_id = $id;
+		$obj->_primary_key = $primary_key;
+		return $obj;
+	}
+	
+	public function Execute($object)
+	{
+		$path = $this->BuildUrl($object);
+		
+		if(get_class($object) == "CPHP\REST\Handler")
+		{
+			$handler_config = $object->object->config["item_handlers"][$object->handler_name];
+			$method = $handler_config["method"];
+			$response = $this->DoRequest($method, $path, $object->parameters);
+			
+			if($handler_config["response"] == "json")
+			{
+				/* Response was opaque JSON; just return it as is. */
+				return $response;
+			}
+			elseif($handler_config["response"] == "resource")
+			{
+				/* Create new resource and populate data. */
+				$resource = $this->api->BlankResource($handler_config["type"]);
+				$resource->PopulateData($this->api->SerializedToAttributes($handler_config["type"], $response));
+				return $resource;
+			}
+			elseif($handler_config["response"] = "list")
+			{
+				/* Create new list of resources and populate data. */
+				$resources = array();
+				
+				foreach($response as $item)
+				{
+					$resource = $this->api->BlankResource($handler_config["type"]);
+					$resource->PopulateData($this->api->SerializedToAttributes($handler_config["type"], $response));
+					$resources[] = $resource;
+				}
+				
+				return $resources;
+			}
+			else
+			{
+				throw new ConfigurationException("No valid expected response type configured for custom '{$object->handler_name}' handler on '{$object->object->type}' type.");
+			}
+		}
+		elseif(get_class($object) == "CPHP\REST\Resource")
+		{
+			/* Fetch the data for the resource. */
+			$method = "GET";
+			
+			if(!empty($object->_primary_key))
+			{
+				$parameters = array("_primary_key" => "true");
+			}
+			else
+			{
+				$parameters = array();
+			}
+			
+			$response = $this->DoRequest($method, $path, $parameters);
+			
+			/* When this method is called, we already have an object that
+			 * we're lazy-loading for. Just return the serialized data, instead
+			 * of an object. The object will take care of populating that data. */
+			return $response;
+		}
+		elseif(get_class($object) == "CPHP\REST\ListRequest")
+		{
+			/* Fetch a list of resources... */
+			$method = "GET";
+			$response = $this->DoRequest($method, $path, $object->filters);
+			
+			$resources = array();
+			
+			foreach($response as $item)
+			{
+				$resource = $this->api->BlankResource($object->type);
+				$resource->PopulateData($this->api->SerializedToAttributes($object->type, $item));
+				$resources[] = $resource;
+			}
+			
+			return $resources;
+		}
+	}
+	
+	public function DoRequest($method, $path, $parameters = array(), $cache = true)
+	{
+		if(!starts_with($path, "/"))
+		{
+			$path = "/" . $path;
+		}
+		
+		if($cache === true && strtolower($method) === "get" && array_key_exists($path, $this->request_cache))
+		{
+			/* This is just a short-lived cache for the same resource reference
+			 * appearing multiple times in the same pageload. */
+			return $this->request_cache[$path];
+		}
+		
+		/* Start request signing code */
+		$get_data = (strtolower($method) == "get") ? $parameters : array();
+		$post_data = (strtolower($method) == "post") ? $parameters : array();
+		$nonce = random_string(16);
+		$expiry = time() + $this->expiry;
+		
+		$signature = $this->Sign($this->api_key, $method, $path, $get_data, $post_data, $nonce, $expiry);
+		/* End request signing code */
+		
+		if(isset($this->logger)) { $this->logger->addDebug("Request", array("method" => $method, "path" => $path, "post_data" => $post_data, "get_data" => $get_data, "signature" => $signature)); }
+		
+		if(strtolower($method) == "get" && !empty($parameters))
+		{
+			$fields = array();
+			
+			foreach($parameters as $key => $value)
+			{
+				$fields[] = rawurlencode($key) . "=" . rawurlencode($value);
+			}
+			
+			$full_path = $path . "?" . implode("&", $fields);
+		}
+		else
+		{
+			$full_path = $path;
+		}
+		
+		$url = $this->endpoint . $full_path;
+		$curl = curl_init();
+		
+		curl_setopt_array($curl, array(
+			CURLOPT_URL		=> $url,
+			CURLOPT_RETURNTRANSFER	=> true,
+			CURLOPT_USERAGENT	=> "CPHP-REST API Library/1.0",
+			CURLOPT_HTTPHEADER	=> array(
+				"API-Id: {$this->api_id}",
+				"API-Signature: {$signature}",
+				"API-Expiry: {$expiry}",
+				"API-Nonce: {$nonce}",
+				"Expect:" /* something something ridiculous something something */
+			)
+		));
+		
+		if(strtolower($method) == "post")
+		{
+			curl_setopt_array($curl, array(
+				CURLOPT_POST		=> true,
+				CURLOPT_POSTFIELDS	=> $parameters
+			));
+		}
+		
+		if($result = curl_exec($curl))
+		{
+			$json = json_decode($result, true);
+			
+			if(isset($this->logger)) { $this->logger->addDebug("Response", array("response" => $result)); }
+			
+			if(json_last_error() != JSON_ERROR_NONE)
+			{
+				if(isset($this->logger)) { $this->logger->addError("The response returned by the API was not valid JSON.", array("response" => $result)); }
+				
+				throw new ApiException("The response returned by the API was not valid JSON.", 0, null, $result);
+			}
+			
+			$status = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+			
+			switch($status)
+			{
+				case 200:
+					/* All went perfectly. */
+					if($cache === true && strtolower($method) === "get")
+					{
+						$this->request_cache[$path] = $json;
+					}
+					
+					return $json;
+				case 400:
+					/* Bad or incomplete request data was provided. */
+					throw new BadDataException("The provided parameters were invalid or incomplete.", 0, null, $json["error"]);
+				case 401:
+					/* The client is not authenticated. */
+					throw new NotAuthenticatedException("No valid API credentials were provided.", 0, null, $json["error"]);
+				case 403:
+					/* The client is trying to access or modify a resource they are not permitted to access. */
+					throw new NotAuthorizedException("The provided API credentials do not grant access to this resource or operation.", 0, null, $json["error"]);
+				case 404:
+					/* The specified resource does not exist. */
+					throw new NotFoundException("The specified resource does not exist.", 0, null, $json["error"]);
+				case 409:
+					/* The client tried to create a resource that already exists. */
+					throw new AlreadyExistsException("A resource with the specified identifier already exists.", 0, null, $json["error"]);
+				case 422:
+					/* The client tried to make a request, but (part of) the request data was invalid. */
+					throw new InvalidArgumentException("One or more of the specified parameters contained invalid data.", 0, null, $json["error"]);
+				default:
+					throw new ApiException("An unrecognized status code ({$status}) was returned.", 0, null, $json["error"]);
+			}
+			
+			return $json;
+		}
+		else
+		{
+			$error = curl_error($curl);
+			$errno = curl_errno($curl);
+			throw new UnknownException("cURL failed with error {$errno} ({$error})");
+		}
 	}
 }

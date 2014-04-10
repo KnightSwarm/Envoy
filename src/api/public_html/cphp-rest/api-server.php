@@ -63,7 +63,7 @@ class APIServer extends API
 					}
 					catch (NotFoundException $e)
 					{
-						if($last !== null && in_array($query[0], $last->custom_item_handlers))
+						if($last !== null && array_key_exists($query[0], $last->custom_item_handlers))
 						{
 							//$response = $last->custom_item_handlers[$query[0]]($last);
 							$response = $this->registered_item_handlers[$last->type][$query[0]]($last);
@@ -207,7 +207,9 @@ class APIServer extends API
 			$nonce = $_SERVER['HTTP_API_NONCE'];
 			$expiry = $_SERVER['HTTP_API_EXPIRY'];
 			
-			if($this->VerifySignature($signature, $signing_key, $verb, $uri, $_GET, $_POST, $nonce, $expiry) !== true)
+			$signature_correct = $this->VerifySignature($signature, $signing_key, $verb, $uri, $_GET, $_POST, $nonce, $expiry);
+			
+			if($signature_correct !== true)
 			{
 				throw new NotAuthenticatedException("The request signature was invalid.");
 			}
@@ -315,7 +317,7 @@ class APIServer extends API
 		return array($query, $values);
 	}
 	
-	public function ObtainResourceList($type, $filters)
+	public function ObtainResourceList($type, $filters, $chain = array())
 	{
 		global $database;
 		list($query, $params) = $this->BuildQuery($type, $filters);
@@ -342,7 +344,7 @@ class APIServer extends API
 		}
 	}
 	
-	public function ObtainResource($type, $filters)
+	public function ObtainResource($type, $filters, $id = null, $primary_key = false, $chain = array())
 	{
 		/* $filters: A single filter for a normal identifier query, or
 		 * multiple filters if a subresource. */

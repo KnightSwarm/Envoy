@@ -18,219 +18,78 @@
 
 $_APP = true;
 
-use CPHP\REST;
+$_CPHP = true;
+$_CPHP_CONFIG = "../../config.json";
+require("cphp/base.php");
 
-function get_fqdn_access_level($fqdn, $keypair)
-{
-	$api_permissions = $keypair->ListPermissions(array("fqdn" => $fqdn->id));
-	$user_permissions = $keypair->user->ListPermissions(array("fqdn" => $fqdn->id));
-	
-	$lowest_level = false;
-	
-	/* We can merge the arrays, since both API permissions and user permissions
-	 * expose roughly the same interface. */
-	foreach(array_merge($api_permissions, $user_permissions) as $permission)
-	{
-		/* Retrieve the original value, rather than the enum representation. *//
-		$level = $api->EnumValue("access_level_enum", $permission->access_level);
-		
-		if($lowest_level === false || $level < $lowest_level)
-		{
-			$lowest_level = $level;
-		}
-	}
-	
-	if($lowest_level === false)
-	{
-		/* No permissions were found... */
-		return 0;
-	}
-	else
-	{
-		return $lowest_level;
-	}
-}
+$_CPHP_REST = true;
+require("cphp-rest/base.php");
 
-$API = new API();
-$API->LoadConfiguration("../api.json");
+use \CPHP\REST;
 
-/* Possible actions:
- * get (retrieve)
- * update (change)
- * create (new item)
- * delete (existing item)
- */
+$API = new \CPHP\REST\APIServer();
+$API->LoadConfiguration("../../api.json"); 
 
-$API->RegisterAuthenticator("fqdn", function($fqdn, $keypair, $action) {
-	if($write === false)
-	{
-		/* The user must have read access to the FQDN. */
-		return (get_fqdn_access_level($fqdn, $keypair) >= $API->EnumValue("access_level_enum", "read"));
-	}
-	else
-	{
-		/* The owner of the keypair must have administrative write access to
-		 * the FQDN. */
-		return (get_fqdn_access_level($fqdn, $keypair) >= $API->EnumValue("access_level_enum", "administrative"));
-	}
+$API->RegisterDecoder("room", "jid", function($api, $value, $filters){
+	list($roomname, $fqdn) = explode("@", $value, 2);
+	$fqdn = $api->Fqdn($fqdn);
+	return array("fqdn" => $fqdn->id, "roomname" => $roomname);
 });
 
-$API->RegisterAuthenticator("user", function($user, $keypair, $action) {
-	$access_level = get_fqdn_access_level($user->fqdn, $keypair);
-	if($user->id == $keypair->user->id)
+$API->RegisterEncoder("room", "jid", function($api, $resource){
+	return "{$resource->roomname}@{$resource->fqdn->fqdn}";
+});
+
+$API->RegisterDecoder("user", "jid", function($api, $value, $filters){
+	list($username, $fqdn) = explode("@", $value, 2);
+	return array("fqdn_string" => $fqdn, "username" => $username);
+});
+
+$API->RegisterEncoder("user", "jid", function($api, $resource){
+	return "{$resource->username}@{$resource->fqdn_string}";
+});
+
+$API->RegisterEncoder("user", "full_name", function($api, $resource){
+	return "{$resource->first_name} {$resource->last_name}";
+});
+
+$API->RegisterEncoder("api_key", "access_level", function($api, $resource){
+	try
 	{
-		if($write === false || $access_level >= $API->EnumValue("access_level_enum", "write"))
-		{
-			return true;
-		}
+		/* Find service-wide permissions, if any. */
+		$permissions = $resource->ListPermissions(array("fqdn" => 0));
 	}
-	elseif($write === false && $access_level >= $API->EnumValue("access_level_enum", "administrative_read"))
+	catch (NotFoundException $e)
 	{
-		return true;
-	}
-	elseif($access_level >= $API->EnumValue("access_level_enum", "administrative"))
-	{
-		return true;
+		/* No service-wide permissions. */
+		$permissions = array();
 	}
 	
-	return false;
-});
-
-$API->RegisterAuthenticator("room", function($room, $keypair, $action) {
-	/* Either the room must be public, or the owner of the keypair must have at
-	 * least a "member" affiliation with the room, or the owner of the keypair must
-	 * have administrative access within the FQDN. */
-	if($write === false)
+	/* Master (server-only) access. */
+	foreach($permissions as $permission)
 	{
-		if($room->is_public === true || get_fqdn_access_level($room->fqdn, $keypair) >= $API->EnumValue("access_level_enum", "administrative_read"))
+		if($permission->access_level == 200 && $resource->type == "server")
 		{
-			return true;
+			return 200;
 		}
-		else
-		{
-			foreach($room->ListAffiliations(array("user" => $keypair->user->id)) as $affiliation)
-			{
-				if(in_array($affiliation->affiliation, array("owner", "admin", "member")))
-				{
-					return true;
-				}
-			}
-			
-			/* If no matches... */
-			return false;
-		}
-	}
-	else
-	{
-		/* The owner of the keypair must either have an admin or owner
-		 * affiliation with the room, or have administrative write access
-		 * within the FQDN. */
-		if(get_fqdn_access_level($room->fqdn, $keypair) >= $API->EnumValue("access_level_enum", "administrative"))
-		{
-			return true;
-		}
-		else
-		{
-			foreach($room->ListAffiliations(array("user" => $keypair->user->id)) as $affiliation)
-			{
-				if(in_array($affiliation->affiliation, array("owner", "admin")))
-				{
-					return true;
-				}
-			}
-			
-			/* If no matches... */
-			return false;
-		}
-	}
-});
-
-$API->RegisterAuthenticator("affiliation", function($affiliation, $keypair, $action) {
-	if($write === false)
-	{
-		/* Either the affliation must belong to the owner of the keypair, or the affiliation
-		 * must belong to a public room, or the owner of the keypair must have
-		 * administrative access within the FQDN. */
-		return (($user->id == $keypair->user->id) || (get_fqdn_access_level($user->fqdn, $keypair) >= $API->EnumValue("access_level_enum", "read")));
-	}
-	else
-	{
-		/* Either the owner of the keypair must have an admin or owner
-		 * position in the room that the affiliation belongs to, or the owner
-		 * of the keypair must have administrative access within the FQDN. */
-		if(get_fqdn_access_level($room->fqdn, $keypair) >= $API->EnumValue("access_level_enum", "administrative"))
-		{
-			return true;
-		}
-		else
-		{
-			foreach($affiliation->room->ListAffiliations(array("user" => $keypair->user->id)) as $affiliation)
-			{
-				if(in_array($affiliation->affiliation, array("owner", "admin")))
-				{
-					return true;
-				}
-			}
-			
-			/* If no matches... */
-			return false;
-		}
-	}
-});
-
-$API->RegisterAuthenticator("api_key", function($api_key, $keypair, $action) {
-	$access_level = get_fqdn_access_level($api_key->user->fqdn, $keypair);
-	if($api_key->user->id == $keypair->user->id)
-	{
-		if($write === false || $access_level >= $API->EnumValue("access_level_enum", "write"))
-		{
-			return true;
-		}
-	}
-	elseif($write === false && $access_level >= $API->EnumValue("access_level_enum", "administrative_read"))
-	{
-		return true;
-	}
-	elseif($access_level >= $API->EnumValue("access_level_enum", "administrative"))
-	{
-		return true;
 	}
 	
-	return false;
-});
-
-$API->RegisterAuthenticator("api_permission", function($api_key, $keypair, $action) {
-	$access_level = get_fqdn_access_level($api_key->user->fqdn, $keypair);
-	if($api_key->user->id == $keypair->user->id)
+	/* Service-administrative access. */
+	foreach($permissions as $permission)
 	{
-		if($write === false || $access_level >= $API->EnumValue("access_level_enum", "write"))
+		if($permission->access_level == 150 && $resource->user->access_level >= 150)
 		{
-			return true;
+			return 150;
 		}
 	}
-	elseif($write === false && $access_level >= $API->EnumValue("access_level_enum", "administrative_read"))
-	{
-		return true;
-	}
-	elseif($access_level >= $API->EnumValue("access_level_enum", "administrative"))
-	{
-		return true;
-	}
 	
-	return false;
-});
-
-
-$API->RegisterDecoder("room", "jid", function($resource) {
-	return $resource->roomname . "@" . $resource->fqdn->fqdn;
-});
-
-$API->RegisterDecoder("user", "jid", function($resource) {
-	return $resource->username . "@" . $resource->fqdn->fqdn;
+	/* There are no service-wide permissions for this key. Return 0 and
+	 * let the authenticators sort out the FQDN-specific permissions. */
+	return 0;
 });
 
 $API->RegisterHandler("room", "notify", function($room) {
-	$handler = new CPHPFormHandler();
+	$handler = new CPHPFormHandler($_POST, true);
 	
 	try
 	{
@@ -246,7 +105,7 @@ $API->RegisterHandler("room", "notify", function($room) {
 	$context = new ZMQContext();
 	$query_socket = new ZMQSocket($context, ZMQ::SOCKET_PUSH);
 	$query_socket->connect("tcp://127.0.0.1:18081");
-	
+
 	$payload = array(
 		"type" => "room_notification",
 		"args" => array(
@@ -260,193 +119,7 @@ $API->RegisterHandler("room", "notify", function($room) {
 	
 	$query_socket->send(json_encode($payload));
 	
-	return $payload;
+	return true;
 });
 
-/* Old API code below */
-
-require("include/base.php");
-
-if(empty($_SERVER['HTTP_ENVOY_API_ID']) || empty($_SERVER['HTTP_ENVOY_API_SIGNATURE']))
-{
-	header('WWW-Authenticate: EnvoyAPIKey realm="Envoy API"');
-	http_status_code(401);
-	echo(json_encode(array("error" => "You did not provide API credentials.")));
-	die();
-}
-
-$uApiId = $_SERVER['HTTP_ENVOY_API_ID'];
-$uApiSignature = $_SERVER['HTTP_ENVOY_API_SIGNATURE'];
-
-try
-{
-	$sApiKeypair = ApiKeypair::CreateFromQuery("SELECT * FROM api_keys WHERE `ApiId` = :ApiId", array(":ApiId" => $uApiId), 60, true);
-	
-	/* Remove query string from URI for signing. */
-	$requestpath = $_SERVER['REQUEST_URI'];
-	if(strpos($requestpath, "?") !== false)
-	{
-		list($requestpath, $bogus) = explode("?", $requestpath, 2);
-	}
-	
-	$authorized = verify_request($uApiSignature, $sApiKeypair->uApiKey, strtoupper($_SERVER['REQUEST_METHOD']), $requestpath, $_GET, $_POST);
-}
-catch (NotFoundException $e)
-{
-	$authorized = false;
-}
-
-if($authorized === false)
-{
-	header('WWW-Authenticate: EnvoyAPIKey realm="Envoy API"');
-	http_status_code(401);
-	echo(json_encode(array("error" => "The API credentials you provided are invalid.")));
-	die();
-}
-
-$sResponse = array();
-$sCode = 200;
-
-$router = new CPHPRouter();
-
-$router->allow_slash = true;
-$router->ignore_query = true;
-
-$router->routes = array(
-	0 => array(
-		"^/$"		=> "list.php",
-		"^/echo$"	=> array(
-			"methods"	=> array("post", "get"),
-			"target"	=> "modules/echo.php"
-		),
-		"^/user/register$"	=> array(
-			"methods"	=> "post",
-			"target"	=> "modules/user/register.php",
-			"authenticator"	=> "authenticators/fqdn_exists.php",
-			"auth_error"	=> ""
-		),
-		"^/user/lookup$"	=> array(
-			"methods"	=> "get",
-			"target"	=> "modules/user/lookup.php",
-			"authenticator"	=> "authenticators/fqdn_exists.php",
-			"auth_error"	=> ""
-		),
-		"^/user/authenticate$"	=> array(
-			"methods"	=> "get",
-			"target"	=> "modules/user/authenticate.php",
-			"authenticator"	=> "authenticators/fqdn_exists.php",
-			"auth_error"	=> ""
-		),
-		"^/user/settings/lookup"=> array(
-			"methods"	=> "get",
-			"target"	=> "modules/user/settings/lookup.php",
-			"authenticator"	=> "authenticators/fqdn_exists.php",
-			"auth_error"	=> ""
-		),
-		"^/user/settings/set"=> array(
-			"methods"	=> "post",
-			"target"	=> "modules/user/settings/set.php",
-			"authenticator"	=> "authenticators/fqdn_exists.php",
-			"auth_error"	=> ""
-		),
-		"^/user/api-key"=> array(
-			"methods"	=> "get",
-			"target"	=> "modules/user/api_key.php",
-			"authenticator"	=> "authenticators/fqdn_exists.php",
-			"auth_error"	=> ""
-		),
-		"^/room$"		=> array(
-			"methods"	=> "get",
-			"target"	=> "modules/room/list.php",
-			"authenticator"	=> "authenticators/fqdn_exists.php",
-			"auth_error"	=> ""
-		),
-		"^/room/lookup$"	=> array(
-			"methods"	=> "get",
-			"target"	=> "modules/room/lookup.php",
-			"authenticator"	=> "authenticators/fqdn_exists.php",
-			"auth_error"	=> ""
-		),
-		"^/room/create"	=> array(
-			"methods"	=> "post",
-			"target"	=> "modules/room/create.php",
-			"authenticator"	=> "authenticators/fqdn_exists.php",
-			"auth_error"	=> ""
-		),
-		"^/fqdn$"		=> array(
-			"methods"	=> "get",
-			"target"	=> "modules/fqdn/list.php"
-		),
-		"^/fqdn/create$"	=> array(
-			"methods"	=> "post",
-			"target"	=> "modules/fqdn/create.php"
-		),
-		"^/fqdn/lookup$"	=> array(
-			"methods"	=> "get",
-			"target"	=> "modules/fqdn/lookup.php",
-			"authenticator"	=> "authenticators/fqdn_exists.php",
-			"auth_error"	=> ""
-		)
-	)
-);
-
-try
-{
-	$router->RouteRequest();
-}
-catch (RouterException $e)
-{
-	http_status_code(404);
-	echo(json_encode(array("error" => "The specified path is invalid.", "type" => "path")));
-	die();
-}
-catch (MissingParameterException $e)
-{
-	http_status_code(400);
-	echo(json_encode(array("error" => $e->getMessage())));
-	die();
-}
-catch (InvalidFqdnException $e)
-{
-	http_status_code(422);
-	echo(json_encode(array("error" => $e->getMessage())));
-	die();
-}
-catch (NotAuthorizedException $e)
-{
-	http_status_code(403);
-	echo(json_encode(array("error" => $e->getMessage())));
-	die();
-}
-catch (ResourceNotFoundException $e)
-{
-	http_status_code(404);
-	echo(json_encode(array("error" => $e->getMessage(), "type" => "resource")));
-	die();
-}
-catch (AlreadyExistsException $e)
-{
-	http_status_code(409);
-	echo(json_encode(array("error" => $e->getMessage())));
-	die();
-}
-catch (InvalidParameterException $e)
-{
-	http_status_code(400);
-	echo(json_encode(array("error" => $e->getMessage())));
-	die();
-}
-catch (Exception $e)
-{
-	echo($e);
-	/* TODO: Log error, this should really never happen. */
-	http_status_code(500);
-	echo(json_encode(array("error" => "An unknown error occurred.")));
-	die();
-}
-
-http_status_code($sCode);
-
-echo(json_encode(array(
-	"response" => $sResponse
-)));
+$API->ProcessRequest();

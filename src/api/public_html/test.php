@@ -8,6 +8,30 @@ require("cphp-rest/base.php");
 
 use \CPHP\REST;
 
+//$API = new \CPHP\REST\APIClient("http://api.envoy.local:8080");
+$API = new \CPHP\REST\APIClient("http://api.envoy.local");
+$API->LoadConfiguration("../../api.json"); 
+$API->Authenticate("test", "test");
+
+try
+{
+	//pretty_dump($API->Fqdn("envoy.local")->Room("testingroom13")->Notify(array("message" => "Hi!")));
+	//pretty_dump($API->Fqdn("envoy.local")->owner->jid);
+	/*foreach($API->Fqdn("envoy.local")->Room("testingroom13")->ListAffiliations() as $affiliation)
+	{
+		echo("<strong>{$affiliation->user->jid}</strong>: ({$affiliation->room->jid}) {$affiliation->affiliation}<br>");
+	}*/
+	pretty_dump($API->ListFqdns()[0]->fqdn);
+}
+catch (CPHP\REST\ApiException $e)
+{
+	echo("API ERROR: " . $e->GetApiMessage());
+	throw $e;
+}
+
+die();
+
+
 $API = new \CPHP\REST\APIServer();
 $API->LoadConfiguration("../../api.json");
 

@@ -29,6 +29,8 @@ class Resource extends ResourceBase
 		$this->types = array();
 		$this->chain = array();
 		$this->custom_item_handlers = array();
+		$this->capitalized_item_handlers = array();
+		$this->data = array();
 		
 		$this->ProcessConfiguration($config);
 	}
@@ -78,9 +80,11 @@ class Resource extends ResourceBase
 		
 		if(!empty($config["item_handlers"]))
 		{
-			foreach($config["item_handlers"] as $handler_name)
+			foreach($config["item_handlers"] as $handler_name => $options)
 			{
-				$this->custom_item_handlers[] = $handler_name;
+				$capitalized = $this->api->Capitalize($handler_name);
+				$this->custom_item_handlers[$handler_name] = $options;
+				$this->capitalized_item_handlers[$capitalized] = $handler_name;
 			}
 		}
 	}
@@ -92,6 +96,13 @@ class Resource extends ResourceBase
 	
 	public function __get($key)
 	{
+		if(!empty($this->_lazy_load) && empty($this->data))
+		{
+			/* Retrieve the data for this resource first. */
+			$response = $this->api->Execute($this);
+			$this->PopulateData($this->api->SerializedToAttributes($this->type, $response));
+		}
+		
 		if(array_key_exists($key, $this->config["attributes"]))
 		{
 			$type = $this->config["attributes"][$key]["type"];
@@ -106,16 +117,23 @@ class Resource extends ResourceBase
 					return $this->data[$key];
 					break;
 				default:
-					/* This is a resource identifier; we need to lazy-load the resource. 
-					 * A special _primary_key flag is used for this; in some cases, the
-					 * root resource identifier may differ from the primary key (as it is
-					 * used in this reference). We will always want to identify referenced
-					 * resources by their primary key, rather than by their regular root
-					 * identifier. */
-					return $this->api->ResolveResource($type, $this->data[$key], null, true);
+					if(array_key_exists($type, $this->api->config["enums"]))
+					{
+						/* This is an enum value of some sort. */
+						return $this->data[$key];
+					}
+					else
+					{
+						/* This is a resource identifier; we need to lazy-load the resource. 
+						 * A special _primary_key flag is used for this; in some cases, the
+						 * root resource identifier may differ from the primary key (as it is
+						 * used in this reference). We will always want to identify referenced
+						 * resources by their primary key, rather than by their regular root
+						 * identifier. */
+						return $this->api->ResolveResource($type, $this->data[$key], null, true);
+					}
 			}
 		}
-		return $this->data[$key];
 	}
 }
 
