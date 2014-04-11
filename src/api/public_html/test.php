@@ -21,10 +21,18 @@ try
 	{
 		echo("<strong>{$affiliation->user->jid}</strong>: ({$affiliation->room->jid}) {$affiliation->affiliation}<br>");
 	}*/
-	pretty_dump($API->ListFqdns()[0]->fqdn);
+	//pretty_dump($API->Fqdn("envoy.local")->fqdn);
+	/*$new_user = $API->Fqdn("envoy.local")->User();
+	$new_user->username = "blah";
+	$new_user->DoCommit();*/
+	$aff = $API->Fqdn("envoy.local")->User("testuser")->Affiliation();
+	$aff->room = $API->Fqdn("envoy.local")->Room("testingroom13");
+	$aff->affiliation = "owner";
+	$aff->DoCommit();
 }
 catch (CPHP\REST\ApiException $e)
 {
+	/* FIXME: Remove in final. */
 	echo("API ERROR: " . $e->GetApiMessage());
 	throw $e;
 }

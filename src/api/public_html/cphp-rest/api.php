@@ -30,6 +30,16 @@ class API extends ResourceBase
 		$this->expiry = 60 * 60 * 24; /* TODO: Make this configurable. */
 	}
 	
+	public function Pluralize($type)
+	{
+		return $this->PluralizeResourceName($type);
+	}
+	
+	public function Singularize($type)
+	{
+		return $this->SingularizeResourceName($type);
+	}
+	
 	public function SerializeResults($results)
 	{
 		if(is_array($results))
@@ -46,6 +56,18 @@ class API extends ResourceBase
 		else
 		{
 			return json_encode($results->serialized);
+		}
+	}
+	
+	public function ParseNumeric($value)
+	{
+		if(strpos($value, ".") !== false)
+		{
+			return (float) $value;
+		}
+		else
+		{
+			return (int) $value;
 		}
 	}
 	
@@ -70,6 +92,20 @@ class API extends ResourceBase
 		else
 		{
 			return "{$name}s";
+		}
+	}
+	
+	public function SingularizeResourceName($name)
+	{
+		$result = array_search($name, $this->resource_plurals);
+		
+		if($result !== false)
+		{
+			return $result;
+		}
+		else
+		{
+			throw new \Exception("No singular version of '{$name}' found.");
 		}
 	}
 	
@@ -119,6 +155,13 @@ class API extends ResourceBase
 		}
 	}
 	
+	public function GetRealSubresourceType($subresource_type)
+	{
+		/* Shim to standardize behaviour between API and Resource. This method
+		 * will just return whatever the input is. */
+		return $subresource_type;
+	}
+	
 	public function ResolveResource($type, $id = null, $last = null, $primary_key = false, $filters = array())
 	{
 		/* The $last argument holds either null (if the resource is top-level) or the
@@ -138,7 +181,7 @@ class API extends ResourceBase
 			else
 			{
 				/* This is a plural form (as used in a URL). */
-				$type_name = array_search($type, $this->resource_plurals);
+				$type_name = $this->Singularize($type);
 				
 				if($type_name === false)
 				{
@@ -151,10 +194,11 @@ class API extends ResourceBase
 		else
 		{
 			/* Subresource. */
-			$subresource_type_name = array_search($type, $last->subresource_plurals);
-			
-			/* FIXME: This should be standardized more. */
-			if($subresource_type_name === false)
+			try
+			{
+				$subresource_type_name = $last->Singularize($type);
+			}
+			catch (\Exception $e)
 			{
 				/* Perhaps it was specified in singular form? */
 				if(isset($last->config["subresources"][$type]))
@@ -209,6 +253,8 @@ class API extends ResourceBase
 			
 			$resource = $this->ObtainResource($type_name, $filters, $id, $primary_key, $chain);
 			$resource->chain = $chain;
+			$resource->_original_identifier_field = $current_id_field;
+			$resource->_original_identifier_value = $current_id_value;
 			
 			if(isset($subresource_type_name))
 			{
@@ -346,6 +392,69 @@ class API extends ResourceBase
 		return $attributes;
 	}
 	
+	public function AttributesToSerialized($object, $data, $ignore_missing = false)
+	{
+		$type = $object->type;
+		$results = array();
+		
+		foreach($this->config["resources"][$type]["attributes"] as $attribute => $settings)
+		{
+			if(!array_key_exists($attribute, $data))
+			{
+				if($ignore_missing === false)
+				{
+					throw new \Exception("Missing attribute '{$attribute}' in dataset.");
+				}
+				else
+				{
+					continue; /* Ignore. */
+				}
+			}
+			
+			if($settings["type"] == "custom")
+			{
+				/* This can be ignored safely. */
+				continue;
+			}
+			else
+			{
+				switch($settings["type"])
+				{
+					case "string":
+						$value = $data[$attribute];
+						break;
+					case "numeric":
+					case "timestamp":
+						/* Cast to string. */
+						$value = (string) $data[$attribute];
+						break;
+					case "boolean":
+						/* Don't touch it. */
+						$value = $data[$attribute];
+						break;
+					default:
+						/* This is a resource identifier. It can be either an integer - in
+						 * which case we cast it to a string - or an object, in which case
+						 * we extract its ID. */
+						if(is_object($data[$attribute]) && get_class($data[$attribute]) == "CPHP\REST\Resource")
+						{
+							$attribute_object = $data[$attribute];
+							$value = (string) $attribute_object->GetPrimaryId();
+						}
+						else
+						{
+							$value = (string) $data[$attribute];
+						}
+						break;
+				}
+				
+				$results[$attribute] = $value;
+			}
+		}
+		
+		return $results;
+	}
+	
 	public function SerializedToAttributes($type, $data, $ignore_missing = false)
 	{
 		/* $ignore_missing is used for the creation of mock resource objects, where
@@ -380,14 +489,7 @@ class API extends ResourceBase
 						break;
 					case "numeric":
 						/* Cast back to a float or int. */
-						if(strpos($data[$attribute], ".") !== false)
-						{
-							$value = (float) $data[$attribute];
-						}
-						else
-						{
-							$value = (int) $data[$attribute];
-						}
+						$value = $this->ParseNumeric($data[$attribute]);
 						break;
 					case "timestamp":
 						/* Cast back to an int. */

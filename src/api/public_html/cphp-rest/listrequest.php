@@ -17,6 +17,8 @@ if(!isset($_CPHP_REST)) { die("Unauthorized."); }
 
 class ListRequest extends ResourceBase
 {
+	public $chain = array();
+	
 	function __construct($api, $type, $filters)
 	{
 		$this->api = $api;

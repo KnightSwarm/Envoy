@@ -45,22 +45,25 @@ class ResourceBase
 		elseif(isset($this->item_methods[$method]))
 		{
 			/* Retrieve a single resource. */
+			$type = $this->item_methods[$method];
+			
 			if(count($arguments) < 1)
 			{
 				/* New object... */
 				$obj = $this->api->BlankResource($type);
+				$obj->_new = true;
 				
 				if($is_resource)
 				{
 					$obj->parent_resource = $this;
+					$obj->chain = $this->chain;
+					$obj->chain[] = $this;
 				}
 				
 				return $obj;
 			}
 			else
 			{
-				$type = $this->item_methods[$method];
-				
 				if($is_resource)
 				{
 					/* A subresource is requested, so we will need to look up the actual type
@@ -78,15 +81,7 @@ class ResourceBase
 			/* Retrieve an (optionally filtered) list of resources. */
 			$type = $this->list_methods[$method];
 			$filters = (count($arguments) >= 1) ? $arguments[0] : array();
-			
-			if($is_resource)
-			{
-				$plural = $this->PluralizeSubresourceName($type);
-			}
-			else
-			{
-				$plural = $this->PluralizeResourceName($type);
-			}
+			$plural = $this->Pluralize($type);
 			
 			$resources = $this->api->ResolveResource($plural, null, $last, false, $filters);
 			

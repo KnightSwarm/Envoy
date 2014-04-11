@@ -17,22 +17,41 @@ if(!isset($_CPHP_REST)) { die("Unauthorized."); }
 
 class Resource extends ResourceBase
 {
+	public $api;
+	public $type;
+	public $config;
+	public $item_methods = array();
+	public $_lazy_load = false;
+	public $_api_id;
+	public $_new;
+	public $parent_resource;
+	public $_primary_key;
+	public $_original_identifier_field;
+	public $_original_identifier_value;
+	public $serialized;
+	public $list_methods = array();
+	public $subresource_plurals = array();
+	public $identifiers = array();
+	public $types = array();
+	public $chain = array();
+	public $custom_item_handlers = array();
+	public $capitalized_item_handlers = array();
+	public $data = array();
+	public $_commit_buffer = array();
+	
+	
 	function __construct($api, $type, $config)
 	{
 		$this->api = $api;
 		$this->type = $type;
 		$this->config = $config;
-		$this->item_methods = array();
-		$this->list_methods = array();
-		$this->subresource_plurals = array();
-		$this->identifiers = array();
-		$this->types = array();
-		$this->chain = array();
-		$this->custom_item_handlers = array();
-		$this->capitalized_item_handlers = array();
-		$this->data = array();
 		
 		$this->ProcessConfiguration($config);
+	}
+	
+	public function Pluralize($type)
+	{
+		return $this->PluralizeSubresourceName($type);
 	}
 	
 	public function PluralizeSubresourceName($name)
@@ -40,7 +59,44 @@ class Resource extends ResourceBase
 		return $this->subresource_plurals[$name];
 	}
 	
-	function ProcessConfiguration($config)
+	public function Singularize($type)
+	{
+		return $this->SingularizeSubresourceName($type);
+	}
+	
+	public function SingularizeSubresourceName($name)
+	{
+		$result = array_search($name, $this->subresource_plurals);
+		
+		if($result !== false)
+		{
+			return $result;
+		}
+		else
+		{
+			throw new \Exception("No singular version of '{$name}' found.");
+		}
+	}
+	
+	public function GetRealSubresourceType($subresource_type)
+	{
+		if(array_key_exists($subresource_type, $this->config["subresources"]))
+		{
+			return $this->config["subresources"][$subresource_type]["type"];
+		}
+		else
+		{
+			throw new \Exception("No such subresource type.");
+		}
+	}
+	
+	public function GetPrimaryId()
+	{
+		$primary_key_field = $this->api->config["resources"][$this->type]["primary_key"];
+		return $this->$primary_key_field;
+	}
+	
+	public function ProcessConfiguration($config)
 	{
 		if(isset($config["subresources"]))
 		{
@@ -134,6 +190,16 @@ class Resource extends ResourceBase
 					}
 			}
 		}
+	}
+	
+	public function __set($key, $value)
+	{
+		$this->_commit_buffer[$key] = $value;
+	}
+	
+	public function DoCommit()
+	{
+		$this->api->Commit($this);
 	}
 }
 

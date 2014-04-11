@@ -25,6 +25,7 @@ class APIServer extends API
 			
 			/* Discard the leading slash */
 			$path = substr(trim($_SERVER['REQUEST_URI']), 1);
+			$method = strtoupper($_SERVER["REQUEST_METHOD"]);
 			
 			if(strpos($path, "?") !== false)
 			{
@@ -48,62 +49,100 @@ class APIServer extends API
 				}
 			}
 			
+			$last_query = end($queries);
+			
 			foreach($queries as $query)
 			{	
 				if(count($query) == 2)
 				{
 					$result = $this->ResolveResource($query[0], $query[1], $last, $primary_key);
+					
+					if($query === $last_query && $method === "POST")
+					{
+						/* Update the object. */
+					}
+					elseif($query === $last_query && $method === "PUT")
+					{
+						/* Overwrite the object. */
+					}
+					elseif($query === $last_query && $method === "DELETE")
+					{
+						/* Delete the object. */
+					}
+					
 					$last = $result;
 				}
 				elseif(count($query) == 1)
 				{
-					try
+					if($query === $last_query && $method === "POST")
 					{
-						$result = $this->ResolveResource($query[0], null, $last, $primary_key, $filters);
-					}
-					catch (NotFoundException $e)
-					{
-						if($last !== null && array_key_exists($query[0], $last->custom_item_handlers))
-						{
-							//$response = $last->custom_item_handlers[$query[0]]($last);
-							$response = $this->registered_item_handlers[$last->type][$query[0]]($last);
-							
-							if(!is_object($response) || get_class($response) !== "\CPHP\REST\Resource")
-							{
-								/* Perhaps this is an array of Resources? */
-								if(is_array($response))
-								{
-									$new_responses = array();
-									
-									foreach($response as $response_key => $response_item)
-									{
-										if(!is_object($response_item) || get_class($response_item) !== "\CPHP\REST\Resource")
-										{
-											/* Wrap anything that isn't a Resource into a Response shim. */
-											$new_responses[$response_key] = new Response($response_item);
-										}
-										else
-										{
-											$new_responses[$response_key] = $response_item;
-										}
-									}
-									
-									$response = $new_responses;
-								}
-								else
-								{
-									/* We got some sort of other serializable data back - we'll
-									 * have to wrap this into a Response shim, so as to not
-									 * upset the rest of the code. */
-									$response = new Response($response);
-								}
-							}
-							
-							$result = $response;
+						/* Create a new object. We'll use the $last object, if it exists,
+						 * as a preset value (similar to a filter for retrieval). */
+						$subresource_type = $this->Singularize($query[0]);
+						$new_type = $this->GetRealSubresourceType($subresource_type);
+						
+						$preset = array();
+						
+						if($last !== null)
+						{	
+							$ref_key = $last->config["subresources"][$subresource_type]["filter"];
+							$ref_value =  $last->GetPrimaryId();
+							$preset[$ref_key] = $ref_value;
 						}
-						else
+						
+						$data = array_merge($_POST, $preset);
+						$this->CreateNewObject($new_type, $data, $last);
+					}
+					else
+					{
+						/* Get a list of existing objects. */
+						try
 						{
-							throw new NotFoundException("Resource type for '{$query[0]}' not found, and no custom handlers available with this name.", 0, $e);
+							$result = $this->ResolveResource($query[0], null, $last, $primary_key, $filters);
+						}
+						catch (NotFoundException $e)
+						{
+							if($last !== null && array_key_exists($query[0], $last->custom_item_handlers) && $last->custom_item_handlers[$query[0]]["method"] === $method)
+							{
+								$response = $this->registered_item_handlers[$last->type][$query[0]]($last);
+								
+								if(!is_object($response) || get_class($response) !== "\CPHP\REST\Resource")
+								{
+									/* Perhaps this is an array of Resources? */
+									if(is_array($response))
+									{
+										$new_responses = array();
+										
+										foreach($response as $response_key => $response_item)
+										{
+											if(!is_object($response_item) || get_class($response_item) !== "\CPHP\REST\Resource")
+											{
+												/* Wrap anything that isn't a Resource into a Response shim. */
+												$new_responses[$response_key] = new Response($response_item);
+											}
+											else
+											{
+												$new_responses[$response_key] = $response_item;
+											}
+										}
+										
+										$response = $new_responses;
+									}
+									else
+									{
+										/* We got some sort of other serializable data back - we'll
+										 * have to wrap this into a Response shim, so as to not
+										 * upset the rest of the code. */
+										$response = new Response($response);
+									}
+								}
+								
+								$result = $response;
+							}
+							else
+							{
+								throw new NotFoundException("Resource type for '{$query[0]}' not found, and no custom handlers available with this name.", 0, $e);
+							}
 						}
 					}
 				}
@@ -162,6 +201,66 @@ class APIServer extends API
 					break;
 			}
 		}
+	}
+	
+	public function CreateNewObject($type, $data, $last = null)
+	{
+		$obj = $this->BlankResource($type);
+		$obj->_new = true;
+		
+		if($last !== null)
+		{
+			$obj->parent_resource = $last;
+		}
+		
+		$parameters = $this->SerializedToQueryParameters($type, $data);
+		
+		/* CURPOS: Actually INSERT the resource into the database. Return the
+		 * primary-key ID of the new row, and set this in the resource object on
+		 * the client side. */
+	}
+	
+	public function SerializedToQueryParameters($type, $data)
+	{
+		$results = array();
+		$handler = new \CPHPFormHandler($data, true);
+		
+		foreach($this->config["resources"][$type]["attributes"] as $attribute => $settings)
+		{
+			if(!isset($data[$attribute]))
+			{
+				$value = "";
+			}
+			else
+			{
+				$value = $data[$attribute];
+				
+				switch($settings["type"])
+				{
+					case "string":
+					case "boolean":
+						/* Leave the value unchanged. */
+						break;
+					case "numeric":
+						$value = $this->ParseNumeric($value);
+						break;
+					case "timestamp":
+						$value = (int) $value;
+					case "custom":
+						/* We ignore these. */
+						continue;
+					default:
+						/* Resource reference or custom type.
+						 * FIXME: Implement custom types. */
+						break;
+				}
+			}
+			
+			$db_field = $settings["field"];
+			$results[$db_field] = $value;
+		}
+		
+		return $results;
 	}
 	
 	public function RequireAuthentication()
@@ -228,6 +327,11 @@ class APIServer extends API
 				throw new NotAuthenticatedException("The specified nonce has been used before.");
 			}
 		}
+	}
+	
+	private function BuildCreationQuery($type, $data)
+	{
+		
 	}
 	
 	private function BuildQuery($type, $filters, $single = false)

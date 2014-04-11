@@ -56,11 +56,11 @@ class APIClient extends API
 			
 			if($last !== null)
 			{
-				$plural = $last->PluralizeSubresourceName($type_name);
+				$plural = $last->Pluralize($type_name);
 			}
 			else
 			{
-				$plural = $this->PluralizeResourceName($type_name);
+				$plural = $this->Pluralize($type_name);
 			}
 			
 			return "{$plural}/{$id}";
@@ -73,11 +73,11 @@ class APIClient extends API
 		{
 			if($last !== null)
 			{
-				$plural = $last->PluralizeSubresourceName($object->type);
+				$plural = $last->Pluralize($object->type);
 			}
 			else
 			{
-				$plural = $this->PluralizeResourceName($object->type);
+				$plural = $this->Pluralize($object->type);
 			}
 			
 			return $plural;
@@ -178,6 +178,32 @@ class APIClient extends API
 			}
 			
 			return $resources;
+		}
+	}
+	
+	public function Commit($object)
+	{
+		if(!empty($object->_new))
+		{
+			/* Create new object. We'll create a mock ListRequest for
+			 * the sake of building a URL to POST the object to. */
+			$list = new ListRequest($this->api, $object->type, array());
+			
+			if(!empty($object->chain))
+			{
+				$list->chain = $object->chain;
+			}
+			
+			$target_path = $this->BuildUrl($list);
+			pretty_dump($this->AttributesToSerialized($object, $object->_commit_buffer, true));
+			$this->DoRequest("POST", $target_path, $this->AttributesToSerialized($object, $object->_commit_buffer, true));
+			
+			/* CURPOS: Set ID of new row in object. */
+			$object->_new = false;
+		}
+		else
+		{
+			/* Update existing object. */
 		}
 	}
 	
