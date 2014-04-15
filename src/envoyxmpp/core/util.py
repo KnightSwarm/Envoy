@@ -57,6 +57,12 @@ class LocalSingleton:
 		except KeyError:
 			self._instance[identifier] = self._decorated(singleton_identifier=identifier)
 			return self._instance[identifier]
+			
+	def RemoveInstance(self, identifier):
+		# Removes the known instance. This is useful when for
+		# example turning threads into LocalSingletons, and
+		# then re-initializing a stopped thread.
+		del self._instance[identifier]
 
 	def __call__(self):
 		raise TypeError('Singletons must be accessed through `Instance()`.')

@@ -25,8 +25,18 @@ class EventLogger(LocalSingletonBase):
 		user_provider = UserProvider.Instance(self.identifier)
 		component = Component.Instance(self.identifier)
 		
+		try:
+			if stanza["mam_archived"]["id"] == "" or stanza["mam_archived"]["id"] is None:
+				message_id = str(uuid.uuid4())
+				logger.warning("Empty MAM message ID found in stanza. Stanza was %s" % str(stanza))
+			else:
+				message_id = stanza["mam_archived"]["id"] # Use the UUID that mod_mam_pretend assigned for us
+		except KeyError, e:
+			message_id = str(uuid.uuid4())
+			logger.warning("MAM message ID missing in stanza. Stanza was %s" % str(stanza))
+		
 		row = Row()
-		row["Id"] = stanza["mam_archived"]["id"] # Use the UUID that mod_mam_pretend assigned for us
+		row["Id"] = message_id
 		row["Date"] = datetime.now()
 		row["Sender"] = user_provider.normalize_jid(sender)
 		row["Recipient"] = user_provider.normalize_jid(recipient)

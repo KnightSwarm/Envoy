@@ -90,10 +90,21 @@ class Resource extends ResourceBase
 		}
 	}
 	
+	public function GetPrimaryIdField()
+	{
+		return $this->api->config["resources"][$this->type]["primary_key"];
+	}
+	
 	public function GetPrimaryId()
 	{
-		$primary_key_field = $this->api->config["resources"][$this->type]["primary_key"];
+		$primary_key_field = $this->GetPrimaryIdField();
 		return $this->$primary_key_field;
+	}
+	
+	public function SetPrimaryId($value)
+	{
+		$primary_key_field = $this->GetPrimaryIdField();
+		$this->$primary_key_field = $value;;
 	}
 	
 	public function ProcessConfiguration($config)
@@ -145,9 +156,16 @@ class Resource extends ResourceBase
 		}
 	}
 	
-	public function PopulateData($data)
+	public function PopulateData($data, $overwrite = false)
 	{
-		$this->data = $data;
+		if($overwrite === true)
+		{
+			$this->data = $data;
+		}
+		else
+		{
+			$this->data = array_merge($this->data, $data);
+		}
 	}
 	
 	public function __get($key)
@@ -200,6 +218,11 @@ class Resource extends ResourceBase
 	public function DoCommit()
 	{
 		$this->api->Commit($this);
+	}
+	
+	public function DoDelete()
+	{
+		$this->api->Delete($this);
 	}
 }
 

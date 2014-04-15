@@ -8,6 +8,8 @@ from sleekxmpp.xmlstream import register_stanza_plugin
 from sleekxmpp.xmlstream.matcher.xpath import MatchXPath
 from sleekxmpp.xmlstream.handler.callback import Callback
 
+import time
+
 @LocalSingleton
 class Component(ComponentXMPP):
 	def __init__(self, singleton_identifier=None):
@@ -27,6 +29,8 @@ class Component(ComponentXMPP):
 		self.add_event_handler("zmq_event", ZeromqEventHandler.Instance(self.identifier).process)
 		self.add_event_handler("resolve_finished", ResolveHandler.Instance(self.identifier).callback)
 		self.add_event_handler("session_start", self.start, threaded=True)
+		self.add_event_handler("disconnected", self.cleanup)
+		self.add_event_handler("kill", self.cleanup)
 		
 		self.registerPlugin('xep_0030') # Service Discovery
 		self.registerPlugin('xep_0004') # Data Forms
@@ -65,12 +69,12 @@ class Component(ComponentXMPP):
 		
 		# Only now that the component is connected, will we start accepting messages over the
 		# ZeroMQ event socket.
-		event_thread = ZeromqEventThread.Instance(self.identifier)
-		event_thread.start()
+		self.event_thread = ZeromqEventThread.Instance(self.identifier)
+		self.event_thread.start()
 		
 		# ... and here we start the preview resolver queue; or rather, the thread for it.
-		queue = ResolverQueue.Instance(self.identifier)
-		queue.start()
+		self.queue = ResolverQueue.Instance(self.identifier)
+		self.queue.start()
 		
 		logger.debug("Launched ResolverQueue thread")
 		
@@ -81,6 +85,33 @@ class Component(ComponentXMPP):
 		StatusSyncer.Instance(self.identifier).sync()
 		VcardSyncer.Instance(self.identifier).sync()
 		
+	def cleanup(self, *args, **kwargs):
+		logger = ApplicationLogger.Instance(self.identifier)
+		
+		# Shut down threads, so we can recreate new ones later.
+		self.event_thread.stop = True
+		self.queue.stop = True
+		
+		# Statekeeping.
+		last_event_thread = False
+		last_queue = False
+		
+		while True:
+			if self.event_thread.stopped == True and last_event_thread == False:
+				last_event_thread = True
+				logger.info("ZeroMQ event thread cleaned up.")
+				ZeromqEventThread.RemoveInstance(self.identifier)
+				
+			if self.queue.stopped == True and last_queue == False:
+				last_queue = True
+				logger.info("Queue resolver thread cleaned up.")
+				ResolverQueue.RemoveInstance(self.identifier)
+				
+			if self.event_thread.stopped and self.queue.stopped:
+				break
+				
+			time.sleep(0.5)
+					
 	def get_fqdn(self):
 		fqdn_provider = FqdnProvider.Instance(self.identifier)
 		return fqdn_provider.get(self.host)

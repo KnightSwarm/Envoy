@@ -25,10 +25,17 @@ try
 	/*$new_user = $API->Fqdn("envoy.local")->User();
 	$new_user->username = "blah";
 	$new_user->DoCommit();*/
-	$aff = $API->Fqdn("envoy.local")->User("testuser")->Affiliation();
-	$aff->room = $API->Fqdn("envoy.local")->Room("testingroom13");
-	$aff->affiliation = "owner";
-	$aff->DoCommit();
+	//$aff = $API->Fqdn("envoy.local")->User("testuser")->Affiliation();
+	//$aff->room = $API->Fqdn("envoy.local")->Room("testingroom13");
+	//$aff = $API->Affiliation(38);
+	//$aff->affiliation = "owner";
+	//$aff->DoCommit();
+	//$aff->DoDelete();
+	//pretty_dump($aff);
+	foreach($API->Fqdn("envoy.local")->ListAffiliations() as $affiliation)
+	{
+		pretty_dump("{$affiliation->room->roomname}: {$affiliation->user->username} ({$affiliation->affiliation})");
+	}
 }
 catch (CPHP\REST\ApiException $e)
 {
@@ -70,7 +77,7 @@ $API->RegisterEncoder("api_key", "access_level", function($api, $resource){
 	try
 	{
 		/* Find service-wide permissions, if any. */
-		$permissions = $resource->ListPermissions(array("fqdn" => 0));
+		$permissions = $resource->ListPermissions(array("fqdn" => 0), true);
 	}
 	catch (NotFoundException $e)
 	{

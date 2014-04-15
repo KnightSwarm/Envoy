@@ -57,7 +57,7 @@ $API->RegisterEncoder("api_key", "access_level", function($api, $resource){
 	try
 	{
 		/* Find service-wide permissions, if any. */
-		$permissions = $resource->ListPermissions(array("fqdn" => 0));
+		$permissions = $resource->ListPermissions(array("fqdn" => 0), true);
 	}
 	catch (NotFoundException $e)
 	{
@@ -119,6 +119,22 @@ $API->RegisterHandler("room", "notify", function($room) {
 	
 	$query_socket->send(json_encode($payload));
 	
+	return true;
+});
+
+$API->RegisterAuthenticator("affiliation", function($object, $keypair, $action) {
+	return ($object->room->roomname == "testingroom13");
+});
+
+$API->RegisterAuthenticator("fqdn", function($object, $keypair, $action) {
+	return true;
+});
+
+$API->RegisterAuthenticator("room", function($object, $keypair, $action) {
+	return true;
+});
+
+$API->RegisterAuthenticator("user", function($object, $keypair, $action) {
 	return true;
 });
 

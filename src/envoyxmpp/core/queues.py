@@ -1,6 +1,6 @@
 from .util import Singleton, LocalSingleton, LocalSingletonBase
 
-from Queue import Queue
+from Queue import Queue, Empty
 from threading import Thread
 
 @LocalSingleton
@@ -13,6 +13,8 @@ class ResolverQueue(Thread):
 	def __init__(self, singleton_identifier=None):
 		Thread.__init__(self)
 		self.identifier = singleton_identifier
+		self.stopped = False
+		self.stop = False
 		self.q = Queue()
 	
 	def run(self):
@@ -21,10 +23,15 @@ class ResolverQueue(Thread):
 		
 		logger.info("ResolverQueue thread started.")
 		
-		while True:
-			resolver, match, message, stanza = self.q.get()
+		while self.stop == False:
+			try:
+				resolver, match, message, stanza = self.q.get(True, 1)
+			except Empty, e:
+				continue
 			result = resolver(match, message, stanza)
 			component.event("resolve_finished", (result, stanza))
+			
+		self.stopped = True
 	
 	def add(self, item):
 		self.q.put(item)

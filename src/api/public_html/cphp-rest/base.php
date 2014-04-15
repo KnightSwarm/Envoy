@@ -81,9 +81,10 @@ class ResourceBase
 			/* Retrieve an (optionally filtered) list of resources. */
 			$type = $this->list_methods[$method];
 			$filters = (count($arguments) >= 1) ? $arguments[0] : array();
+			$bypass_auth = (count($arguments) >= 2) ? $arguments[1] : false;
 			$plural = $this->Pluralize($type);
 			
-			$resources = $this->api->ResolveResource($plural, null, $last, false, $filters);
+			$resources = $this->api->ResolveResource($plural, null, $last, false, $filters, $bypass_auth);
 			
 			if($is_resource)
 			{

@@ -19,6 +19,8 @@ class APIServer extends API
 {
 	public function ProcessRequest()
 	{
+		global $database;
+		
 		try
 		{
 			$this->RequireAuthentication();
@@ -60,14 +62,79 @@ class APIServer extends API
 					if($query === $last_query && $method === "POST")
 					{
 						/* Update the object. */
+						$data = $_POST;
+						
+						$result->PopulateData($this->SerializedToAttributes($result->type, $data, true));
+						
+						/* Check if the user is allowed to do this. */
+						if($this->CallAuthenticator($this->config["resources"][$type]["authenticator"], "update", $result, $this->_keypair) !== true)
+						{
+							throw new NotAuthorizedException("You are not allowed to update this resource.");
+						}
+						
+						$parameters = $this->SerializedToQueryParameters($result->type, $data);
+						$target_table = $this->config["resources"][$result->type]["table"];
+						
+						$assignments = array();
+						
+						foreach($parameters as $key => $value)
+						{
+							$assignments[] = "`{$key}` = :{$key}";
+						}
+						
+						$assignment_string = implode(",", $assignments);
+						
+						$id_field = $result->config["attributes"][$result->GetPrimaryIdField()]["field"];
+						$id_value = $result->GetPrimaryId();
+						
+						if(array_key_exists($id_field, $parameters))
+						{
+							throw new MalformedRequestException("You cannot modify the primary key of a resource.");
+						}
+						
+						$parameters[$id_field] = $id_value;
+						
+						$db_query = "UPDATE {$target_table} SET {$assignment_string} WHERE `{$id_field}` = :{$id_field}";
+						
+						try
+						{
+							$database->CachedQuery($db_query, $parameters, 0);
+						}
+						catch (\DatabaseDuplicateException $e)
+						{
+							/* There was a key uniqueness conflict. */
+							throw new AlreadyExistsException("A resource with these key(s) already exists.", 0, $e);
+						}
+						
+						/* If successful, update $result to have an up-to-date version of the resource. 
+						 * This can then be returned to the client. */
+						$result = $this->ResolveResource($query[0], $query[1], $last, $primary_key);
 					}
 					elseif($query === $last_query && $method === "PUT")
 					{
-						/* Overwrite the object. */
+						/* Overwrite the object.
+						 * FIXME: Implement this. */
+						http_status_code(405);
+						die();
 					}
 					elseif($query === $last_query && $method === "DELETE")
 					{
-						/* Delete the object. */
+						/* Delete the object. First check if the user is allowed to do this. */
+						if($this->CallAuthenticator($this->config["resources"][$type]["authenticator"], "delete", $result, $this->_keypair) !== true)
+						{
+							throw new NotAuthorizedException("You are not allowed to delete this resource.");
+						}
+						
+						$target_table = $this->config["resources"][$result->type]["table"];
+						$id_field = $result->config["attributes"][$result->GetPrimaryIdField()]["field"];
+						$id_value = $result->GetPrimaryId();
+						
+						$db_query = "DELETE FROM {$target_table} WHERE `{$id_field}` = :{$id_field}";
+						
+						$parameters = array();
+						$parameters[$id_field] = $id_value;
+						
+						$database->CachedQuery($db_query, $parameters, 0);
 					}
 					
 					$last = $result;
@@ -91,7 +158,13 @@ class APIServer extends API
 						}
 						
 						$data = array_merge($_POST, $preset);
-						$this->CreateNewObject($new_type, $data, $last);
+						$new_id = $this->CreateNewObject($new_type, $data, $last);
+						
+						$plural_type = $this->Pluralize($new_type);
+						$url = "/{$plural_type}/{$new_id}";
+						
+						http_status_code(201); /* 201 Created */
+						redirect($url);
 					}
 					else
 					{
@@ -176,6 +249,11 @@ class APIServer extends API
 			http_status_code(422);
 			echo(json_encode(array("error" => $e->getMessage())));
 		}
+		catch (AlreadyExistsException $e)
+		{
+			http_status_code(409);
+			echo(json_encode(array("error" => $e->getMessage())));
+		}
 		catch (\Exception $e)
 		{
 			switch(strtolower(ini_get('display_errors')))
@@ -205,6 +283,8 @@ class APIServer extends API
 	
 	public function CreateNewObject($type, $data, $last = null)
 	{
+		global $database;
+		
 		$obj = $this->BlankResource($type);
 		$obj->_new = true;
 		
@@ -213,11 +293,33 @@ class APIServer extends API
 			$obj->parent_resource = $last;
 		}
 		
-		$parameters = $this->SerializedToQueryParameters($type, $data);
+		$obj->PopulateData($this->SerializedToAttributes($type, $data, true));
 		
-		/* CURPOS: Actually INSERT the resource into the database. Return the
-		 * primary-key ID of the new row, and set this in the resource object on
-		 * the client side. */
+		/* Check if the user is allowed to do this. */
+		if($this->CallAuthenticator($this->config["resources"][$type]["authenticator"], "create", $obj, $this->_keypair) !== true)
+		{
+			throw new NotAuthorizedException("You are not allowed to create this resource.");
+		}
+		
+		$parameters = $this->SerializedToQueryParameters($type, $data);
+		$target_table = $this->config["resources"][$type]["table"];
+		
+		$field_names = implode("`, `", array_keys($parameters));
+		$value_names = implode(", :", array_keys($parameters));
+		
+		$query = "INSERT INTO {$target_table} (`{$field_names}`) VALUES (:{$value_names})";
+		
+		try
+		{
+			$new_id = $database->CachedQuery($query, $parameters, 0);
+		}
+		catch (\DatabaseDuplicateException $e)
+		{
+			/* There was a key uniqueness conflict. */
+			throw new AlreadyExistsException("A resource with these key(s) already exists.", 0, $e);
+		}
+		
+		return $new_id;
 	}
 	
 	public function SerializedToQueryParameters($type, $data)
@@ -229,7 +331,7 @@ class APIServer extends API
 		{
 			if(!isset($data[$attribute]))
 			{
-				$value = "";
+				continue;
 			}
 			else
 			{
@@ -246,12 +348,22 @@ class APIServer extends API
 						break;
 					case "timestamp":
 						$value = (int) $value;
+						break;
 					case "custom":
 						/* We ignore these. */
 						continue;
 					default:
-						/* Resource reference or custom type.
+						/* Resource reference. enum or custom type.
 						 * FIXME: Implement custom types. */
+						if(array_key_exists($settings["type"], $this->config["enums"]))
+						{
+							/* This is an enum. */
+							if(!array_key_exists($value, $this->config["enums"][$settings["type"]]))
+							{
+								throw new BadDataException("Enum value not found.");
+							}
+							$value = $this->config["enums"][$settings["type"]][$value];
+						}
 						break;
 				}
 			}
@@ -292,7 +404,7 @@ class APIServer extends API
 			
 			try
 			{
-				$keypair = $this->ObtainResource($keypair_config["resource"], $filters);
+				$keypair = $this->ObtainResource($keypair_config["resource"], $filters, null, false, array(), true);
 			}
 			catch (NotFoundException $e)
 			{
@@ -326,12 +438,9 @@ class APIServer extends API
 			{
 				throw new NotAuthenticatedException("The specified nonce has been used before.");
 			}
+			
+			$this->_keypair = $keypair; /* Store the keypair for later use in authenticators. */
 		}
-	}
-	
-	private function BuildCreationQuery($type, $data)
-	{
-		
 	}
 	
 	private function BuildQuery($type, $filters, $single = false)
@@ -421,7 +530,7 @@ class APIServer extends API
 		return array($query, $values);
 	}
 	
-	public function ObtainResourceList($type, $filters, $chain = array())
+	public function ObtainResourceList($type, $filters, $chain = array(), $bypass_auth = false)
 	{
 		global $database;
 		list($query, $params) = $this->BuildQuery($type, $filters);
@@ -436,10 +545,26 @@ class APIServer extends API
 				$resource = $this->BlankResource($type);
 				$resource->serialized = $this->ResultsToSerialized($type, $data);
 				$resource->PopulateData($this->SerializedToAttributes($type, $resource->serialized));
+				
+				/* Check if the user is allowed to do this. */
+				if($bypass_auth === false && $this->CallAuthenticator($this->config["resources"][$type]["authenticator"], "get", $resource, $this->_keypair) !== true)
+				{
+					continue; /* Don't add this one to the output, and skip to next. */
+				}
+				
 				$return_objects[] = $resource;
 			}
 			
-			return $return_objects;
+			if(count($return_objects) > 0)
+			{
+				return $return_objects;
+			}
+			else
+			{
+				/* None of the results passed the authenticator. Pretend nothing was
+				 * found. */
+				throw new NotFoundException("No results for query.");
+			}
 		}
 		else
 		{
@@ -448,7 +573,7 @@ class APIServer extends API
 		}
 	}
 	
-	public function ObtainResource($type, $filters, $id = null, $primary_key = false, $chain = array())
+	public function ObtainResource($type, $filters, $id = null, $primary_key = false, $chain = array(), $bypass_auth = false)
 	{
 		/* $filters: A single filter for a normal identifier query, or
 		 * multiple filters if a subresource. */
@@ -462,6 +587,13 @@ class APIServer extends API
 			$resource = $this->BlankResource($type);
 			$resource->serialized = $this->ResultsToSerialized($type, $data);
 			$resource->PopulateData($this->SerializedToAttributes($type, $resource->serialized));
+			
+			/* Check if the user is allowed to do this. */
+			if($bypass_auth === false && $this->CallAuthenticator($this->config["resources"][$type]["authenticator"], "get", $resource, $this->_keypair) !== true)
+			{
+				throw new NotAuthorizedException("You are not allowed to retrieve this resource.");
+			}
+			
 			return $resource;
 		}
 		else
@@ -499,6 +631,18 @@ class APIServer extends API
 	public function RegisterAuthenticator($name, $function)
 	{
 		$this->authenticator[$name] = $function;
+	}
+	
+	public function CallAuthenticator($name, $action, $object, $keypair)
+	{
+		if(array_key_exists($name, $this->authenticator))
+		{
+			return $this->authenticator[$name]($object, $keypair, $action);
+		}
+		else
+		{
+			throw new ConfigurationException("No authenticator registered for '{$name}'.");
+		}
 	}
 	
 	public function RegisterHandler($type, $name, $function)

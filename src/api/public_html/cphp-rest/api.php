@@ -162,7 +162,7 @@ class API extends ResourceBase
 		return $subresource_type;
 	}
 	
-	public function ResolveResource($type, $id = null, $last = null, $primary_key = false, $filters = array())
+	public function ResolveResource($type, $id = null, $last = null, $primary_key = false, $filters = array(), $bypass_auth = false)
 	{
 		/* The $last argument holds either null (if the resource is top-level) or the
 		 * object representing the resource that the requested resource is a child
@@ -251,7 +251,7 @@ class API extends ResourceBase
 			
 			$filters[$current_id_field] = $current_id_value;
 			
-			$resource = $this->ObtainResource($type_name, $filters, $id, $primary_key, $chain);
+			$resource = $this->ObtainResource($type_name, $filters, $id, $primary_key, $chain, $bypass_auth);
 			$resource->chain = $chain;
 			$resource->_original_identifier_field = $current_id_field;
 			$resource->_original_identifier_value = $current_id_value;
@@ -268,7 +268,7 @@ class API extends ResourceBase
 		else
 		{
 			/* List of objects was requested. */
-			$resources = $this->ObtainResourceList($type_name, $filters, $chain);
+			$resources = $this->ObtainResourceList($type_name, $filters, $chain, $bypass_auth);
 			
 			foreach($resources as $resource)
 			{
@@ -392,7 +392,7 @@ class API extends ResourceBase
 		return $attributes;
 	}
 	
-	public function AttributesToSerialized($object, $data, $ignore_missing = false)
+	public function AttributesToSerialized($object, $data = null, $ignore_missing = false)
 	{
 		$type = $object->type;
 		$results = array();
@@ -418,32 +418,40 @@ class API extends ResourceBase
 			}
 			else
 			{
+				if($data === null)
+				{
+					$original_value = $object->$attribute;
+				}
+				else
+				{
+					$original_value = $data[$attribute];
+				}
+				
 				switch($settings["type"])
 				{
 					case "string":
-						$value = $data[$attribute];
+						$value = $original_value;
 						break;
 					case "numeric":
 					case "timestamp":
 						/* Cast to string. */
-						$value = (string) $data[$attribute];
+						$value = (string) $original_value;
 						break;
 					case "boolean":
 						/* Don't touch it. */
-						$value = $data[$attribute];
+						$value = $original_value;
 						break;
 					default:
 						/* This is a resource identifier. It can be either an integer - in
 						 * which case we cast it to a string - or an object, in which case
 						 * we extract its ID. */
-						if(is_object($data[$attribute]) && get_class($data[$attribute]) == "CPHP\REST\Resource")
+						if(is_object($original_value) && get_class($original_value) == "CPHP\REST\Resource")
 						{
-							$attribute_object = $data[$attribute];
-							$value = (string) $attribute_object->GetPrimaryId();
+							$value = (string) $original_value->GetPrimaryId();
 						}
 						else
 						{
-							$value = (string) $data[$attribute];
+							$value = (string) $original_value;
 						}
 						break;
 				}

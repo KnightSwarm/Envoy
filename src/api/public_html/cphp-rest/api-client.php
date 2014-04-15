@@ -84,14 +84,14 @@ class APIClient extends API
 		}
 	}
 	
-	public function ObtainResourceList($type, $filters, $chain = array())
+	public function ObtainResourceList($type, $filters, $chain = array(), $bypass_auth = false)
 	{
 		$list = new ListRequest($this, $type, $filters);
 		$list->chain = $chain;
 		return $this->Execute($list);
 	}
 	
-	public function ObtainResource($type, $filters, $id, $primary_key = false, $chain = array())
+	public function ObtainResource($type, $filters, $id, $primary_key = false, $chain = array(), $bypass_auth = false)
 	{
 		$obj = $this->api->BlankResource($type);
 		$obj->_lazy_load = true;
@@ -195,16 +195,30 @@ class APIClient extends API
 			}
 			
 			$target_path = $this->BuildUrl($list);
-			pretty_dump($this->AttributesToSerialized($object, $object->_commit_buffer, true));
-			$this->DoRequest("POST", $target_path, $this->AttributesToSerialized($object, $object->_commit_buffer, true));
+			$new_url = $this->DoRequest("POST", $target_path, $this->AttributesToSerialized($object, $object->_commit_buffer, true));
 			
-			/* CURPOS: Set ID of new row in object. */
+			list($plural_type, $new_id) = explode("/", substr($new_url, 1));
+			
+			$object->SetPrimaryId($new_id);
 			$object->_new = false;
 		}
 		else
 		{
 			/* Update existing object. */
+			$target_path = $this->BuildUrl($object);
+			$new_data = $this->DoRequest("POST", $target_path, $this->AttributesToSerialized($object, $object->_commit_buffer, true));
+			
+			$object->PopulateData($this->SerializedToAttributes($object->type, $new_data));
 		}
+		
+		/* Empty the commit buffer. */
+		$object->_commit_buffer = array();
+	}
+	
+	public function Delete($object)
+	{
+		$target_path = $this->BuildUrl($object);
+		$this->DoRequest("DELETE", $target_path);
 	}
 	
 	public function DoRequest($method, $path, $parameters = array(), $cache = true)
@@ -253,6 +267,7 @@ class APIClient extends API
 		
 		curl_setopt_array($curl, array(
 			CURLOPT_URL		=> $url,
+			CURLOPT_HEADER => true,
 			CURLOPT_RETURNTRANSFER	=> true,
 			CURLOPT_USERAGENT	=> "CPHP-REST API Library/1.0",
 			CURLOPT_HTTPHEADER	=> array(
@@ -272,8 +287,32 @@ class APIClient extends API
 			));
 		}
 		
-		if($result = curl_exec($curl))
+		if(strtolower($method) == "delete")
 		{
+			curl_setopt_array($curl, array(
+				CURLOPT_CUSTOMREQUEST		=> "DELETE"
+			));
+		}
+		
+		if(($result = curl_exec($curl)) !== false)
+		{
+			list($headerdata, $result) = explode("\r\n\r\n", $result, 2);
+			
+			$headers = array();
+			
+			foreach(explode("\n", $headerdata) as $line)
+			{
+				if(strpos($line, ":") === false)
+				{
+					continue;
+				}
+				
+				list($key, $value) = explode(":", $line, 2);
+				$value = trim($value);
+				$key = strtolower($key);
+				$headers[$key] = $value;
+			}
+			
 			$json = json_decode($result, true);
 			
 			if(isset($this->logger)) { $this->logger->addDebug("Response", array("response" => $result)); }
@@ -297,6 +336,10 @@ class APIClient extends API
 					}
 					
 					return $json;
+				case 201:
+					/* New resource was created, URL returned as Location header. */
+					return $headers["location"];
+					break;
 				case 400:
 					/* Bad or incomplete request data was provided. */
 					throw new BadDataException("The provided parameters were invalid or incomplete.", 0, null, $json["error"]);
