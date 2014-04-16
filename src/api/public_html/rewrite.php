@@ -55,7 +55,8 @@ $API->RegisterDecoder("user", "jid", function($api, $value, $filters){
 	}
 	
 	list($username, $fqdn) = explode("@", $value, 2);
-	return array("fqdn_string" => $fqdn, "username" => $username);
+	$fqdn = $api->Fqdn($fqdn);
+	return array("fqdn" => $fqdn->id, "username" => $username);
 });
 
 $API->RegisterEncoder("user", "jid", function($api, $resource){
@@ -210,6 +211,37 @@ $API->RegisterHandler("user", "authenticate", function($api, $user){
 	return $api->ConstantTimeCompare($provided_hash, $correct_hash);
 });
 
+$API->RegisterHandler("user", "set_password", function($api, $user){
+	$allowed = ($api->_keypair->access_level >= 150) || ($api->_keypair->user->fqdn->id === $user->fqdn->id && $api->_keypair->access_level >= 100);
+	
+	if($allowed !== true)
+	{
+		throw new CPHP\REST\NotAuthorizedException("You do not have the required access to perform that operation.");
+	}
+	
+	$handler = new CPHPFormHandler($_POST, true);
+	
+	try
+	{
+		$handler
+			->RequireNonEmpty("password")
+			->Done();
+	}
+	catch (FormValidationException $e)
+	{
+		throw new CPHP\REST\BadDataException("No password was provided.");
+	}
+	
+	$salt = base64_encode(mcrypt_create_iv(24, MCRYPT_DEV_URANDOM));
+	$hash = base64_encode(pbkdf2("sha256", $handler->GetValue("password"), base64_decode($salt), 30000, 32, true));
+	
+	$user->hash = $hash;
+	$user->salt = $salt;
+	$user->DoCommit(true);
+	
+	return true;
+});
+
 $API->RegisterHandler("user", "get_api_key", function($api, $user){
 	$allowed = ($api->_keypair->access_level >= 150) || ($user->id === $api->_keypair->user->id && $keypair->access_level >= 50);
 	
@@ -351,8 +383,21 @@ $API->RegisterAuthenticator("user", function($api, $user, $keypair, $action) {
 	/* We need to do a bit of a hack here; we can't call magic methods recursively
 	 * from within themselves, so we manually retrieve the relevant user object,
 	 * bypassing the authentication for that entirely. */
-	$keypair_user = $api->ObtainResource("user", array("id" => $keypair->data["user"]), array(), true);
-	 
+	try
+	{
+		$keypair_user = $api->ObtainResource("user", array("id" => $keypair->data["user"]), array(), true);
+	}
+	catch (CPHP\REST\NotFoundException $e)
+	{
+		/* This is only okay if the API key is a server key, as it has no
+		 * user associated with it. */
+		if($keypair->type === "user")
+		{
+			/* The keypair is a user keypair, this is not supposed to happen. */
+			throw $e;
+		}
+	}
+	
 	switch($action)
 	{
 		case "get":

@@ -66,7 +66,7 @@ class APIServer extends API
 			{
 				if(count($query) == 2)
 				{
-					$result = $this->ResolveResource($query[0], $query[1], $last, $primary_key);
+					$result = $this->ResolveResource($query[0], $query[1], $last, $primary_key, array(), false, 0);
 					
 					if($query === $last_query && $method === "POST")
 					{
@@ -240,7 +240,7 @@ class APIServer extends API
 		}
 	}
 	
-	public function Commit(&$object)
+	public function Commit(&$object, $include_private = false)
 	{
 		if(!empty($object->_new))
 		{
@@ -277,7 +277,7 @@ class APIServer extends API
 		}
 		else
 		{
-			$this->UpdateObject($object, $object->_commit_buffer);
+			$this->UpdateObject($object, $object->_commit_buffer, $include_private);
 			$object->_commit_buffer= array();
 		}
 	}
@@ -307,7 +307,7 @@ class APIServer extends API
 		$database->CachedQuery($db_query, $parameters, 0);
 	}
 	
-	public function UpdateObject($object, $data)
+	public function UpdateObject($object, $data, $include_private = false)
 	{
 		global $database;
 		
@@ -319,7 +319,7 @@ class APIServer extends API
 			throw new NotAuthorizedException("You are not allowed to update this resource.");
 		}
 		
-		$parameters = $this->SerializedToQueryParameters($object->_type, $data);
+		$parameters = $this->SerializedToQueryParameters($object->_type, $data, $include_private);
 		$target_table = $this->config["resources"][$object->_type]["table"];
 		
 		$assignments = array();

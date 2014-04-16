@@ -113,6 +113,11 @@ $router->routes = array(
 			"authenticator" => "authenticators/logged_in.php",
 			"auth_error" => "modules/error/not_logged_in.php"
 		),
+		"^/fqdns/([^/]+)/users/create$" => array(
+			"target" => "modules/user/create.php",
+			"authenticator" => "authenticators/logged_in.php",
+			"auth_error" => "modules/error/not_logged_in.php"
+		),
 		"^/fqdns/([^/]+)/users/([^/]+)$" => array(
 			"target" => "modules/user/lookup.php",
 			"authenticator" => "authenticators/logged_in.php",

@@ -1,0 +1,38 @@
+{%if isempty|errors == false}
+	<ul>
+		{%foreach error in errors}
+			<li>{%?error}</li>
+		{%/foreach}
+	</ul>
+{%/if}
+
+<form class="pure-form pure-form-aligned" method="post" action="/fqdns/{%?fqdn}/users/create">
+	<div class="pure-control-group">
+		<label>Username</label>
+		<input type="text" name="username">@{%?fqdn}
+	</div>
+	
+	<div class="pure-control-group">
+		<label>Password</label>
+		<input type="text" name="password">
+	</div>
+	
+	<div class="pure-control-group">
+		<label>E-mail address</label>
+		<input type="text" name="email">
+	</div>
+	
+	<div class="pure-control-group">
+		<label>Job title</label>
+		<input type="text" name="title">
+	</div>
+	
+	<div class="pure-control-group">
+		<label>Nickname</label>
+		<input type="text" name="nickname">
+	</div>
+	
+	<div class="pure-controls">
+		<button type="submit" name="submit" class="pure-button black">Create user</button>
+	</div>
+</form>

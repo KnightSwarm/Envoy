@@ -27,6 +27,7 @@ class Resource extends ResourceBase
 	public $parent_resource;
 	public $_primary_key;
 	public $_subresource_name;
+	public $subresource_type_name;
 	public $_original_identifier_field;
 	public $_original_identifier_value;
 	public $serialized;
@@ -105,7 +106,7 @@ class Resource extends ResourceBase
 	public function SetPrimaryId($value)
 	{
 		$primary_key_field = $this->GetPrimaryIdField();
-		$this->$primary_key_field = $value;;
+		$this->data[$primary_key_field] = $value;
 	}
 	
 	public function ProcessConfiguration($config)
@@ -221,9 +222,9 @@ class Resource extends ResourceBase
 		$this->_commit_buffer[$key] = $value;
 	}
 	
-	public function DoCommit()
+	public function DoCommit($include_private = false)
 	{
-		$this->api->Commit($this);
+		$this->api->Commit($this, $include_private);
 	}
 	
 	public function DoDelete()

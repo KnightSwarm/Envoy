@@ -48,7 +48,7 @@ if($router->uMethod == "post")
 	if(empty($sErrors))
 	{
 		/* Actual authentication step */
-		$sUser = $API->User($_POST["username"]);
+		$sUser = $API->User($handler->GetValue("username"));
 		
 		try
 		{

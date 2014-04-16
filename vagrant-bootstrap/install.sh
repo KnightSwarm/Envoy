@@ -46,7 +46,7 @@ apt-get install -y mysql-server mysql-client libmysql++-dev >mysql-log 2>&1
 
 # Get lighttpd and PHP (with memcached)
 echo "Installing lighttpd and PHP..."
-apt-get install -y lighttpd php5-cgi memcached php5-memcache php5-mysql php5-curl php5-dev php-pear libzmq1 libzmq-dev >/dev/null 2>&1
+apt-get install -y lighttpd php5-cgi memcached php5-memcache php5-mysql php5-curl php5-dev php5-mcrypt php-pear libzmq1 libzmq-dev >/dev/null 2>&1
 expect -f /vagrant/vagrant-bootstrap/zmq-beta.exp >/dev/null # This installs the ZMQ PHP plugin through PECL, auto-answering interactive prompts
 echo "extension=zmq.so" > /etc/php5/conf.d/20-zmq.ini
 chmod o+r /etc/php5/conf.d/20-zmq.ini

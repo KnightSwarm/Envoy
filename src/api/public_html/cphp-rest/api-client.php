@@ -51,7 +51,33 @@ class APIClient extends API
 	{
 		if(get_class($object) === "CPHP\REST\Resource")
 		{
-			$id = rawurlencode($object->_api_id);
+			if(!empty($object->_api_id))
+			{
+				$id = rawurlencode($object->_api_id);
+			}
+			else
+			{
+				if($last !== null)
+				{
+					/* Subresource. */
+					if(isset($last->config["subresources"][$object->_subresource_name]["identifier"]))
+					{
+						$id_field = $last->config["subresources"][$object->_subresource_name]["identifier"];
+					}
+					else
+					{
+						$id_field = $this->config["resources"][$object->_type]["identifier"];
+					}
+				}
+				else
+				{
+					/* Top-level resource. */
+					$id_field = $this->config["resources"][$object->_type]["identifier"];
+				}
+				
+				$id = rawurlencode($object->$id_field);
+			}
+			
 			$type_name = isset($object->subresource_type_name) ? $object->subresource_type_name : $object->_type;
 			
 			if($last !== null)
@@ -119,7 +145,6 @@ class APIClient extends API
 			{
 				/* Create new resource and populate data. */
 				$resource = $this->api->BlankResource($handler_config["type"]);
-				pretty_dump($response);
 				$resource->PopulateData($this->api->SerializedToAttributes($handler_config["type"], $response));
 				return $resource;
 			}
@@ -202,6 +227,9 @@ class APIClient extends API
 			
 			$object->SetPrimaryId($new_id);
 			$object->_new = false;
+			
+			$object->PopulateData($object->_commit_buffer);
+			$object->_commit_buffer = array();
 		}
 		else
 		{

@@ -218,6 +218,10 @@
 				"authenticate": {
 					"method": "POST",
 					"response": "json"
+				},
+				"set_password": {
+					"method": "POST",
+					"response": "json"
 				}
 			},
 			"attributes": {
