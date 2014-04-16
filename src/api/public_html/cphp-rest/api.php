@@ -105,7 +105,7 @@ class API extends ResourceBase
 		}
 		else
 		{
-			throw new \Exception("No singular version of '{$name}' found.");
+			throw new ConfigurationException("No singular version of '{$name}' found.");
 		}
 	}
 	
@@ -162,7 +162,7 @@ class API extends ResourceBase
 		return $subresource_type;
 	}
 	
-	public function ResolveResource($type, $id = null, $last = null, $primary_key = false, $filters = array(), $bypass_auth = false)
+	public function ResolveResource($type, $id = null, $last = null, $primary_key = false, $filters = array(), $bypass_auth = false, $expiry = 60)
 	{
 		/* The $last argument holds either null (if the resource is top-level) or the
 		 * object representing the resource that the requested resource is a child
@@ -251,7 +251,7 @@ class API extends ResourceBase
 			
 			$filters[$current_id_field] = $current_id_value;
 			
-			$resource = $this->ObtainResource($type_name, $filters, $id, $primary_key, $chain, $bypass_auth);
+			$resource = $this->ObtainResource($type_name, $filters, $id, $primary_key, $chain, $bypass_auth, null, $expiry);
 			$resource->chain = $chain;
 			$resource->_original_identifier_field = $current_id_field;
 			$resource->_original_identifier_value = $current_id_value;
@@ -268,7 +268,7 @@ class API extends ResourceBase
 		else
 		{
 			/* List of objects was requested. */
-			$resources = $this->ObtainResourceList($type_name, $filters, $chain, $bypass_auth);
+			$resources = $this->ObtainResourceList($type_name, $filters, $chain, $bypass_auth, $expiry);
 			
 			foreach($resources as $resource)
 			{
@@ -284,13 +284,18 @@ class API extends ResourceBase
 		}
 	}
 	
-	public function ResultsToSerialized($type, $data)
+	public function ResultsToSerialized($type, $data, $include_private = false)
 	{
 		$attributes = array();
 		$custom_attributes = array();
 		
 		foreach($this->config["resources"][$type]["attributes"] as $attribute => $settings)
 		{
+			if($include_private !== true && !empty($settings["private"]))
+			{
+				continue; /* This attribute is private, and should not be included. */
+			}
+			
 			if($settings["type"] == "custom")
 			{
 				/* Queue for later processing. */
@@ -392,14 +397,26 @@ class API extends ResourceBase
 		return $attributes;
 	}
 	
-	public function AttributesToSerialized($object, $data = null, $ignore_missing = false)
+	public function AttributesToSerialized($object, $data = null, $ignore_missing = false, $include_private = false)
 	{
-		$type = $object->type;
+		if(!is_object($object))
+		{
+			throw new \Exception("No valid object provided ");
+		}
+		
+		$type = $object->_type;
 		$results = array();
 		
 		foreach($this->config["resources"][$type]["attributes"] as $attribute => $settings)
 		{
-			if(!array_key_exists($attribute, $data))
+			if($include_private !== true && !empty($settings["private"]))
+			{
+				continue; /* This attribute is private, and should not be included. */
+			}
+			
+			$exists = ($data === null) ? array_key_exists($attribute, $object->data) : array_key_exists($attribute, $data);
+			
+			if(!$exists)
 			{
 				if($ignore_missing === false)
 				{
@@ -463,14 +480,24 @@ class API extends ResourceBase
 		return $results;
 	}
 	
-	public function SerializedToAttributes($type, $data, $ignore_missing = false)
+	public function SerializedToAttributes($type, $data, $ignore_missing = false, $include_private = false)
 	{
 		/* $ignore_missing is used for the creation of mock resource objects, where
 		 * not all data is available yet. */
 		$attributes = array();
 		
+		if(!is_array($data))
+		{
+			throw new \Exception("No source data provided.");
+		}
+		
 		foreach($this->config["resources"][$type]["attributes"] as $attribute => $settings)
 		{
+			if($include_private !== true && !empty($settings["private"]))
+			{
+				continue; /* This attribute is private, and should not be included. */
+			}
+			
 			if(!array_key_exists($attribute, $data))
 			{
 				if($ignore_missing === false)

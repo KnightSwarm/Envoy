@@ -10,3 +10,15 @@
 
 table.fill {
   width: 100%; }
+
+.pure-button.black {
+  background-color: #212121;
+  color: white; }
+.pure-button.blue {
+  background-color: #1500C2;
+  color: white; }
+.pure-button.red {
+  background-color: #A4000B;
+  color: white; }
+.pure-button.lime {
+  background-color: #84DC39; }

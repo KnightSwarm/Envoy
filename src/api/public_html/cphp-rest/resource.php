@@ -18,7 +18,7 @@ if(!isset($_CPHP_REST)) { die("Unauthorized."); }
 class Resource extends ResourceBase
 {
 	public $api;
-	public $type;
+	public $_type;
 	public $config;
 	public $item_methods = array();
 	public $_lazy_load = false;
@@ -26,13 +26,14 @@ class Resource extends ResourceBase
 	public $_new;
 	public $parent_resource;
 	public $_primary_key;
+	public $_subresource_name;
 	public $_original_identifier_field;
 	public $_original_identifier_value;
 	public $serialized;
 	public $list_methods = array();
 	public $subresource_plurals = array();
 	public $identifiers = array();
-	public $types = array();
+	public $_types = array();
 	public $chain = array();
 	public $custom_item_handlers = array();
 	public $capitalized_item_handlers = array();
@@ -43,7 +44,7 @@ class Resource extends ResourceBase
 	function __construct($api, $type, $config)
 	{
 		$this->api = $api;
-		$this->type = $type;
+		$this->_type = $type;
 		$this->config = $config;
 		
 		$this->ProcessConfiguration($config);
@@ -74,7 +75,7 @@ class Resource extends ResourceBase
 		}
 		else
 		{
-			throw new \Exception("No singular version of '{$name}' found.");
+			throw new ConfigurationException("No singular version of '{$name}' found.");
 		}
 	}
 	
@@ -92,7 +93,7 @@ class Resource extends ResourceBase
 	
 	public function GetPrimaryIdField()
 	{
-		return $this->api->config["resources"][$this->type]["primary_key"];
+		return $this->api->config["resources"][$this->_type]["primary_key"];
 	}
 	
 	public function GetPrimaryId()
@@ -115,7 +116,7 @@ class Resource extends ResourceBase
 			{
 				$type = $data["type"];
 				
-				$this->types[$name] = $type;
+				$this->_types[$name] = $type;
 				
 				if(isset($data["plural"]))
 				{
@@ -174,12 +175,17 @@ class Resource extends ResourceBase
 		{
 			/* Retrieve the data for this resource first. */
 			$response = $this->api->Execute($this);
-			$this->PopulateData($this->api->SerializedToAttributes($this->type, $response));
+			$this->PopulateData($this->api->SerializedToAttributes($this->_type, $response));
 		}
 		
 		if(array_key_exists($key, $this->config["attributes"]))
 		{
 			$type = $this->config["attributes"][$key]["type"];
+			
+			if(!isset($this->data[$key]) && $type !== "custom")
+			{
+				throw new \Exception("Missing data for '{$key}' in '{$this->_type}' object.");
+			}
 			
 			switch($type)
 			{

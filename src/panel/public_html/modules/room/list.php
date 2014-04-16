@@ -20,15 +20,15 @@ if(!isset($_APP)) { die("Unauthorized."); }
 
 $sRooms = array();
 
-$sFqdn = $sAPI->Fqdn($router->uParameters[1]);
+$sFqdn = $API->Fqdn($router->uParameters[1]);
 
 foreach($sFqdn->ListRooms() as $sRoom)
 {
 	$sRooms[] = array(
 		"jid" => htmlspecialchars($sRoom->jid), 
-		"name" => htmlspecialchars($sRoom->friendly_name), 
-		"owner" => htmlspecialchars($sRoom->owner_name),
-		"owner_jid" => htmlspecialchars($sRoom->owner_jid),
+		"name" => htmlspecialchars($sRoom->name), 
+		"owner" => htmlspecialchars($sRoom->owner->full_name),
+		"owner_jid" => htmlspecialchars($sRoom->owner->jid),
 		"roomname" => htmlspecialchars($sRoom->roomname)
 	);
 }

@@ -1,5 +1,5 @@
 <?php
-/* Copyright 2013 by Sven Slootweg <admin@cryto.net>
+/* Copyright 2014 by Sven Slootweg <admin@cryto.net>
  * 
  * This file is part of Envoy.
  * 
@@ -18,11 +18,22 @@
 
 if(!isset($_APP)) { die("Unauthorized."); }
 
+$sUsers = array();
+
 $sFqdn = $API->Fqdn($router->uParameters[1]);
 
-$sPageContents = NewTemplater::Render("fqdns/lookup", $locale->strings, array(
-	"fqdn" => htmlspecialchars($sFqdn->fqdn),
-	"name" => htmlspecialchars($sFqdn->name),
-	"description" => htmlspecialchars($sFqdn->description),
-	"owner" => htmlspecialchars($sFqdn->owner->jid),
-));
+foreach($sFqdn->ListUsers() as $sUser)
+{
+	$sUsers[] = array(
+		"id" => htmlspecialchars($sUser->id),
+		"jid" => htmlspecialchars($sUser->jid),
+		"name" => htmlspecialchars($sUser->full_name), 
+		"title" => htmlspecialchars($sUser->job_title), 
+		"username" => htmlspecialchars($sUser->username),
+		"email" => htmlspecialchars($sUser->email_address),
+		"phone" => htmlspecialchars($sUser->mobile_number),
+		"status" => htmlspecialchars($sUser->status),
+	);
+}
+
+$sPageContents = NewTemplater::Render("users/list", $locale->strings, array("users" => $sUsers, "fqdn" => $sFqdn->fqdn));

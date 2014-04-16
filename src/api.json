@@ -232,6 +232,16 @@
 					"field": "Username",
 					"type": "string"
 				},
+				"hash": {
+					"field": "Hash",
+					"type": "string",
+					"private": true
+				},
+				"salt": {
+					"field": "Salt",
+					"type": "string",
+					"private": true
+				},
 				"fqdn": {
 					"field": "FqdnId",
 					"type": "fqdn"
@@ -359,7 +369,7 @@
 				},
 				"api_key": {
 					"field": "ApiKeyId",
-					"type": "apikey"
+					"type": "api_key"
 				},
 				"fqdn": {
 					"field": "FqdnId",

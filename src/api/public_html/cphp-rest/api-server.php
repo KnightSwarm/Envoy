@@ -17,6 +17,9 @@ if(!isset($_CPHP_REST)) { die("Unauthorized."); }
 
 class APIServer extends API
 {
+	public $_keypair = true;
+	private $_bypass_all_auth = false;
+		
 	public function ProcessRequest()
 	{
 		global $database;
@@ -35,6 +38,12 @@ class APIServer extends API
 			}
 			
 			$segments = explode("/", $path);
+			
+			foreach($segments as $key => $value)
+			{
+				$segments[$key] = rawurldecode($value);
+			}
+			
 			$queries = array_chunk($segments, 2);
 			$last = null;
 			$chain = array();
@@ -54,7 +63,7 @@ class APIServer extends API
 			$last_query = end($queries);
 			
 			foreach($queries as $query)
-			{	
+			{
 				if(count($query) == 2)
 				{
 					$result = $this->ResolveResource($query[0], $query[1], $last, $primary_key);
@@ -62,49 +71,7 @@ class APIServer extends API
 					if($query === $last_query && $method === "POST")
 					{
 						/* Update the object. */
-						$data = $_POST;
-						
-						$result->PopulateData($this->SerializedToAttributes($result->type, $data, true));
-						
-						/* Check if the user is allowed to do this. */
-						if($this->CallAuthenticator($this->config["resources"][$type]["authenticator"], "update", $result, $this->_keypair) !== true)
-						{
-							throw new NotAuthorizedException("You are not allowed to update this resource.");
-						}
-						
-						$parameters = $this->SerializedToQueryParameters($result->type, $data);
-						$target_table = $this->config["resources"][$result->type]["table"];
-						
-						$assignments = array();
-						
-						foreach($parameters as $key => $value)
-						{
-							$assignments[] = "`{$key}` = :{$key}";
-						}
-						
-						$assignment_string = implode(",", $assignments);
-						
-						$id_field = $result->config["attributes"][$result->GetPrimaryIdField()]["field"];
-						$id_value = $result->GetPrimaryId();
-						
-						if(array_key_exists($id_field, $parameters))
-						{
-							throw new MalformedRequestException("You cannot modify the primary key of a resource.");
-						}
-						
-						$parameters[$id_field] = $id_value;
-						
-						$db_query = "UPDATE {$target_table} SET {$assignment_string} WHERE `{$id_field}` = :{$id_field}";
-						
-						try
-						{
-							$database->CachedQuery($db_query, $parameters, 0);
-						}
-						catch (\DatabaseDuplicateException $e)
-						{
-							/* There was a key uniqueness conflict. */
-							throw new AlreadyExistsException("A resource with these key(s) already exists.", 0, $e);
-						}
+						$result = $this->UpdateObject($result, $_POST);
 						
 						/* If successful, update $result to have an up-to-date version of the resource. 
 						 * This can then be returned to the client. */
@@ -119,100 +86,92 @@ class APIServer extends API
 					}
 					elseif($query === $last_query && $method === "DELETE")
 					{
-						/* Delete the object. First check if the user is allowed to do this. */
-						if($this->CallAuthenticator($this->config["resources"][$type]["authenticator"], "delete", $result, $this->_keypair) !== true)
-						{
-							throw new NotAuthorizedException("You are not allowed to delete this resource.");
-						}
-						
-						$target_table = $this->config["resources"][$result->type]["table"];
-						$id_field = $result->config["attributes"][$result->GetPrimaryIdField()]["field"];
-						$id_value = $result->GetPrimaryId();
-						
-						$db_query = "DELETE FROM {$target_table} WHERE `{$id_field}` = :{$id_field}";
-						
-						$parameters = array();
-						$parameters[$id_field] = $id_value;
-						
-						$database->CachedQuery($db_query, $parameters, 0);
+						/* Delete the object. */
+						$this->DeleteObject($result);
 					}
 					
 					$last = $result;
 				}
 				elseif(count($query) == 1)
 				{
-					if($query === $last_query && $method === "POST")
+					if($last !== null && array_key_exists($query[0], $last->custom_item_handlers) && $last->custom_item_handlers[$query[0]]["method"] === $method)
 					{
-						/* Create a new object. We'll use the $last object, if it exists,
-						 * as a preset value (similar to a filter for retrieval). */
-						$subresource_type = $this->Singularize($query[0]);
-						$new_type = $this->GetRealSubresourceType($subresource_type);
-						
-						$preset = array();
-						
-						if($last !== null)
-						{	
-							$ref_key = $last->config["subresources"][$subresource_type]["filter"];
-							$ref_value =  $last->GetPrimaryId();
-							$preset[$ref_key] = $ref_value;
+						/* A custom handler was called. */
+						if(!array_key_exists($last->_type, $this->registered_item_handlers) || !array_key_exists($query[0], $this->registered_item_handlers[$last->_type]))
+						{
+							throw new ConfigurationException("No custom handler function was provided for {$last->_type}/{$query[0]}, but the configuration says there should be one.");
 						}
 						
-						$data = array_merge($_POST, $preset);
-						$new_id = $this->CreateNewObject($new_type, $data, $last);
+						$response = $this->registered_item_handlers[$last->_type][$query[0]]($this, $last);
 						
-						$plural_type = $this->Pluralize($new_type);
-						$url = "/{$plural_type}/{$new_id}";
-						
-						http_status_code(201); /* 201 Created */
-						redirect($url);
-					}
-					else
-					{
-						/* Get a list of existing objects. */
-						try
+						if(!is_object($response) || get_class($response) !== "CPHP\REST\Resource")
 						{
-							$result = $this->ResolveResource($query[0], null, $last, $primary_key, $filters);
-						}
-						catch (NotFoundException $e)
-						{
-							if($last !== null && array_key_exists($query[0], $last->custom_item_handlers) && $last->custom_item_handlers[$query[0]]["method"] === $method)
+							/* Perhaps this is an array of Resources? */
+							if(is_array($response))
 							{
-								$response = $this->registered_item_handlers[$last->type][$query[0]]($last);
+								$new_responses = array();
 								
-								if(!is_object($response) || get_class($response) !== "\CPHP\REST\Resource")
+								foreach($response as $response_key => $response_item)
 								{
-									/* Perhaps this is an array of Resources? */
-									if(is_array($response))
+									if(!is_object($response_item) || get_class($response_item) !== "CPHP\REST\Resource")
 									{
-										$new_responses = array();
-										
-										foreach($response as $response_key => $response_item)
-										{
-											if(!is_object($response_item) || get_class($response_item) !== "\CPHP\REST\Resource")
-											{
-												/* Wrap anything that isn't a Resource into a Response shim. */
-												$new_responses[$response_key] = new Response($response_item);
-											}
-											else
-											{
-												$new_responses[$response_key] = $response_item;
-											}
-										}
-										
-										$response = $new_responses;
+										/* Wrap anything that isn't a Resource into a Response shim. */
+										$new_responses[$response_key] = new Response($response_item);
 									}
 									else
 									{
-										/* We got some sort of other serializable data back - we'll
-										 * have to wrap this into a Response shim, so as to not
-										 * upset the rest of the code. */
-										$response = new Response($response);
+										$new_responses[$response_key] = $response_item;
 									}
 								}
 								
-								$result = $response;
+								$response = $new_responses;
 							}
 							else
+							{
+								/* We got some sort of other serializable data back - we'll
+								 * have to wrap this into a Response shim, so as to not
+								 * upset the rest of the code. */
+								$response = new Response($response);
+							}
+						}
+						
+						$result = $response;
+					}
+					else
+					{
+						if($query === $last_query && $method === "POST")
+						{
+							/* Create a new object. We'll use the $last object, if it exists,
+							 * as a preset value (similar to a filter for retrieval). */
+							$subresource_type = $this->Singularize($query[0]);
+							$new_type = $this->GetRealSubresourceType($subresource_type);
+							
+							$preset = array();
+							
+							if($last !== null)
+							{	
+								$ref_key = $last->config["subresources"][$subresource_type]["filter"];
+								$ref_value =  $last->GetPrimaryId();
+								$preset[$ref_key] = $ref_value;
+							}
+							
+							$data = array_merge($_POST, $preset);
+							$new_id = rawurlencode($this->CreateNewObject($new_type, $data, $last));
+							
+							$plural_type = rawurlencode($this->Pluralize($new_type));
+							$url = "/{$plural_type}/{$new_id}";
+							
+							http_status_code(201); /* 201 Created */
+							redirect($url);
+						}
+						else
+						{
+							/* Get a list of existing objects. */
+							try
+							{
+								$result = $this->ResolveResource($query[0], null, $last, $primary_key, $filters);
+							}
+							catch (NotFoundException $e)
 							{
 								throw new NotFoundException("Resource type for '{$query[0]}' not found, and no custom handlers available with this name.", 0, $e);
 							}
@@ -281,6 +240,122 @@ class APIServer extends API
 		}
 	}
 	
+	public function Commit(&$object)
+	{
+		if(!empty($object->_new))
+		{
+			if(!empty($object->chain))
+			{
+				$last = end($object->chain);
+			}
+			else
+			{
+				$last = null;
+			}
+			
+			$preset = array();
+			
+			if($last !== null)
+			{
+				$ref_key = $last->config["subresources"][$object->_subresource_name]["filter"];
+				$ref_value =  $last->GetPrimaryId();
+				$preset[$ref_key] = $ref_value;
+			}
+			
+			$data = array_merge($object->_commit_buffer, $preset);
+			$new_id = $this->CreateNewObject($object->_type, $data, $last);
+			
+			/* Retrieve our newly created object as a fresh resource. */
+			$filters = array();
+			$filters[$object->GetPrimaryIdField()] = $new_id;
+			$object = $this->ObtainResource($object->_type, $filters, null, false, $object->chain, false, $object);
+			//$object->data = $object->_commit_buffer;
+			//$id_field = $object->GetPrimaryIdField();
+			//$object->data[$id_field] = $new_id;
+			//$object->serialized = $this->AttributesToSerialized($object, null, true);
+			$object->_commit_buffer = array();
+		}
+		else
+		{
+			$this->UpdateObject($object, $object->_commit_buffer);
+			$object->_commit_buffer= array();
+		}
+	}
+	
+	public function Delete($object)
+	{
+		$this->DeleteObject($object);
+	}
+	
+	public function DeleteObject($object)
+	{
+		/* First check if the user is allowed to do this. */
+		if($this->CallAuthenticator($this->config["resources"][$type]["authenticator"], "delete", $object, $this->_keypair) !== true)
+		{
+			throw new NotAuthorizedException("You are not allowed to delete this resource.");
+		}
+		
+		$target_table = $this->config["resources"][$object->_type]["table"];
+		$id_field = $object->config["attributes"][$object->GetPrimaryIdField()]["field"];
+		$id_value = $object->GetPrimaryId();
+		
+		$db_query = "DELETE FROM {$target_table} WHERE `{$id_field}` = :{$id_field}";
+		
+		$parameters = array();
+		$parameters[$id_field] = $id_value;
+		
+		$database->CachedQuery($db_query, $parameters, 0);
+	}
+	
+	public function UpdateObject($object, $data)
+	{
+		global $database;
+		
+		$object->PopulateData($this->SerializedToAttributes($object->_type, $data, true));
+		
+		/* Check if the user is allowed to do this. */
+		if($this->CallAuthenticator($this->config["resources"][$object->_type]["authenticator"], "update", $object, $this->_keypair) !== true)
+		{
+			throw new NotAuthorizedException("You are not allowed to update this resource.");
+		}
+		
+		$parameters = $this->SerializedToQueryParameters($object->_type, $data);
+		$target_table = $this->config["resources"][$object->_type]["table"];
+		
+		$assignments = array();
+		
+		foreach($parameters as $key => $value)
+		{
+			$assignments[] = "`{$key}` = :{$key}";
+		}
+		
+		$assignment_string = implode(",", $assignments);
+		
+		$id_field = $object->config["attributes"][$object->GetPrimaryIdField()]["field"];
+		$id_value = $object->GetPrimaryId();
+		
+		if(array_key_exists($id_field, $parameters))
+		{
+			throw new MalformedRequestException("You cannot modify the primary key of a resource.");
+		}
+		
+		$parameters[$id_field] = $id_value;
+		
+		$db_query = "UPDATE {$target_table} SET {$assignment_string} WHERE `{$id_field}` = :{$id_field}";
+		
+		try
+		{
+			$database->CachedQuery($db_query, $parameters, 0);
+		}
+		catch (\DatabaseDuplicateException $e)
+		{
+			/* There was a key uniqueness conflict. */
+			throw new AlreadyExistsException("A resource with these key(s) already exists.", 0, $e);
+		}
+		
+		$object->serialized = $this->AttributesToSerialized($object);
+	}
+	
 	public function CreateNewObject($type, $data, $last = null)
 	{
 		global $database;
@@ -322,13 +397,18 @@ class APIServer extends API
 		return $new_id;
 	}
 	
-	public function SerializedToQueryParameters($type, $data)
+	public function SerializedToQueryParameters($type, $data, $include_private = false)
 	{
 		$results = array();
 		$handler = new \CPHPFormHandler($data, true);
 		
 		foreach($this->config["resources"][$type]["attributes"] as $attribute => $settings)
 		{
+			if($include_private !== true && !empty($settings["private"]))
+			{
+				continue; /* This attribute is private, and should not be included. */
+			}
+			
 			if(!isset($data[$attribute]))
 			{
 				continue;
@@ -363,6 +443,11 @@ class APIServer extends API
 								throw new BadDataException("Enum value not found.");
 							}
 							$value = $this->config["enums"][$settings["type"]][$value];
+						}
+						elseif(is_object($value) && get_class($value) === "CPHP\REST\Resource")
+						{
+							/* This is a Resource object. Extract the ID. */
+							$value = $value->GetPrimaryId();
 						}
 						break;
 				}
@@ -530,12 +615,12 @@ class APIServer extends API
 		return array($query, $values);
 	}
 	
-	public function ObtainResourceList($type, $filters, $chain = array(), $bypass_auth = false)
+	public function ObtainResourceList($type, $filters, $chain = array(), $bypass_auth = false, $expiry = 60)
 	{
 		global $database;
 		list($query, $params) = $this->BuildQuery($type, $filters);
 		
-		if($result = $database->CachedQuery($query, $params))
+		if($result = $database->CachedQuery($query, $params, $expiry))
 		{
 			$return_objects = array();
 			
@@ -544,7 +629,7 @@ class APIServer extends API
 				$data = $row;
 				$resource = $this->BlankResource($type);
 				$resource->serialized = $this->ResultsToSerialized($type, $data);
-				$resource->PopulateData($this->SerializedToAttributes($type, $resource->serialized));
+				$resource->PopulateData($this->SerializedToAttributes($type, $this->ResultsToSerialized($type, $data, true), false, true));
 				
 				/* Check if the user is allowed to do this. */
 				if($bypass_auth === false && $this->CallAuthenticator($this->config["resources"][$type]["authenticator"], "get", $resource, $this->_keypair) !== true)
@@ -573,7 +658,7 @@ class APIServer extends API
 		}
 	}
 	
-	public function ObtainResource($type, $filters, $id = null, $primary_key = false, $chain = array(), $bypass_auth = false)
+	public function ObtainResource($type, $filters, $id = null, $primary_key = false, $chain = array(), $bypass_auth = false, $existing_resource = null, $expiry = 60)
 	{
 		/* $filters: A single filter for a normal identifier query, or
 		 * multiple filters if a subresource. */
@@ -581,14 +666,25 @@ class APIServer extends API
 		
 		list($query, $params) = $this->BuildQuery($type, $filters, true);
 		
-		if($result = $database->CachedQuery($query, $params))
+		if($result = $database->CachedQuery($query, $params, $expiry))
 		{
 			$data = $result->data[0];
-			$resource = $this->BlankResource($type);
+			
+			if($existing_resource === null)
+			{
+				$resource = $this->BlankResource($type);
+			}
+			else
+			{
+				$resource = $existing_resource;
+			}
+			
 			$resource->serialized = $this->ResultsToSerialized($type, $data);
-			$resource->PopulateData($this->SerializedToAttributes($type, $resource->serialized));
+			/* We re-serialize here, to include the private attributes. */
+			$resource->PopulateData($this->SerializedToAttributes($type, $this->ResultsToSerialized($type, $data, true), false, true));
 			
 			/* Check if the user is allowed to do this. */
+			
 			if($bypass_auth === false && $this->CallAuthenticator($this->config["resources"][$type]["authenticator"], "get", $resource, $this->_keypair) !== true)
 			{
 				throw new NotAuthorizedException("You are not allowed to retrieve this resource.");
@@ -635,9 +731,21 @@ class APIServer extends API
 	
 	public function CallAuthenticator($name, $action, $object, $keypair)
 	{
+		if($keypair === true || $this->_bypass_all_auth === true)
+		{
+			/* This is used for pre-auth internal API calls. Once the client is
+			 * authenticated, this variable will contain a keypair resource
+			 * instead. */
+			return true;
+		}
+		
 		if(array_key_exists($name, $this->authenticator))
 		{
-			return $this->authenticator[$name]($object, $keypair, $action);
+			/* Authenticators can access everything. */
+			$this->_bypass_all_auth = true;
+			$result = $this->authenticator[$name]($this, $object, $keypair, $action);
+			$this->_bypass_all_auth = false;
+			return $result;
 		}
 		else
 		{

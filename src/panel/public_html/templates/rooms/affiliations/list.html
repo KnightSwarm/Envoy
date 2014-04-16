@@ -3,16 +3,26 @@
 		<tr>
 			<th>JID</th>
 			<th>Affiliation</th>
-			<th></th>
+			<th style="width: 480px;">Change to...</th>
 		</tr>
 	</thead>
 	{%foreach affiliation in affiliations}
 		<tr>
-			<!-- CURPOS: Add roomname and fqdn to data, and add correct info... -->
-			<td><a href="/fqdns/{%?fqdn}/rooms/{%?room[roomname]}">{%?room[name]}</a></td>
-			<td>{%?room[jid]}</td>
-			<td>{%?room[owner]} ({%?room[owner_jid]})</td>
-			<td><!-- delete button will go here...? --></td>
+			<td>{%?affiliation[jid]}</td>
+			<td>{%?affiliation[affiliation]}</td>
+			<td>
+				{%if access-level >= 100}
+				<!-- Currently the XMPPd state is synced to the database. For this to work, that needs to be reversed.
+					<form method="post" action="/fqdns/{%?fqdn}/rooms/{%?room}/affiliations/{%?affiliation[id]}">
+						<button class="pure-button blue" type="submit" name="affiliation" value="owner">Owner</button>
+						<button class="pure-button red" type="submit" name="affiliation" value="admin">Admin</button>
+						<button class="pure-button lime" type="submit" name="affiliation" value="member">Member</button>
+						<button class="pure-button" type="submit" name="affiliation" value="none">None (Guest)</button>
+						<button class="pure-button black" type="submit" name="affiliation" value="outcast">Banned</button>
+					</form>
+				-->
+				{%/if}
+			</td>
 		</tr>
 	{%/foreach}
 </table>

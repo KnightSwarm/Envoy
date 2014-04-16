@@ -1,5 +1,5 @@
 <?php
-/* Copyright 2013 by Sven Slootweg <admin@cryto.net>
+/* Copyright 2014 by Sven Slootweg <admin@cryto.net>
  * 
  * This file is part of Envoy.
  * 
@@ -18,11 +18,24 @@
 
 if(!isset($_APP)) { die("Unauthorized."); }
 
-$sFqdn = $API->Fqdn($router->uParameters[1]);
-
-$sPageContents = NewTemplater::Render("fqdns/lookup", $locale->strings, array(
-	"fqdn" => htmlspecialchars($sFqdn->fqdn),
-	"name" => htmlspecialchars($sFqdn->name),
-	"description" => htmlspecialchars($sFqdn->description),
-	"owner" => htmlspecialchars($sFqdn->owner->jid),
-));
+if($router->uMethod == "post")
+{
+	$handler = new CPHPFormHandler();
+	
+	try
+	{
+		$handler
+			->RequireNonEmpty("affiliation")
+			->Done();
+	}
+	catch (FormValidationException $e)
+	{
+		redirect("/fqdns/{$router->uParameters[1]}/rooms/{$router->uParameters[2]}/affiliations");
+	}
+	
+	$sAffiliation = $API->Affiliation($router->uParameters[3]);
+	$sAffiliation->affiliation = $handler->GetValue("affiliation");
+	$sAffiliation->DoCommit();
+	
+	redirect("/fqdns/{$router->uParameters[1]}/rooms/{$router->uParameters[2]}/affiliations");
+}

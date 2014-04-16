@@ -22,7 +22,7 @@ class ListRequest extends ResourceBase
 	function __construct($api, $type, $filters)
 	{
 		$this->api = $api;
-		$this->type = $type;
+		$this->_type = $type;
 		$this->filters = $filters;
 	}
 }

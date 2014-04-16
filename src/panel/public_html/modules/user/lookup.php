@@ -18,16 +18,18 @@
 
 if(!isset($_APP)) { die("Unauthorized."); }
 
-$sRoom = $API->Fqdn($router->uParameters[1])->Room($router->uParameters[2]);
+$sUser = $API->Fqdn($router->uParameters[1])->User($router->uParameters[2]);
 
-$sPageContents = NewTemplater::Render("rooms/lookup", $locale->strings, array(
-	"fqdn" => htmlspecialchars($sRoom->fqdn->fqdn),
-	"name" => htmlspecialchars($sRoom->name),
-	"roomname" => htmlspecialchars($sRoom->roomname),
-	"jid" => htmlspecialchars($sRoom->jid),
-	"owner" => htmlspecialchars($sRoom->owner->full_name),
-	"owner-jid" => htmlspecialchars($sRoom->owner->jid),
-	"creation-date" => local_from_unix($sRoom->creation_date, $locale->datetime_long),
-	"private" => $sRoom->is_private,
-	"archived" => $sRoom->is_archived,
+$sPageContents = NewTemplater::Render("users/lookup", $locale->strings, array(
+	"username" => htmlspecialchars($sUser->username),
+	"fqdn" => htmlspecialchars($sUser->fqdn->fqdn),
+	"jid" => htmlspecialchars($sUser->jid),
+	"name" => htmlspecialchars($sUser->full_name),
+	"nickname" => htmlspecialchars($sUser->nickname),
+	"job-title" => htmlspecialchars($sUser->job_title),
+	"email" => htmlspecialchars($sUser->email_address),
+	"phone" => htmlspecialchars($sUser->mobile_number),
+	"status" => htmlspecialchars($sUser->status),
+	"status-message" => htmlspecialchars($sUser->status_message),
+	"active" => htmlspecialchars($sUser->is_active)
 ));

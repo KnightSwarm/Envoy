@@ -1,0 +1,24 @@
+<table class="pure-table pure-table-bordered fill">
+	<thead>
+		<tr>
+			<th>Name</th>
+			<th>Job Title</th>
+			<th>JID</th>
+			<th>E-mail Address</th>
+			<th>Mobile Number</th>
+			<th>Status</th>
+			<th></th>
+		</tr>
+	</thead>
+	{%foreach user in users}
+		<tr>
+			<td><a href="/fqdns/{%?fqdn}/users/{%?user[username]}">{%?user[name]}</a></td>
+			<td>{%?user[title]}</td>
+			<td>{%?user[jid]}</td>
+			<td>{%?user[email]}</td>
+			<td>{%?user[phone]}</td>
+			<td>{%?user[status]}</td>
+			<td><!-- delete button will go here...? --></td>
+		</tr>
+	{%/foreach}
+</table>

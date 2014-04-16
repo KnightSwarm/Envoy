@@ -20,7 +20,7 @@ if(!isset($_APP)) { die("Unauthorized."); }
 
 $sFqdns = array();
 
-foreach($sAPI->ListFqdns() as $sFqdn)
+foreach($API->ListFqdns() as $sFqdn)
 {
 	$sFqdns[] = array("id" => $sFqdn->id, "fqdn" => htmlspecialchars($sFqdn->fqdn));
 }

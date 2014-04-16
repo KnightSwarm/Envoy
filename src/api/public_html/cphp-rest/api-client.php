@@ -51,16 +51,16 @@ class APIClient extends API
 	{
 		if(get_class($object) === "CPHP\REST\Resource")
 		{
-			$id = $object->_api_id;
-			$type_name = isset($object->subresource_type_name) ? $object->subresource_type_name : $object->type;
+			$id = rawurlencode($object->_api_id);
+			$type_name = isset($object->subresource_type_name) ? $object->subresource_type_name : $object->_type;
 			
 			if($last !== null)
 			{
-				$plural = $last->Pluralize($type_name);
+				$plural = rawurlencode($last->Pluralize($type_name));
 			}
 			else
 			{
-				$plural = $this->Pluralize($type_name);
+				$plural = rawurlencode($this->Pluralize($type_name));
 			}
 			
 			return "{$plural}/{$id}";
@@ -73,25 +73,25 @@ class APIClient extends API
 		{
 			if($last !== null)
 			{
-				$plural = $last->Pluralize($object->type);
+				$plural = rawurlencode($last->Pluralize($object->_type));
 			}
 			else
 			{
-				$plural = $this->Pluralize($object->type);
+				$plural = rawurlencode($this->Pluralize($object->_type));
 			}
 			
 			return $plural;
 		}
 	}
 	
-	public function ObtainResourceList($type, $filters, $chain = array(), $bypass_auth = false)
+	public function ObtainResourceList($type, $filters, $chain = array(), $bypass_auth = false, $expiry = 60)
 	{
 		$list = new ListRequest($this, $type, $filters);
 		$list->chain = $chain;
 		return $this->Execute($list);
 	}
 	
-	public function ObtainResource($type, $filters, $id, $primary_key = false, $chain = array(), $bypass_auth = false)
+	public function ObtainResource($type, $filters, $id, $primary_key = false, $chain = array(), $bypass_auth = false, $existing_resource = null, $expiry = 60)
 	{
 		$obj = $this->api->BlankResource($type);
 		$obj->_lazy_load = true;
@@ -119,6 +119,7 @@ class APIClient extends API
 			{
 				/* Create new resource and populate data. */
 				$resource = $this->api->BlankResource($handler_config["type"]);
+				pretty_dump($response);
 				$resource->PopulateData($this->api->SerializedToAttributes($handler_config["type"], $response));
 				return $resource;
 			}
@@ -138,7 +139,7 @@ class APIClient extends API
 			}
 			else
 			{
-				throw new ConfigurationException("No valid expected response type configured for custom '{$object->handler_name}' handler on '{$object->object->type}' type.");
+				throw new ConfigurationException("No valid expected response type configured for custom '{$object->handler_name}' handler on '{$object->object->_type}' type.");
 			}
 		}
 		elseif(get_class($object) == "CPHP\REST\Resource")
@@ -172,8 +173,8 @@ class APIClient extends API
 			
 			foreach($response as $item)
 			{
-				$resource = $this->api->BlankResource($object->type);
-				$resource->PopulateData($this->api->SerializedToAttributes($object->type, $item));
+				$resource = $this->api->BlankResource($object->_type);
+				$resource->PopulateData($this->api->SerializedToAttributes($object->_type, $item));
 				$resources[] = $resource;
 			}
 			
@@ -187,7 +188,7 @@ class APIClient extends API
 		{
 			/* Create new object. We'll create a mock ListRequest for
 			 * the sake of building a URL to POST the object to. */
-			$list = new ListRequest($this->api, $object->type, array());
+			$list = new ListRequest($this->api, $object->_type, array());
 			
 			if(!empty($object->chain))
 			{
@@ -208,7 +209,7 @@ class APIClient extends API
 			$target_path = $this->BuildUrl($object);
 			$new_data = $this->DoRequest("POST", $target_path, $this->AttributesToSerialized($object, $object->_commit_buffer, true));
 			
-			$object->PopulateData($this->SerializedToAttributes($object->type, $new_data));
+			$object->PopulateData($this->SerializedToAttributes($object->_type, $new_data));
 		}
 		
 		/* Empty the commit buffer. */
@@ -223,6 +224,11 @@ class APIClient extends API
 	
 	public function DoRequest($method, $path, $parameters = array(), $cache = true)
 	{
+		if(!is_array($parameters))
+		{
+			throw new \Exception("Parameters must be an (associative) array.");
+		}
+		
 		if(!starts_with($path, "/"))
 		{
 			$path = "/" . $path;
@@ -320,7 +326,7 @@ class APIClient extends API
 			if(json_last_error() != JSON_ERROR_NONE)
 			{
 				if(isset($this->logger)) { $this->logger->addError("The response returned by the API was not valid JSON.", array("response" => $result)); }
-				
+				echo($result);
 				throw new ApiException("The response returned by the API was not valid JSON.", 0, null, $result);
 			}
 			

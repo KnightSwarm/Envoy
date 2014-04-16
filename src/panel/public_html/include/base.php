@@ -71,20 +71,24 @@ $logger->pushProcessor(new Processor\UidProcessor());
 ErrorHandler::register($logger); /* Sets this logger as the default target for uncaught exceptions and errors */
 
 /* Load the Envoy PHP API library... */
-require("lib/envoylib/base.php");
+$_CPHP_REST = true;
+require("cphp-rest/base.php");
+
+$API = new CPHP\REST\APIClient($cphp_config->api->endpoint);
+$API->LoadConfiguration("../../api.json");
 
 /* If the user is logged in, we use their keypair (stored in the session data).
  * If not, we use the master keypair, since the only call that can be made
- * is an authentication and keypair retrieval call. */
+ * is an authentication and keypair retrieval call. */ 
 if(!empty($_SESSION["user_id"]))
 {
 	/* User keypair */
-	$sAPI = new EnvoyLib\API($cphp_config->api->endpoint, $_SESSION["api_id"], $_SESSION["api_key"]);
+	$API->Authenticate($_SESSION["api_id"], $_SESSION["api_key"]);
 }
 else
 {
 	/* Master keypair */
-	$sAPI = new EnvoyLib\API($cphp_config->api->endpoint, $cphp_config->api->id, $cphp_config->api->key);
+	$API->Authenticate($cphp_config->api->id, $cphp_config->api->key);
 }
 
-$sAPI->SetupMonolog(new StreamHandler("/etc/envoy/panel.log", $log_level));
+//$sAPI->SetupMonolog(new StreamHandler("/etc/envoy/panel.log", $log_level));

@@ -20,6 +20,6 @@ if(!isset($_APP)) { die("Unauthorized."); }
 
 if(!empty($_SESSION["user_id"]))
 {
-	$sApiUser = $sAPI->User($_SESSION["username"], $_SESSION["fqdn"]);
+	$sApiUser = $API->User($_SESSION["jid"]);
 	$sRouterAuthenticated = true;
 }

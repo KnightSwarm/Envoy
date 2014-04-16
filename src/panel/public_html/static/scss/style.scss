@@ -18,3 +18,30 @@ table.fill
 {
 	width: 100%;
 }
+
+.pure-button
+{
+	&.black
+	{
+		background-color: #212121;
+		color: white;
+	}
+	
+	&.blue
+	{
+		background-color: #1500C2;
+		color: white;
+	}
+
+	&.red
+	{
+		background-color: #A4000B;
+		color: white;
+	}
+	
+	&.lime
+	{
+		background-color: #84DC39;
+	}
+}
+

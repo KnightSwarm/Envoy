@@ -18,18 +18,21 @@
 
 if(!isset($_APP)) { die("Unauthorized."); }
 
-$sRoom = $sAPI->Room($router->uParameters[2], $router->uParameters[1]);
-$sFqdn = $sAPI->Fqdn($router->uParameters[1]);
+$sRoom = $API->Fqdn($router->uParameters[1])->Room($router->uParameters[2]);
 
 $sAffiliations = array();
 
 foreach($sRoom->ListAffiliations() as $sAffiliation)
 {
 	$sAffiliations[] = array(
-		"jid" => $sAffiliation->user_jid,
+		"jid" => $sAffiliation->user->jid,
 		"affiliation" => $sAffiliation->affiliation,
 		"id" => $sAffiliation->id
 	);
 }
 
-NewTemplater::Render("rooms/affiliations/list", $locale->strings, array("affiliations" => $sAffiliations));
+$sPageContents = NewTemplater::Render("rooms/affiliations/list", $locale->strings, array(
+	"affiliations" => $sAffiliations, 
+	"fqdn" => htmlspecialchars($router->uParameters[1]), 
+	"room" => htmlspecialchars($router->uParameters[2])
+));

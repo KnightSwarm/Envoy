@@ -31,7 +31,7 @@ apt-get upgrade -y >/dev/null
 
 # Get htop and such
 echo "Installing tools..."
-apt-get install -y htop iftop iotop git highlight multitail expect pkg-config build-essential > /dev/null
+apt-get install -y htop iftop iotop git highlight multitail expect pkg-config build-essential inotify-tools > /dev/null
 
 # Get Python and pip
 echo "Installing Python..."

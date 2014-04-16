@@ -49,15 +49,37 @@ class ResourceBase
 			
 			if(count($arguments) < 1)
 			{
+				if($is_resource)
+				{
+					$real_type = $this->GetRealSubresourceType($type);
+				}
+				else
+				{
+					$real_type = $type;
+				}
+				
 				/* New object... */
-				$obj = $this->api->BlankResource($type);
+				$obj = $this->api->BlankResource($real_type);
 				$obj->_new = true;
+				$obj->_subresource_name = $type;
 				
 				if($is_resource)
 				{
 					$obj->parent_resource = $this;
 					$obj->chain = $this->chain;
 					$obj->chain[] = $this;
+				}
+				
+				if(get_class($this->api) == "CPHP\REST\APIServer")
+				{
+					/* We need to manually set the implicit reference here,
+					 * as there is no URL to derive it from later on. */
+					if($is_resource)
+					{	
+						$ref_key = $this->config["subresources"][$type]["filter"];
+						$ref_value =  $this->GetPrimaryId();
+						$obj->$ref_key = $ref_value;
+					}
 				}
 				
 				return $obj;
@@ -70,10 +92,12 @@ class ResourceBase
 					 * name - the resource type specified is just the subresource type.
 					 * FIXME: This currently breaks, because the conversion would happen
 					 * twice in different places. Commented out for now. */
-					//$type = $this->types[$type];
+					//$type = $this->_types[$type];
 				}
 				
-				return $this->api->ResolveResource($type, $arguments[0], $last);
+				$obj = $this->api->ResolveResource($type, $arguments[0], $last);
+				$obj->_subresource_name = $type;
+				return $obj;
 			}
 		}
 		elseif(isset($this->list_methods[$method]))
@@ -82,9 +106,10 @@ class ResourceBase
 			$type = $this->list_methods[$method];
 			$filters = (count($arguments) >= 1) ? $arguments[0] : array();
 			$bypass_auth = (count($arguments) >= 2) ? $arguments[1] : false;
+			$expiry = (count($arguments) >= 3) ? $arguments[2] : 60;
 			$plural = $this->Pluralize($type);
 			
-			$resources = $this->api->ResolveResource($plural, null, $last, false, $filters, $bypass_auth);
+			$resources = $this->api->ResolveResource($plural, null, $last, false, $filters, $bypass_auth, $expiry);
 			
 			if($is_resource)
 			{
@@ -94,6 +119,7 @@ class ResourceBase
 				foreach($resources as $resource)
 				{
 					$resource->chain = $new_chain;
+					$resource->_subresource_name = $type;
 				}
 			}
 			
@@ -101,7 +127,6 @@ class ResourceBase
 		}
 		else
 		{
-			throw new \Exception("boom!");
 			trigger_error('Call to undefined method '.__CLASS__.'::'.$method.'()', E_USER_ERROR);
 			return;
 		}
