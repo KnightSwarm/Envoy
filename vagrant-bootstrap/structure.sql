@@ -8,8 +8,9 @@ CREATE TABLE IF NOT EXISTS `affiliations` (
   `Affiliation` tinyint(3) unsigned NOT NULL,
   PRIMARY KEY (`Id`),
   UNIQUE KEY `Id` (`Id`),
+  UNIQUE KEY `UserId_2` (`UserId`,`RoomId`),
   KEY `UserId` (`UserId`,`RoomId`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8;
 
 CREATE TABLE IF NOT EXISTS `api_keys` (
   `Id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
@@ -26,7 +27,8 @@ CREATE TABLE IF NOT EXISTS `api_permissions` (
   `ApiKeyId` bigint(20) unsigned NOT NULL,
   `FqdnId` bigint(20) unsigned NOT NULL,
   `Type` int(11) NOT NULL,
-  PRIMARY KEY (`Id`)
+  PRIMARY KEY (`Id`),
+  UNIQUE KEY `ApiKeyId` (`ApiKeyId`,`FqdnId`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8;
 
 CREATE TABLE IF NOT EXISTS `fqdns` (
@@ -44,7 +46,8 @@ CREATE TABLE IF NOT EXISTS `fqdn_settings` (
   `Key` varchar(50) NOT NULL,
   `Value` varchar(150) NOT NULL,
   `LastModified` timestamp NULL DEFAULT NULL,
-  PRIMARY KEY (`Id`)
+  PRIMARY KEY (`Id`),
+  UNIQUE KEY `FqdnId` (`FqdnId`,`Key`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 CREATE TABLE IF NOT EXISTS `log_events` (
@@ -60,6 +63,7 @@ CREATE TABLE IF NOT EXISTS `log_events` (
   `FqdnId` bigint(20) unsigned NOT NULL,
   PRIMARY KEY (`Id`),
   UNIQUE KEY `OrderId` (`OrderId`),
+  UNIQUE KEY `Id` (`Id`),
   KEY `FqdnId` (`FqdnId`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8;
 
@@ -75,6 +79,7 @@ CREATE TABLE IF NOT EXISTS `log_messages` (
   `FqdnId` bigint(20) unsigned NOT NULL,
   PRIMARY KEY (`Id`),
   UNIQUE KEY `OrderId` (`OrderId`),
+  UNIQUE KEY `Id` (`Id`),
   KEY `FqdnId` (`FqdnId`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8;
 
@@ -88,7 +93,7 @@ CREATE TABLE IF NOT EXISTS `presences` (
   `FqdnId` bigint(20) unsigned NOT NULL,
   PRIMARY KEY (`Id`),
   KEY `FqdnId` (`FqdnId`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8;
 
 CREATE TABLE IF NOT EXISTS `presences_old` (
   `Id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
@@ -110,6 +115,7 @@ CREATE TABLE IF NOT EXISTS `rooms` (
   `ArchivalDate` timestamp NULL DEFAULT NULL,
   `Name` varchar(80) NOT NULL,
   PRIMARY KEY (`Id`),
+  UNIQUE KEY `Node` (`Node`,`FqdnId`),
   KEY `FqdnId` (`FqdnId`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8;
 
@@ -129,7 +135,8 @@ CREATE TABLE IF NOT EXISTS `users` (
   `MobileNumber` varchar(45) CHARACTER SET latin1 NOT NULL,
   `Status` tinyint(4) NOT NULL,
   `StatusMessage` varchar(200) NOT NULL,
-  PRIMARY KEY (`Id`)
+  PRIMARY KEY (`Id`),
+  UNIQUE KEY `Username` (`Username`,`FqdnId`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8;
 
 CREATE TABLE IF NOT EXISTS `user_permissions` (
@@ -137,8 +144,9 @@ CREATE TABLE IF NOT EXISTS `user_permissions` (
   `UserId` bigint(20) unsigned NOT NULL,
   `FqdnId` bigint(20) unsigned NOT NULL,
   `Type` int(11) NOT NULL,
-  PRIMARY KEY (`Id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+  PRIMARY KEY (`Id`),
+  UNIQUE KEY `UserId` (`UserId`,`FqdnId`)
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8;
 
 CREATE TABLE IF NOT EXISTS `user_settings` (
   `Id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
@@ -146,5 +154,6 @@ CREATE TABLE IF NOT EXISTS `user_settings` (
   `Key` varchar(50) NOT NULL,
   `Value` varchar(150) NOT NULL,
   `LastModified` timestamp NULL DEFAULT NULL,
-  PRIMARY KEY (`Id`)
+  PRIMARY KEY (`Id`),
+  UNIQUE KEY `UserId` (`UserId`,`Key`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
