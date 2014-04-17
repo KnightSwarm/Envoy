@@ -1,3 +1,5 @@
+#!/usr/bin/env python2
+
 import uuid, sys, json
 
 from envoyxmpp.core.component import Component

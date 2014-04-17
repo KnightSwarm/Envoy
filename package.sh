@@ -74,3 +74,37 @@ dpkg-deb --build envoy-server-panel_$VER
 cd ../
 
 ## Step 3: Envoy Server (XMPP) Component
+BUILDROOT=build/envoy-server-component_$VER
+SOURCEDIR=build-assets/envoy-server-component
+
+cp -r $SOURCEDIR/root/* $BUILDROOT/
+mkdir $BUILDROOT/DEBIAN
+sed "s/\$VER/$VER/g" $SOURCEDIR/control > $BUILDROOT/DEBIAN/control
+cp $SOURCEDIR/config $BUILDROOT/DEBIAN/
+cp $SOURCEDIR/templates $BUILDROOT/DEBIAN/
+cp $SOURCEDIR/postinst $BUILDROOT/DEBIAN/
+
+mkdir -p $BUILDROOT/usr/share/doc/envoy
+cp src/config.json.example $BUILDROOT/usr/share/doc/envoy/config.json.example.component
+
+mkdir -p $BUILDROOT/usr/share/envoy/component
+cp -r src/component/* $BUILDROOT/usr/share/envoy/component/
+
+cp /vagrant/vagrant-bootstrap/structure.sql /usr/share/doc/envoy/structure.sql
+
+# Replace symlinks with real files
+rm $BUILDROOT/usr/share/envoy/component/requirements.txt
+cp /vagrant/vagrant-bootstrap/requirements.txt $BUILDROOT/usr/share/envoy/component/
+rm $BUILDROOT/usr/share/envoy/component/optional_deps.txt
+cp /vagrant/vagrant-bootstrap/optional_deps.txt $BUILDROOT/usr/share/envoy/component/
+
+mkdir -p $BUILDROOT/etc/envoy
+cp -r src/component/templates $BUILDROOT/etc/envoy/templates
+
+mkdir -p $BUILDROOT/usr/bin
+cp -r src/component/run-debian.py $BUILDROOT/usr/bin/envoy
+chmod +x $BUILDROOT/usr/bin/envoy
+
+cd build/
+dpkg-deb --build envoy-server-component_$VER
+cd ../

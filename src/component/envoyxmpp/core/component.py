@@ -89,8 +89,12 @@ class Component(ComponentXMPP):
 		logger = ApplicationLogger.Instance(self.identifier)
 		
 		# Shut down threads, so we can recreate new ones later.
-		self.event_thread.stop = True
-		self.queue.stop = True
+		try:
+			self.event_thread.stop = True
+			self.queue.stop = True
+		except AttributeError, e:
+			# Never mind, we apparently never connected.
+			return
 		
 		# Statekeeping.
 		last_event_thread = False
