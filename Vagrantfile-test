@@ -1,0 +1,10 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+VAGRANTFILE_API_VERSION = "2"
+
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+  config.vm.box = "debian72-64"
+  config.vm.box_url = "http://cryto.net/~joepie91/debian72-64.box"
+  config.vm.network :forwarded_port, guest: 5222, host: 6222
+end

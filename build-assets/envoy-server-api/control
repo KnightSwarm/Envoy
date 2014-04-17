@@ -1,0 +1,8 @@
+Package: envoy-server-api
+Version: $VER
+Section: base
+Priority: optional
+Architecture: all
+Depends: mysql-server, httpd-cgi, php5-cgi (>=5.3), memcached, php5-memcache, php5-mysql, php5-curl, php5-dev, php5-mcrypt, php-pear, libzmq1, libzmq-dev, expect, pkg-config
+Maintainer: Sven Slootweg <sven.slootweg@knightswarm.com>
+Description: Envoy API Server

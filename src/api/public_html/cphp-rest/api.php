@@ -665,6 +665,11 @@ class API extends ResourceBase
 			{
 				usort($values, function($a, $b) { return strcasecmp($a, $b); });
 			}
+			elseif($values === null)
+			{
+				/* Nulls should be converted into empty strings. */
+				$values = "";
+			}
 		}
 		$sts .= http_build_query($get_data) . "\n";
 		
@@ -676,6 +681,10 @@ class API extends ResourceBase
 			if(is_array($values))
 			{
 				usort($values, function($a, $b) { return strcasecmp($a, $b); });
+			}
+			elseif($values === null)
+			{
+				$values = "";
 			}
 		}
 		$sts .= http_build_query($post_data) . "\n";

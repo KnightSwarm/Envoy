@@ -55,6 +55,11 @@ $router->routes = array(
 			"authenticator" => "authenticators/logged_in.php",
 			"auth_error" => "modules/error/not_logged_in.php"
 		),
+		"^/profile$" => array(
+			"target" => "modules/profile.php",
+			"authenticator" => "authenticators/logged_in.php",
+			"auth_error" => "modules/error/not_logged_in.php"
+		),
 		"^/rooms$" => array(
 			"target" => "modules/room/redirect_own.php",
 			"methods" => "get",

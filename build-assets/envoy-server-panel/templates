@@ -1,0 +1,4 @@
+Template: envoy-panel/hostname
+Type: string
+Description: What hostname should the control panel be available on?
+ This is the hostname that will be used by the Envoy control panel. It is what end users and FQDN administrators use to manage their account and/or FQDN.

@@ -1,0 +1,39 @@
+#!/bin/sh
+set -e
+
+. /usr/share/debconf/confmodule
+
+cat << EOF > /tmp/zmq-beta.exp
+set timeout -1
+spawn sh
+match_max 100000
+expect "# "
+send -- "pecl install zmq-beta\r"
+expect {
+	"pecl/zmq is already installed" {
+		expect "# "
+		send -- "exit\r"
+		expect eof
+	}
+	"Please provide the prefix of libzmq installation" { 
+		send -- "\r"
+		expect "# "
+		send -- "exit\r"
+		expect eof
+	}
+}
+EOF
+
+expect -f /tmp/zmq-beta.exp
+
+db_get "envoy-api/hostname"
+API_HOSTNAME=$RET
+
+cat /usr/share/envoy/50-envoy-api.conf | sed "s/\$API_HOSTNAME/$API_HOSTNAME/g" > /etc/lighttpd/conf-available/50-envoy-api.conf
+
+if command -v lighttpd >&2 2>/dev/null; then
+	lighty-enable-mod fastcgi fastcgi-php envoy-api || true
+	/etc/init.d/lighttpd restart
+fi
+
+db_stop

@@ -1,0 +1,16 @@
+#!/bin/sh
+set -e
+
+. /usr/share/debconf/confmodule
+
+db_get "envoy-panel/hostname"
+PANEL_HOSTNAME=$RET
+
+cat /usr/share/envoy/50-envoy-panel.conf | sed "s/\$PANEL_HOSTNAME/$PANEL_HOSTNAME/g" > /etc/lighttpd/conf-available/50-envoy-panel.conf
+
+if command -v lighttpd >&2 2>/dev/null; then
+	lighty-enable-mod fastcgi fastcgi-php envoy-panel || true
+	/etc/init.d/lighttpd restart
+fi
+
+db_stop

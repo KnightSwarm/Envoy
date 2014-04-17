@@ -19,17 +19,16 @@
 if(!isset($_APP)) { die("Unauthorized."); }
 
 $sErrors = array();
+$sUser = $API->User($_SESSION["jid"]);
 
 if($router->uMethod == "post")
 {
 	$handler = new CPHPFormHandler();
-
+	
 	try
 	{
 		$handler
 			->RequireNonEmpty("first_name")
-			->RequireNonEmpty("username")
-			->RequireNonEmpty("password")
 			->RequireNonEmpty("nickname")
 			->ValidateEmail("email")
 			->Done();
@@ -39,9 +38,7 @@ if($router->uMethod == "post")
 		$sErrors = $e->GetErrorMessages(array(
 			"required" => array(
 				"first_name" => "You must specify at least a first name.",
-				"username" => "You must specify a username.",
-				"password" => "You must specify a password.",
-				"nickname" => "You must specify a nickname.",
+				"nickname" => "You must specify a nickname."
 			),
 			"email" => array(
 				"email" => "You must specify a valid e-mail address."
@@ -49,22 +46,23 @@ if($router->uMethod == "post")
 		));
 	}
 	
-	if(empty($sErrors))
-	{
-		$sUser = $API->Fqdn($router->uParameters[1])->User();
-		$sUser->first_name = $handler->GetValue("first_name");
-		$sUser->last_name = $handler->GetValue("last_name", "");
-		$sUser->username = $handler->GetValue("username");
-		$sUser->job_title = $handler->GetValue("title", "");
-		$sUser->email_address = $handler->GetValue("email");
-		$sUser->nickname = $handler->GetValue("nickname");
-		$sUser->is_active = true;
-		$sUser->DoCommit();
-		
-		$sUser->SetPassword(array("password" => $handler->GetValue("password")));
-		
-		redirect("/fqdns/{$router->uParameters[1]}/users/{$sUser->username}");
-	}
+	$sUser->first_name = $handler->GetValue("first_name");
+	$sUser->last_name = $handler->GetValue("last_name");
+	$sUser->email_address = $handler->GetValue("email");
+	$sUser->mobile_number = $handler->GetValue("phone");
+	$sUser->nickname = $handler->GetValue("nickname");
+	$sUser->job_title = $handler->GetValue("job_title");
+	$sUser->DoCommit();
+	
+	$sErrors[] = "The changes have been saved."; /* Not actually an error; easy workaround. */
 }
 
-$sPageContents = NewTemplater::Render("users/create", $locale->strings, array("errors" => $sErrors, "fqdn" => htmlspecialchars($router->uParameters[1])));
+$sPageContents = NewTemplater::Render("profile", $locale->strings, array(
+	"first_name" => htmlspecialchars($sUser->first_name),
+	"last_name" => htmlspecialchars($sUser->last_name),
+	"phone" => htmlspecialchars($sUser->mobile_number),
+	"email" => htmlspecialchars($sUser->email_address),
+	"job_title" => htmlspecialchars($sUser->job_title),
+	"nickname" => htmlspecialchars($sUser->nickname),
+	"errors" => $sErrors
+));

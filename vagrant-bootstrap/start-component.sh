@@ -1,1 +1,1 @@
-su -c "cd /etc/envoy/src; python /vagrant/src/envoyxmpp/run.py &" envoy
+su -c "cd /etc/envoy/src; python /vagrant/src/component/run.py &" envoy

@@ -1,5 +1,0 @@
-{
-	"endpoint": "http://api.envoy.local",
-	"api_id":   "test",
-	"api_key":  "test"
-}

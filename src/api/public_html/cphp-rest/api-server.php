@@ -18,7 +18,7 @@ if(!isset($_CPHP_REST)) { die("Unauthorized."); }
 class APIServer extends API
 {
 	public $_keypair = true;
-	private $_bypass_all_auth = false;
+	public $_bypass_all_auth = false;
 		
 	public function ProcessRequest()
 	{

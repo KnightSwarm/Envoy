@@ -1,0 +1,43 @@
+{%if isempty|errors == false}
+	<ul>
+		{%foreach error in errors}
+			<li>{%?error}</li>
+		{%/foreach}
+	</ul>
+{%/if}
+
+<form class="pure-form pure-form-aligned" method="post" action="/profile">
+	<div class="pure-control-group">
+		<label>First name</label>
+		<input type="text" name="first_name" value="{%?first_name}">
+	</div>
+	
+	<div class="pure-control-group">
+		<label>Last name</label>
+		<input type="text" name="last_name" value="{%?last_name}">
+	</div>
+	
+	<div class="pure-control-group">
+		<label>Nickname</label>
+		<input type="text" name="nickname" value="{%?nickname}">
+	</div>
+	
+	<div class="pure-control-group">
+		<label>E-mail address</label>
+		<input type="text" name="email" value="{%?email}">
+	</div>
+	
+	<div class="pure-control-group">
+		<label>Mobile number</label>
+		<input type="text" name="phone" value="{%?phone}">
+	</div>
+	
+	<div class="pure-control-group">
+		<label>Job title</label>
+		<input type="text" name="job_title" value="{%?job_title}">
+	</div>
+	
+	<div class="pure-controls">
+		<button type="submit" name="submit" class="pure-button black">Update profile</button>
+	</div>
+</form>

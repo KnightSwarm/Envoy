@@ -60,7 +60,7 @@ $API->RegisterDecoder("user", "jid", function($api, $value, $filters){
 });
 
 $API->RegisterEncoder("user", "jid", function($api, $resource){
-	return "{$resource->username}@{$resource->fqdn_string}";
+	return "{$resource->username}@{$resource->fqdn->fqdn}";
 });
 
 $API->RegisterEncoder("user", "full_name", function($api, $resource){
@@ -144,7 +144,9 @@ $API->RegisterEncoder("api_key", "access_level", function($api, $resource){
 });
 
 $API->RegisterHandler("room", "notify", function($api, $room) {
+	$api->_bypass_all_auth = true;
 	$allowed = ($api->_keypair->access_level >= 150) || ($room->fqdn->id === $api->_keypair->user->fqdn->id && $keypair->access_level >= 50);
+	$api->_bypass_all_auth = false;
 	
 	if($allowed !== true)
 	{
@@ -185,7 +187,9 @@ $API->RegisterHandler("room", "notify", function($api, $room) {
 });
 
 $API->RegisterHandler("user", "authenticate", function($api, $user){
+	$api->_bypass_all_auth = true;
 	$allowed = ($api->_keypair->access_level >= 150) || ($user->id === $api->_keypair->user->id && $keypair->access_level >= 50);
+	$api->_bypass_all_auth = false;
 	
 	if($allowed !== true)
 	{
@@ -212,7 +216,9 @@ $API->RegisterHandler("user", "authenticate", function($api, $user){
 });
 
 $API->RegisterHandler("user", "set_password", function($api, $user){
+	$api->_bypass_all_auth = true;
 	$allowed = ($api->_keypair->access_level >= 150) || ($api->_keypair->user->fqdn->id === $user->fqdn->id && $api->_keypair->access_level >= 100);
+	$api->_bypass_all_auth = false;
 	
 	if($allowed !== true)
 	{
@@ -243,7 +249,9 @@ $API->RegisterHandler("user", "set_password", function($api, $user){
 });
 
 $API->RegisterHandler("user", "get_api_key", function($api, $user){
+	$api->_bypass_all_auth = true;
 	$allowed = ($api->_keypair->access_level >= 150) || ($user->id === $api->_keypair->user->id && $keypair->access_level >= 50);
+	$api->_bypass_all_auth = false;
 	
 	if($allowed !== true)
 	{
@@ -337,8 +345,8 @@ $API->RegisterAuthenticator("fqdn_setting", function($api, $setting, $keypair, $
 
 $API->RegisterAuthenticator("room", function($api, $room, $keypair, $action) {
 	/* If the room is private and the user is not a member, they can't do
-	 * anything with it. */
-	if($room->is_private)
+	 * anything with it. Unless they have administrative access, of course. */
+	if($keypair->access_level < 75 && $room->is_private)
 	{
 		try
 		{
@@ -415,7 +423,7 @@ $API->RegisterAuthenticator("user", function($api, $user, $keypair, $action) {
 			}
 			else
 			{
-				if($user->id === $keypair_user->id)
+				if($user->id === $keypair_user->id && $keypair->access_level >= 50)
 				{
 					/* The user should only be allowed to set these particular attributes. */
 					$allowed_attributes = array("nickname", "email_address", "first_name", "last_name", "job_title", "mobile_number");

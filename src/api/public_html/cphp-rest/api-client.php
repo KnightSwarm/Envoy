@@ -379,7 +379,7 @@ class APIClient extends API
 					throw new BadDataException("The provided parameters were invalid or incomplete.", 0, null, $json["error"]);
 				case 401:
 					/* The client is not authenticated. */
-					throw new NotAuthenticatedException("No valid API credentials were provided.", 0, null, $json["error"]);
+					throw new NotAuthenticatedException("No valid API credentials were provided, or there was an STS mismatch.", 0, null, $json["error"]);
 				case 403:
 					/* The client is trying to access or modify a resource they are not permitted to access. */
 					throw new NotAuthorizedException("The provided API credentials do not grant access to this resource or operation.", 0, null, $json["error"]);

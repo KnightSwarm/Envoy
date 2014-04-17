@@ -1,0 +1,4 @@
+Template: envoy-api/hostname
+Type: string
+Description: What hostname should the API be configured for?
+ This is the hostname that will be used by client applications, as the API endpoint.
