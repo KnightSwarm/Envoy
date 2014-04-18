@@ -1,0 +1,15 @@
+Template: envoy-component/fqdn
+Type: string
+Description: What is the primary Envoy FQDN?
+ This is the hostname that will be used for the Envoy component JID, amongst other things.
+
+Template: envoy-component/username
+Type: string
+Description: What should the username for the primary account be?
+ The primary account is the administrative account on the primary FQDN that you can use to manage this server and the FQDNs that are hosted on it.
+
+Template: envoy-component/password
+Type: string
+Description: What should the password for the primary account be?
+ Ensure that this is a secure password.
+ IMPORTANT: This account cannot be automatically created, until you have configured Envoy. You should create /etc/envoy/config.json as soon as possible - the first time you run Envoy after doing so, it will create your account. Until then, this password has to be stored in a plaintext file on disk.

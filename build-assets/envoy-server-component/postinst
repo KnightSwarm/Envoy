@@ -1,0 +1,74 @@
+#!/bin/sh
+set -e
+
+generate_cert () {
+	HOST=$1
+	if [ ! -f /etc/envoy/certs/$HOST.cert ]; then
+		openssl req -new -newkey rsa:4096 -days 365 -nodes -x509 -subj "/CN=$HOST" -keyout /etc/envoy/certs/$HOST.key  -out /etc/envoy/certs/$HOST.cert
+		echo "Auto-generated TLS certificate for $HOST"
+	fi
+}
+
+. /usr/share/debconf/confmodule
+
+db_get "envoy-component/fqdn"
+FQDN=$RET
+db_get "envoy-component/username"
+USERNAME=$RET
+db_get "envoy-component/password"
+PASSWORD=$RET
+
+cat << EOF > /etc/envoy/init.dat
+$FQDN
+$USERNAME
+$PASSWORD
+EOF
+
+COMPONENT_PASSWORD=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)
+
+# Install the component module to the current Python 2 version
+cd /usr/share/envoy/component
+python2 setup.py install
+
+pip install git+git://github.com/fritzy/SleekXMPP.git@new_muc
+
+# Install LPC for Prosody
+luarocks install lpc
+
+# Create user and group for Envoy
+adduser --system --group --disabled-password --shell "/bin/bash" --home "/home/envoy" envoy >/dev/null || true
+
+# Set up logging directory
+mkdir /var/log/envoy || true
+chown envoy:envoy /var/log/envoy
+chmod g+rwx /var/log/envoy
+
+# Both the httpd (under www-data) and Prosody should be able to access group-accessible Envoy stuff.
+usermod -a -G envoy www-data || true
+usermod -a -G envoy prosody || true
+
+# Generate keypairs for both localhost and the primary FQDN.
+generate_cert "localhost"
+generate_cert "$FQDN"
+echo "Auto-generated TLS certificates and keys for Prosody are stored in /etc/envoy/certs. If you want to use a custom (eg. CA-signed) certificate, you should replace the relevant files in that directory, and restart Prosody."
+
+# Fix permissions and ownership.
+chown -R envoy:envoy /etc/envoy
+chmod -R gu=rwx /etc/envoy
+chmod -R o-rwx /etc/envoy/certs
+
+chown -R prosody:envoy /var/lib/prosody/
+chmod -R gu=rwx /var/lib/prosody/
+
+# Configure component password in config.json template
+sed -i "s/\$COMPONENT_PASSWORD/$COMPONENT_PASSWORD/g" /usr/share/doc/envoy/config.json.example.component
+
+# Stop Prosody, apply configuration, and restart. We need to manually stop and start, because the
+# PID path in the new configuration differs from that in the old configuration - if we were to use
+# `prosodyctl restart`, it would fail to shut down the existing Prosody instance as it doesn't know
+# where to find its PID.
+prosodyctl stop
+cat /usr/share/envoy/template.cfg.lua | sed "s/\$FQDN/$FQDN/g" | sed "s/\$COMPONENT_PASSWORD/$COMPONENT_PASSWORD/g" > /etc/prosody/prosody.cfg.lua
+prosodyctl start
+
+db_stop

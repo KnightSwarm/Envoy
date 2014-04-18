@@ -61,7 +61,7 @@
 			<!-- Per-room user list -->
 			<div id="user_list">
 				<div class="list" ng-repeat="room in data.rooms" ng-class="{hidden : data.current_room != room.jid}" ng-controller="RoomController">
-					<div class="user" ng-repeat="user in room.all_users" ng-click="start_private_conversation(user.jid)">
+					<div class="user" ng-repeat="user in room.all_users" ng-click="start_private_conversation(user.jid)" ng-controller="UserController">
 						<i class="status {{user.status}} icon-circle"></i>
 						{{ user.fullname }}
 					</div>

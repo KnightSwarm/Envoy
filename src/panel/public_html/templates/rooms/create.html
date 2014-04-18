@@ -1,0 +1,28 @@
+{%if isempty|errors == false}
+	<ul>
+		{%foreach error in errors}
+			<li>{%?error}</li>
+		{%/foreach}
+	</ul>
+{%/if}
+
+<form class="pure-form pure-form-aligned" method="post" action="/fqdns/{%?fqdn}/rooms/create">
+	<div class="pure-control-group">
+		<label>JID</label>
+		<input type="text" name="roomname">@conference.{%?fqdn}
+	</div>
+	
+	<div class="pure-control-group">
+		<label>Name</label>
+		<input type="text" name="name">
+	</div>
+	
+	<div class="pure-control-group">
+		<label>Description</label>
+		<input type="text" name="description">
+	</div>
+	
+	<div class="pure-controls">
+		<button type="submit" name="submit" class="pure-button black">Create room</button>
+	</div>
+</form>

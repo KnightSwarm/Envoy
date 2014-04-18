@@ -160,6 +160,9 @@ class RoomSyncer(LocalSingletonBase):
 			if needs_reconfiguration:
 				logger.debug("Room configuration for %s incorrect; attempting reconfiguration" % room.jid)
 				self.configure(room)
+				
+			# Always set owner affiliation...
+			component["xep_0045"].set_affiliation(room.jid, room.owner.jid, "owner")
 		
 	def configure(self, room):
 		# EVENT: Room (re-)configuration

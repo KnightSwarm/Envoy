@@ -54,9 +54,21 @@ envoyClient.service("vcardService", function vcardService($rootScope) {
 		else
 		{
 			var vcard_data = backend.get_vcard(jid);
-			console.log($rootScope.data.users);
 			$rootScope.data.users[jid].vcard = vcard_data;
 			return vcard_data;
+		}
+	}
+	
+	this.get_nick = function(nick)
+	{
+		for(jid in $rootScope.data.users)
+		{
+			var user = $rootScope.data.users[jid];
+			
+			if(user.vcard && user.vcard.nickname[0] == nick)
+			{
+				return jid;
+			}
 		}
 	}
 });
@@ -159,7 +171,23 @@ envoyClient.controller('UiController', function UiController($scope, $rootScope,
 		{
 			/* We'll assume it's a room. */
 			window.log("Sending group message")
-			backend.send_group_message($scope.data.input_message, $scope.data.current_room);
+			if($scope.data.input_message.match(/^\/affiliation /))
+			{
+				/* Command to set affiliation. */
+				var parts = /^\/affiliation (\S+) (\S+)/.exec($scope.data.input_message);
+				var nickname = parts[1];
+				var affiliation = parts[2];
+				var target_jid = vcardService.get_nick(nickname);
+				
+				if(target_jid)
+				{
+					backend.set_affiliation($scope.data.current_room, target_jid, affiliation);
+				}
+			}
+			else
+			{
+				backend.send_group_message($scope.data.input_message, $scope.data.current_room);
+			}
 		}
 		
 		$scope.data.input_message = "";
@@ -193,8 +221,6 @@ envoyClient.controller('UiController', function UiController($scope, $rootScope,
 				/* Create the new tab first. */
 				
 				var vcard = vcardService.get_user(jid);
-				
-				console.log(vcard);
 				
 				$scope.data.private_conversations.push({
 					"type": "user",

@@ -365,6 +365,12 @@ class TideBackend(object):
 	def send_private_message(self, message, recipient_jid):
 		self.client.send_message(mto=recipient_jid, mbody=message, mtype="chat")
 		
+	def set_affiliation(self, room, jid, affiliation):
+		try:
+			self.client["xep_0045"].set_affiliation(room, jid, affiliation)
+		except IqError, e:
+			pass
+		
 	def change_status(self, status):
 		pass
 		

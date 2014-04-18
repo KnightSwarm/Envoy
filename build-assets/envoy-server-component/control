@@ -1,0 +1,8 @@
+Package: envoy-server-component
+Version: $VER
+Section: base
+Priority: optional
+Architecture: all
+Depends: mysql-server, pkg-config, python, python-dev, python-pip, libzmq1, libzmq-dev, prosody (>= 0.9), luarocks, libmysql++-dev, python-setuptools, git-core
+Maintainer: Sven Slootweg <sven.slootweg@knightswarm.com>
+Description: Envoy Control Panel
