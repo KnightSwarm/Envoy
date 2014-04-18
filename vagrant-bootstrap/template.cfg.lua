@@ -51,7 +51,7 @@ s2s_require_encryption = true
 -- We will use an external ejabberd-style authentication script.
 authentication = "external"
 external_auth_protocol = "ejabberd"
-external_auth_command = "/etc/envoy/extauth/auth.py"
+external_auth_command = "/vagrant/src/auth/auth.py"
 
 -- System logging
 log = {
@@ -59,30 +59,9 @@ log = {
         error = "/etc/envoy/prosody/prosody.err";
 }
 
--- Virtual hosts
-VirtualHost "envoy.local"
-        enabled = true -- Remove this line to enable this host
-        
-        admins = { "component.envoy.local" }
-
-        -- Assign this host a certificate for TLS, otherwise it would use the one
-        -- set in the global section (if any).
-        -- Note that old-style SSL on port 5223 only supports one certificate, and will always
-        -- use the global one.
-        ssl = {
-                key = "/etc/envoy/certs/envoy.local.key";
-                certificate = "/etc/envoy/certs/envoy.local.crt";
-        }
-
--- The standard MUC component (TODO: this needs to go into host config)
-Component "conference.envoy.local" "muc"
-	name = "Rooms for envoy.local"
-	restrict_room_creation = true
-        admins = { "component.envoy.local" }
-
 -- The external Envoy component
 Component "component.envoy.local"
         component_secret = "password"  -- TODO: Make installer generate a password for this.
 
--- We will also include everything in conf.d - these files will hold host-specific configuration.
-Include "conf.d/*.lua"
+-- We will also include everything in the Envoy hosts folder - these files will hold host-specific configuration.
+Include "/etc/envoy/hosts/*.lua"

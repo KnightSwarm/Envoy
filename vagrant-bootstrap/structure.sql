@@ -127,17 +127,18 @@ CREATE TABLE IF NOT EXISTS `users` (
   `Salt` varchar(32) CHARACTER SET latin1 NOT NULL,
   `Active` tinyint(1) NOT NULL,
   `FqdnId` bigint(20) unsigned NOT NULL,
-  `Nickname` varchar(64) CHARACTER SET latin1 NOT NULL,
-  `EmailAddress` varchar(320) CHARACTER SET latin1 NOT NULL,
-  `FirstName` varchar(50) CHARACTER SET latin1 NOT NULL,
-  `LastName` varchar(50) CHARACTER SET latin1 NOT NULL,
-  `JobTitle` varchar(50) CHARACTER SET latin1 NOT NULL,
-  `MobileNumber` varchar(45) CHARACTER SET latin1 NOT NULL,
-  `Status` tinyint(4) NOT NULL,
-  `StatusMessage` varchar(200) NOT NULL,
+  `Nickname` varchar(64) CHARACTER SET latin1 DEFAULT NULL,
+  `EmailAddress` varchar(320) CHARACTER SET latin1 DEFAULT NULL,
+  `FirstName` varchar(50) CHARACTER SET latin1 DEFAULT NULL,
+  `LastName` varchar(50) CHARACTER SET latin1 DEFAULT NULL,
+  `JobTitle` varchar(50) CHARACTER SET latin1 DEFAULT NULL,
+  `MobileNumber` varchar(45) CHARACTER SET latin1 DEFAULT NULL,
+  `Status` tinyint(4) DEFAULT '0',
+  `StatusMessage` varchar(200) DEFAULT NULL,
   PRIMARY KEY (`Id`),
   UNIQUE KEY `Username` (`Username`,`FqdnId`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8;
+
 
 CREATE TABLE IF NOT EXISTS `user_permissions` (
   `Id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,

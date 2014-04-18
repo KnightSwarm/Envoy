@@ -1,10 +1,10 @@
 #!/usr/bin/python
 
 import sys, logging, struct, oursql, json, os, base64
-import envoyxmpp.core.hash
+from envoyxmpp.core.util import pbkdf2_sha512
 
-sys.stderr = open("/etc/envoy/extauth/extauth_err.log", "a")
-logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s", filename="/etc/envoy/extauth/extauth.log", filemode="a")
+sys.stderr = open("/var/log/envoy/extauth.err", "a")
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s", filename="/var/log/envoy/extauth.log", filemode="a")
 
 class EjabberdInputError(Exception):
 	def __init__(self, value):
@@ -55,7 +55,12 @@ def ejabberd_write(response):
 
 def get_user(username, hostname):
 	cursor = db.cursor()
-	cursor.execute("SELECT `Id`, `Username`, `Fqdn`, `Hash`, `Salt`, `Active` FROM users WHERE `Username` = ? AND `Fqdn` = ?", (username, hostname))
+	
+	cursor.execute("SELECT `Id` FROM fqdns WHERE `Fqdn` = ?", (hostname,))
+	row = cursor.fetchall()[0]
+	fqdn_id = row[0]
+	
+	cursor.execute("SELECT `Id`, `Username`, `Fqdn`, `Hash`, `Salt`, `Active` FROM users WHERE `Username` = ? AND `FqdnId` = ?", (username, fqdn_id))
 	result = cursor.fetchone()
 	
 	if result is None:
@@ -73,8 +78,9 @@ def authenticate(username, hostname, password):
 		return False
 	
 	_id, _username, _fqdn, _hash, _salt, _active = user
-	digest, _, _ = envoyxmpp.core.hash.pbkdf2_sha512(password, base64.b64decode(_salt))
+	digest, _, _ = pbkdf2_sha512(password, base64.b64decode(_salt))
 	
+	# FIXME: Constant time compare!
 	if digest == base64.b64decode(_hash):
 		logging.debug("Successful authentication (%s@%s)" % (username, hostname))
 		return True
@@ -89,7 +95,7 @@ def register(username, hostname, password):
 		logging.info("Attempt to register account that already exists (%s@%s)" % (username, hostname))
 		return False
 		
-	digest, salt, rounds = envoyxmpp.util.hash.pbkdf2_sha512(password)
+	digest, salt, rounds = pbkdf2_sha512(password)
 	
 	cur = db.cursor()
 	cur.execute("INSERT INTO users (`Username`, `Fqdn`, `Hash`, `Salt`, `Active`, `FqdnId`) VALUES (?, ?, ?, ?, ?, 0)",
@@ -105,7 +111,7 @@ def set_password(username, hostname, password):
 		return False
 	
 	_id, _username, _fqdn, _hash, _salt, _active = user
-	digest, salt, rounds = envoyxmpp.util.hash.pbkdf2_sha512(password, salt=base64.b64decode(_salt))
+	digest, salt, rounds = pbkdf2_sha512(password, salt=base64.b64decode(_salt))
 	
 	cur = db.cursor()
 	cur.execute("UPDATE users SET `Hash` = ? WHERE `Id` = ?", (base64.b64encode(digest), _id))
@@ -134,7 +140,8 @@ def remove_user_safe(username, hostname, password):
 	else:
 		return False
 
-configuration = json.load(open(get_relative_path("../config.json"), "r"))
+with open("/etc/envoy/config.json", "r") as config_file:
+	configuration = json.load(config_file)
 
 db = oursql.connect(host=configuration['database']['hostname'], user=configuration['database']['username'], 
                     passwd=configuration['database']['password'], db=configuration['database']['database'],

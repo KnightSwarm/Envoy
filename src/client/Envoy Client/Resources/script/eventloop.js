@@ -165,7 +165,7 @@ var event_handlers = {
 			return item.data.room_jid;
 		},
 		handler: function($scope, data) {
-			if(data.jid !== "component.envoy.local")
+			if(!data.jid.match(/^component\.[^@]+$/) || data.body.match(/^\[/))
 			{
 				data["type"] = "message";
 				$scope.room.messages.push(data);
@@ -178,7 +178,7 @@ var event_handlers = {
 			return item.data.jid;
 		},
 		handler: function($scope, data) {
-			if(data.jid !== "component.envoy.local")
+			if(!data.jid.match(/^component\.[^@]+$/) || data.body.match(/^\[/))
 			{
 				/* We need the vcardService here... */
 				var vcardService = angular.element("html").injector().get("vcardService");

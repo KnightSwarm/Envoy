@@ -19,7 +19,7 @@
 if(!isset($_APP)) { die("Unauthorized."); }
 
 $_CPHP = true;
-$_CPHP_CONFIG = "../../config.json";
+$_CPHP_CONFIG = "/etc/envoy/config.json";
 require("cphp/base.php");
 
 function autoload_class($class_name) 
@@ -75,7 +75,7 @@ $_CPHP_REST = true;
 require("cphp-rest/base.php");
 
 $API = new CPHP\REST\APIClient($cphp_config->api->endpoint);
-$API->LoadConfiguration("../../api.json");
+$API->LoadConfiguration("/etc/envoy/api.json");
 
 /* If the user is logged in, we use their keypair (stored in the session data).
  * If not, we use the master keypair, since the only call that can be made

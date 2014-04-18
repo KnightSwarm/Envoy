@@ -4,6 +4,19 @@ from sleekxmpp.exceptions import IqError
 import os, stat
 
 @LocalSingleton
+class FqdnSyncer(LocalSingletonBase):
+	def sync(self):
+		# Generates configuration files and TLS keys/certs for FQDNs that don't have one yet.
+		fqdn_provider = FqdnProvider.Instance(self.identifier)
+		generator = FqdnConfigurationGenerator.Instance(self.identifier)
+		
+		fqdns = fqdn_provider.get_from_query("SELECT * FROM fqdns", [])
+		
+		for fqdn in fqdns:
+			if not os.path.exists("/etc/envoy/hosts/%s.cfg.lua" % fqdn.fqdn):
+				generator.generate(fqdn)
+
+@LocalSingleton
 class PresenceSyncer(LocalSingletonBase):
 	def sync(self):
 		component = Component.Instance(self.identifier)
@@ -99,6 +112,7 @@ class RoomSyncer(LocalSingletonBase):
 		except NotFoundException, e:
 			# No rooms for this FQDN at all...
 			logger.warning("No rooms found for FQDN %s during sync!" % component.get_fqdn().fqdn)
+			return
 			
 		for room in all_rooms:
 			# Always join all rooms.
@@ -185,6 +199,7 @@ class StatusSyncer(LocalSingletonBase):
 	def sync(self):
 		user_provider = UserProvider.Instance(self.identifier)
 		component = Component.Instance(self.identifier)
+		logger = ApplicationLogger.Instance(self.identifier)
 		
 		try:
 			all_users = user_provider.find_by_fqdn(component.host)
@@ -195,8 +210,11 @@ class StatusSyncer(LocalSingletonBase):
 			# We only need to send out a presence probe and forget; incoming responses will be 
 			# handled by the default presence handler.
 			user = user_provider.normalize_user(user)
-			stanza = component.make_presence(ptype="probe", pto=user.jid, pfrom=component.boundjid)
-			stanza.send()
+			try:
+				stanza = component.make_presence(ptype="probe", pto=user.jid, pfrom=component.boundjid)
+				stanza.send()
+			except sleekxmpp.exceptions.InvalidJID:
+				logger.warning("InvalidJID raised for %s" % repr(user.jid))
 
 @LocalSingleton
 class VcardSyncer(LocalSingletonBase):
@@ -248,6 +266,7 @@ class VcardSyncer(LocalSingletonBase):
 			logger.debug("Regenerated vCard file for %s." % user.jid)
 
 from .exceptions import NotFoundException
-from .providers import UserProvider, PresenceProvider, AffiliationProvider, RoomProvider
+from .providers import UserProvider, PresenceProvider, AffiliationProvider, RoomProvider, FqdnProvider, ConfigurationProvider
 from .component import Component
 from .loggers import ApplicationLogger
+from .generators import FqdnConfigurationGenerator

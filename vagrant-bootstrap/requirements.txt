@@ -1,4 +1,3 @@
-SleekXMPP
 passlib
 oursql
 marrow.mailer

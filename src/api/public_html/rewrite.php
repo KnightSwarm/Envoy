@@ -19,7 +19,7 @@
 $_APP = true;
 
 $_CPHP = true;
-$_CPHP_CONFIG = "../../config.json";
+$_CPHP_CONFIG = "/etc/envoy/config.json";
 require("cphp/base.php");
 
 $_CPHP_REST = true;
@@ -30,7 +30,7 @@ require("lib/pbkdf2.php");
 use \CPHP\REST;
 
 $API = new \CPHP\REST\APIServer();
-$API->LoadConfiguration("../../api.json"); 
+$API->LoadConfiguration("/etc/envoy/api.json"); 
 
 $API->RegisterDecoder("room", "jid", function($api, $value, $filters){
 	if(!preg_match("/([^@]+)@conference\.(.+)/", $value, $matches))
@@ -38,7 +38,7 @@ $API->RegisterDecoder("room", "jid", function($api, $value, $filters){
 		throw new CPHP\REST\BadDataException("Specified room JID is not a valid JID.");
 	}
 	
-	list($roomname, $fqdn) = $matches;
+	list($_, $roomname, $fqdn) = $matches;
 	$fqdn = $api->Fqdn($fqdn);
 	return array("fqdn" => $fqdn->id, "roomname" => $roomname);
 });
@@ -173,6 +173,7 @@ $API->RegisterHandler("room", "notify", function($api, $room) {
 	$payload = array(
 		"type" => "room_notification",
 		"args" => array(
+			"origin" => $api->_keypair->description,
 			"room" => $room->jid,
 			"color" => $handler->GetValue("color", "yellow"),
 			"message" => $handler->GetValue("message"),
@@ -375,7 +376,8 @@ $API->RegisterAuthenticator("room", function($api, $room, $keypair, $action) {
 	switch($action)
 	{
 		case "get":
-			return ($room->fqdn->id === $keypair->user->fqdn->id && $keypair->access_level >= 10);
+			return ($keypair->access_level >= 150)
+				|| ($room->fqdn->id === $keypair->user->fqdn->id && $keypair->access_level >= 10);
 		case "create":
 		case "delete":
 			return ($keypair->access_level >= 150)

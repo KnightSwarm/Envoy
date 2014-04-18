@@ -60,6 +60,9 @@ class Component(ComponentXMPP):
 		database = Database.Instance(self.identifier)
 		database.initialize(configuration.mysql_hostname, configuration.mysql_username, configuration.mysql_password, configuration.mysql_database)
 		
+		# Make sure all vhost configurations exist.
+		FqdnSyncer.Instance(self.identifier).sync()
+		
 	def start(self, *args, **kwargs):
 		# The following might be useful, if it is decided to re-add scheduled purging. This should not
 		# be necessary in an optimal scenario, as everything would stay in sync as long as the
@@ -84,6 +87,8 @@ class Component(ComponentXMPP):
 		PresenceSyncer.Instance(self.identifier).sync()
 		StatusSyncer.Instance(self.identifier).sync()
 		VcardSyncer.Instance(self.identifier).sync()
+		
+		self.scheduler.add("Sync Rooms", 60, RoomSyncer.Instance(self.identifier).sync, repeat=True)
 		
 	def cleanup(self, *args, **kwargs):
 		logger = ApplicationLogger.Instance(self.identifier)
@@ -129,7 +134,7 @@ xmpp.process(block=True)
 from .db import Database
 from .handlers import StanzaHandler, MucHandler, OverrideHandler, LogRequestHandler, ZeromqEventHandler, ResolveHandler
 from .providers import FqdnProvider, ConfigurationProvider
-from .sync import PresenceSyncer, AffiliationSyncer, RoomSyncer, StatusSyncer, VcardSyncer
+from .sync import PresenceSyncer, AffiliationSyncer, RoomSyncer, StatusSyncer, VcardSyncer, FqdnSyncer
 from .stanzas import EnvoyQueryFlag, ResolverResponse, ResolverResponseData
 from .zeromq import ZeromqEventThread
 from .queues import ResolverQueue

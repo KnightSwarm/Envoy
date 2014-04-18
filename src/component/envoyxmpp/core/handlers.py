@@ -514,6 +514,7 @@ class ResolveHandler(LocalSingletonBase):
 class ZeromqEventHandler(LocalSingletonBase):
 	def process(self, message):
 		logger = ApplicationLogger.Instance(self.identifier)
+		component = Component.Instance(self.identifier)
 		
 		if message["type"] == "update_fqdn":
 			# FQDN settings have been updated, Prosody configuration needs to be regenerated.
@@ -527,7 +528,13 @@ class ZeromqEventHandler(LocalSingletonBase):
 			jid = message["args"]["jid"]
 		elif message["type"] == "room_notification":
 			# A third-party room notification was sent.
-			pass
+			room = message["args"]["room"]
+			origin = message["args"]["origin"]
+			body = message["args"]["message"]
+			
+			msg = "[%s] %s" % (origin, body)
+			logger.debug("Sending message to %s: %s" % (room, msg))
+			component.send_message(mto=room, mbody=msg, mtype="groupchat")
 
 from .notification import HighlightChecker
 from .providers import UserProvider, PresenceProvider, AffiliationProvider, ConfigurationProvider, LogEntryProvider, RoomProvider

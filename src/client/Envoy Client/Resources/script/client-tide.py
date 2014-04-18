@@ -94,6 +94,7 @@ class Client(ClientXMPP):
 		self.q.put({"type": "login_success", "data": {}})
 		
 		self._update_room_list()
+		self.scheduler.add("Update roomlist", 300, self._update_room_list, repeat=True)
 		
 		# TODO: Load bookmarks
 		## window.log(self['xep_0048'].get_bookmarks())
@@ -217,9 +218,6 @@ class Client(ClientXMPP):
 			else:
 				logging.error("No known real JID for %s!" % stanza["from"])
 				return
-				
-		if real_jid == "component.envoy.local":
-			return
 			
 		self.q.put({"type": "receive_message", "data": {
 			"id": message_id,
@@ -238,9 +236,6 @@ class Client(ClientXMPP):
 		
 		jid = str(stanza["from"])
 		message_id = stanza["id"]
-		
-		if jid == "component.envoy.local":
-			return
 		
 		'''  FIXME: This is currently broken due to a bug in the XEP-0203 plugin. As a temporary workaround,
 		     we will just check if the timestamp falls within the first 2 days of epoch; if so, replace with current time.

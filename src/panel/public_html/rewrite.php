@@ -87,6 +87,11 @@ $router->routes = array(
 			"authenticator" => "authenticators/logged_in.php",
 			"auth_error" => "modules/error/not_logged_in.php"
 		),
+		"^/fqdns/([^/]+)/rooms/create$" => array(
+			"target" => "modules/room/create.php",
+			"authenticator" => "authenticators/logged_in.php",
+			"auth_error" => "modules/error/not_logged_in.php"
+		),
 		"^/fqdns/([^/]+)/rooms/([^/]+)$" => array(
 			"target" => "modules/room/lookup.php",
 			"authenticator" => "authenticators/logged_in.php",

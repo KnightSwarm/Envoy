@@ -86,6 +86,7 @@ mkdir -p /etc/envoy/prosody >/dev/null
 mkdir -p /etc/envoy/extauth >/dev/null
 mkdir -p /etc/envoy/certs >/dev/null
 mkdir /etc/prosody/conf.d >/dev/null 2>/dev/null || true
+mkdir /var/log/envoy
 
 # Copy configuration
 echo "Configuring..."
@@ -97,7 +98,7 @@ cp /vagrant/vagrant-bootstrap/config.json /etc/envoy/config.json >/dev/null
 touch /etc/envoy/extauth/extauth.log >/dev/null
 touch /etc/envoy/extauth/extauth_err.log >/dev/null
 tar -xzf certs.tar.gz -C /etc/envoy/certs >/dev/null
-ln -s /vagrant/src/envoyxmpp /usr/lib/python2.7/envoyxmpp
+ln -s /vagrant/src/component/envoyxmpp /usr/lib/python2.7/envoyxmpp
 
 mkdir /etc/lighttpd/vhosts.d/
 cp /vagrant/vagrant-bootstrap/lighttpd.conf /etc/lighttpd/lighttpd.conf
@@ -122,10 +123,12 @@ chown -R prosody:envoy /etc/envoy/prosody >/dev/null
 chown prosody:prosody /etc/prosody/prosody.cfg.lua >/dev/null
 chown prosody:prosody /etc/prosody/conf.d >/dev/null
 chown -R prosody:envoy /var/lib/prosody
+chown -R envoy:envoy /var/log/envoy >/dev/null
 #-- Directory permissions 
 chmod -R ug=rwx /etc/envoy >/dev/null
 chmod -R ug=rwx /var/lib/prosody >/dev/null
 chmod -R o=rx /etc/envoy >/dev/null
+chmod -R ug+rwx /var/log/envoy >/dev/null
 #-- Hide configuration from others
 chmod o-rwx /etc/prosody/prosody.cfg.lua >/dev/null
 #-- Add the httpd user to the envoy group

@@ -3,7 +3,7 @@ try:
 except ImportError, e:
 	import xml.etree.ElementTree as ET
 	
-import functools, re
+import functools, re, passlib.hash, passlib.utils, base64, os
 
 class Singleton:
 	# http://stackoverflow.com/a/7346105/1332715
@@ -62,7 +62,11 @@ class LocalSingleton:
 		# Removes the known instance. This is useful when for
 		# example turning threads into LocalSingletons, and
 		# then re-initializing a stopped thread.
-		del self._instance[identifier]
+		try:
+			del self._instance[identifier]
+		except KeyError, e:
+			# Didn't exist.
+			pass
 
 	def __call__(self):
 		raise TypeError('Singletons must be accessed through `Instance()`.')
@@ -142,3 +146,18 @@ def prosody_quote(s):
 	return "".join(res)
 
 _safemaps = {}
+
+def pbkdf2_sha512(password, salt="", iterations=30000):
+	# passlib returns a modular-crypt-formatted hash, and that's not
+	# what we want. This function will decode the hash and turn it
+	# into a tuple with raw data.
+	if salt == "":
+		crypt = passlib.hash.pbkdf2_sha256.encrypt(password, salt_size=24, rounds=iterations)
+	else:
+		crypt = passlib.hash.pbkdf2_sha256.encrypt(password, salt=salt, rounds=iterations)
+
+	_, _, rounds, salt_ab64, digest_ab64 = crypt.split("$")
+	salt = passlib.utils.ab64_decode(salt_ab64)
+	digest = passlib.utils.ab64_decode(digest_ab64)
+
+	return (digest, salt, rounds)

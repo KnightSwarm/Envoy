@@ -30,6 +30,9 @@ cp $SOURCEDIR/postinst $BUILDROOT/DEBIAN/
 mkdir -p $BUILDROOT/usr/share/doc/envoy
 cp src/config.json.example $BUILDROOT/usr/share/doc/envoy/
 
+mkdir -p $BUILDROOT/etc/envoy
+cp src/api.json $BUILDROOT/etc/envoy/api.json
+
 mkdir -p $BUILDROOT/usr/share/envoy/api
 cp -r src/api/public_html/* $BUILDROOT/usr/share/envoy/api/
 
@@ -90,7 +93,13 @@ cp src/config.json.example $BUILDROOT/usr/share/doc/envoy/config.json.example.co
 mkdir -p $BUILDROOT/usr/share/envoy/component
 cp -r src/component/* $BUILDROOT/usr/share/envoy/component/
 
-cp /vagrant/vagrant-bootstrap/structure.sql /usr/share/doc/envoy/structure.sql
+mkdir -p $BUILDROOT/usr/share/envoy/component/extauth
+cp -r src/auth/auth.py $BUILDROOT/usr/share/envoy/component/extauth/auth.py
+
+cp /vagrant/vagrant-bootstrap/structure.sql $BUILDROOT/usr/share/doc/envoy/structure.sql
+
+mkdir $BUILDROOT/usr/share/envoy/component/prosody
+cp -r /vagrant/vagrant-bootstrap/prosody-modules $BUILDROOT/usr/share/envoy/component/prosody/modules
 
 # Replace symlinks with real files
 rm $BUILDROOT/usr/share/envoy/component/requirements.txt

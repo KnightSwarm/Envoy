@@ -32,10 +32,11 @@ try
 	//$aff->DoCommit();
 	//$aff->DoDelete();
 	//pretty_dump($aff);
-	foreach($API->Fqdn("envoy.local")->ListAffiliations() as $affiliation)
+	/*foreach($API->Fqdn("envoy.local")->ListAffiliations() as $affiliation)
 	{
 		pretty_dump("{$affiliation->room->roomname}: {$affiliation->user->username} ({$affiliation->affiliation})");
-	}
+	}*/
+	$API->Room("testingroom13@conference.envoy.local")->Notify(array("message" => "hi, testing message!"));
 }
 catch (CPHP\REST\ApiException $e)
 {

@@ -18,6 +18,9 @@
 		"hostname": 	"localhost",
 		"port": 	11211
 	},
+	"templates": {
+		"extension": "html"
+	},
 	"class_map": {
 		"user": "User",
 		"fqdn": "Fqdn",
@@ -34,6 +37,21 @@
 		"token": "",
 		"sender": "+15005550006"
 	},
+	"github": {
+		"token": ""
+	},
+	"imgur": {
+		"client_id": ""
+	},
+	"trello": {
+		"key": "",
+		"token": ""
+	},
+	"beanstalk": {
+		"host": "",
+		"user": "",
+		"key": ""
+	},
 	"smtp": {
 		"hostname": "smtp.gmail.com",
 		"port": 587,
@@ -42,9 +60,22 @@
 		"password": "sekrit",
 		"sender": "notifications@your.service"
 	},
+	"api": {
+		"endpoint": "http://api.envoy.local",
+		"id": "api_id_goes_here",
+		"key": "api_key_goes_here"
+	},
+	"xmpp_component": {
+		"jid": "component.envoy.local",
+		"fqdn": "envoy.local",
+		"port": 5347,
+		"password": "$COMPONENT_PASSWORD"
+	},
+	"asset_path": "/vagrant/src/component",
 	"mock": {
 		"sms": false,
 		"email": false
 	},
+	"debug": false,
 	"development_mode": false
 }

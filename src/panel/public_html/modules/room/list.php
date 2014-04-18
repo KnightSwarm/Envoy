@@ -22,15 +22,22 @@ $sRooms = array();
 
 $sFqdn = $API->Fqdn($router->uParameters[1]);
 
-foreach($sFqdn->ListRooms() as $sRoom)
+try
 {
-	$sRooms[] = array(
-		"jid" => htmlspecialchars($sRoom->jid), 
-		"name" => htmlspecialchars($sRoom->name), 
-		"owner" => htmlspecialchars($sRoom->owner->full_name),
-		"owner_jid" => htmlspecialchars($sRoom->owner->jid),
-		"roomname" => htmlspecialchars($sRoom->roomname)
-	);
+	foreach($sFqdn->ListRooms() as $sRoom)
+	{
+		$sRooms[] = array(
+			"jid" => htmlspecialchars($sRoom->jid), 
+			"name" => htmlspecialchars($sRoom->name), 
+			"owner" => htmlspecialchars($sRoom->owner->full_name),
+			"owner_jid" => htmlspecialchars($sRoom->owner->jid),
+			"roomname" => htmlspecialchars($sRoom->roomname)
+		);
+	}
+}
+catch (CPHP\REST\NotFoundException $e)
+{
+	$sRooms = array();
 }
 
 $sPageContents = NewTemplater::Render("rooms/list", $locale->strings, array("rooms" => $sRooms, "fqdn" => $sFqdn->fqdn));

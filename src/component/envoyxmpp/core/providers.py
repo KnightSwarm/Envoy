@@ -280,9 +280,10 @@ class User(object):
 		
 	def load_row(self, row):
 		user_provider = UserProvider.Instance(self.identifier)
+		fqdn_provider = FqdnProvider.Instance(self.identifier)
 		
 		self.id = row["Id"]
-		self.jid = "%s@%s" % (row["Username"], row["Fqdn"])
+		self.jid = "%s@%s" % (row["Username"], fqdn_provider.find_by_id(row["FqdnId"]).fqdn)
 		self.first_name = row["FirstName"]
 		self.last_name = row["LastName"]
 		self.full_name = "%s %s" % (row["FirstName"], row["LastName"])
