@@ -139,7 +139,6 @@ CREATE TABLE IF NOT EXISTS `users` (
   UNIQUE KEY `Username` (`Username`,`FqdnId`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8;
 
-
 CREATE TABLE IF NOT EXISTS `user_permissions` (
   `Id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `UserId` bigint(20) unsigned NOT NULL,

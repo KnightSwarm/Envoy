@@ -11,6 +11,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.define "default", primary: true do |default|
     default.vm.network :forwarded_port, guest: 5222, host: 5222
     default.vm.network :forwarded_port, guest: 3306, host: 3307
+    default.vm.network :forwarded_port, guest: 5281, host: 5281
     default.vm.network :forwarded_port, guest: 80, host: 8080
     default.vm.synced_folder "../cphp", "/usr/share/php/cphp"
     default.vm.provision :shell, :path => "vagrant-bootstrap/bootstrap.sh"

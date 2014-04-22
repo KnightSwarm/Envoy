@@ -26,12 +26,15 @@
 		<script type="text/python" src="script/client-tide.py"></script>
 		<!-- Components and shims for web client -->
 		<script src="script/shim.js"></script>
+		<!-- Universal application code -->
+		<script src="script/eventloop.js"></script>
+		<!-- More web client stuff -->
+		<script src="script/stanzaio.min.js"></script>
 		<script src="script/client-web.js"></script>
 		<!-- Universal application code -->
 		<script src="script/menu.js"></script>
 		<script src="script/ui.js"></script>
 		<script src="script/client-all.js"></script>
-		<script src="script/eventloop.js"></script>
 	</head>
 	<body ng-controller="UiController">
 		<div class="application" ng-show="data.logged_in == true">
@@ -126,6 +129,7 @@
 			<div class="alert" ng-show="data.login_failed == true">
 				<span ng-show="data.login_error == 'value'">Please enter your full JID, including domain.</span>
 				<span ng-show="data.login_error == 'auth'">The login details you entered are incorrect.</span>
+				<span ng-show="data.login_error == 'unknown'">Could not connect to the server. Verify that the login details you entered are correct.</span>
 			</div>
 			<form ng-submit="login()" class="loginform">
 				<label>XMPP Address</label>

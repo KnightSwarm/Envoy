@@ -10,7 +10,7 @@ sys.setdefaultencoding('utf8')
 
 xmpp = Component.Instance(uuid.uuid4())
 print "created"
-xmpp.initialize("component.envoy.local", "envoy.local", 5347, "password", "conference.envoy.local", "../config.json")
+xmpp.initialize("component.envoy.local", "envoy.local", 5347, "password", "conference.envoy.local", "/vagrant/src/config.json")
 print "initialized"
 xmpp.connect()
 print "connected"

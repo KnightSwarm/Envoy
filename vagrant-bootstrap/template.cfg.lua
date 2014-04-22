@@ -33,6 +33,7 @@ modules_enabled = {
                 "mam_pretend"; -- Pretends to have archived according to XEP-0313; actually just adds a UUID.
                 "forward"; -- Forwards all stanzas to an external component and relays responses.
                 "admin_probe"; -- Lets admins retrieve presences for arbitrary users.
+                "websocket"; -- Enable XMPP-over-WebSockets
 };
 
 -- For now, we will only allow registration through the API.
@@ -59,9 +60,33 @@ log = {
         error = "/etc/envoy/prosody/prosody.err";
 }
 
+-- Virtual hosts
+VirtualHost "envoy.local"
+        enabled = true -- Remove this line to enable this host
+        
+        admins = { "component.envoy.local" }
+
+        -- Assign this host a certificate for TLS, otherwise it would use the one
+        -- set in the global section (if any).
+        -- Note that old-style SSL on port 5223 only supports one certificate, and will always
+        -- use the global one.
+        ssl = {
+                key = "/etc/envoy/certs/envoy.local.key";
+                certificate = "/etc/envoy/certs/envoy.local.cert";
+        }
+
+-- The standard MUC component (TODO: this needs to go into host config)
+Component "conference.envoy.local" "muc"
+	name = "Rooms for envoy.local"
+	restrict_room_creation = true
+        admins = { "component.envoy.local" }
+
+
 -- The external Envoy component
 Component "component.envoy.local"
         component_secret = "password"  -- TODO: Make installer generate a password for this.
+
+cross_domain_websocket = true;
 
 -- We will also include everything in the Envoy hosts folder - these files will hold host-specific configuration.
 Include "/etc/envoy/hosts/*.lua"

@@ -68,7 +68,7 @@ apt-get update >/dev/null
 
 # Install Prosody
 echo "Installing Prosody and dependencies..."
-apt-get install -y prosody luarocks >/dev/null
+apt-get install -y prosody luarocks lua-bitop >/dev/null
 luarocks install lpc >/dev/null
 
 # We don't want Prosody to start automatically, so let's get rid of it again
@@ -85,6 +85,7 @@ usermod -a -G envoy prosody >/dev/null
 mkdir -p /etc/envoy/prosody >/dev/null
 mkdir -p /etc/envoy/extauth >/dev/null
 mkdir -p /etc/envoy/certs >/dev/null
+mkdir -p /etc/envoy/hosts >/dev/null
 mkdir /etc/prosody/conf.d >/dev/null 2>/dev/null || true
 mkdir /var/log/envoy
 
@@ -99,12 +100,17 @@ touch /etc/envoy/extauth/extauth.log >/dev/null
 touch /etc/envoy/extauth/extauth_err.log >/dev/null
 tar -xzf certs.tar.gz -C /etc/envoy/certs >/dev/null
 ln -s /vagrant/src/component/envoyxmpp /usr/lib/python2.7/envoyxmpp
+ln -s /vagrant/src/api.json /etc/envoy/api.json
 
 mkdir /etc/lighttpd/vhosts.d/
 cp /vagrant/vagrant-bootstrap/lighttpd.conf /etc/lighttpd/lighttpd.conf
 cp /vagrant/vagrant-bootstrap/api.envoy.local.conf /etc/lighttpd/vhosts.d/
 cp /vagrant/vagrant-bootstrap/panel.envoy.local.conf /etc/lighttpd/vhosts.d/
+cp /vagrant/vagrant-bootstrap/webchat.envoy.local.conf /etc/lighttpd/vhosts.d/
 cp /vagrant/vagrant-bootstrap/php.ini /etc/php5/cgi/php.ini
+
+# Generate SSL keys for localhost
+openssl req -new -newkey rsa:4096 -days 365 -nodes -x509 -subj "/CN=localhost" -keyout /etc/envoy/certs/localhost.key -out /etc/envoy/certs/localhost.cert
 
 # TEMPORARY: Pre-create envoy.local Prosody data directory, so that Envoy can access it.
 mkdir "/var/lib/prosody/envoy%2elocal"

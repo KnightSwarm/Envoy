@@ -59,7 +59,7 @@ class ConfigurationProvider(LocalSingletonBase):
 			self.excluded_resolvers = data["excluded_resolvers"]
 		except KeyError, e:
 			self.excluded_resolvers = []
-			
+		
 		try:
 			self.github_token = data["github"]["token"]
 		except KeyError, e:

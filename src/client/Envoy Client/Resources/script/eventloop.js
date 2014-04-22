@@ -203,7 +203,7 @@ var event_handlers = {
 	}
 }
 
-q.set_callback(function(item){
+var process_func = function(item){
 	event_loop_processing = true;
 	
 	window.log(item);
@@ -242,23 +242,31 @@ q.set_callback(function(item){
 	 * to compensate for offline room members? */
 	
 	event_loop_processing = false;
-});
+};
+
+if(has_tide)
+{
+	q.set_callback(process_func);
+}
 
 $(function(){
-	setInterval(function(){
-		if(event_loop_processing == false)
-		{
-			if(typeof q.check !== "undefined")
+	if(has_tide)
+	{
+		setInterval(function(){
+			if(event_loop_processing == false)
 			{
-				q.check();
+				if(typeof q.check !== "undefined")
+				{
+					q.check();
+				}
+				else if(has_tide) /* Only run this check when using the TideSDK backend */
+				{
+					/* Our backend crashed, restart the client.
+					 * TODO: Notify the user, and ask them to submit a log. */
+					console.log("CRITICAL: Backend crash detected. reloading client...");
+					location.reload();
+				}
 			}
-			else
-			{
-				/* Our backend crashed, restart the client.
-				 * TODO: Notify the user, and ask them to submit a log. */
-				console.log("CRITICAL: Backend crash detected. reloading client...");
-				location.reload();
-			}
-		}
-	}, 150); /* FIXME: This is not very efficient. Surely, there's a better way to do this? */
+		}, 150); /* FIXME: This is not very efficient. Surely, there's a better way to do this? */
+	}
 });

@@ -240,17 +240,17 @@ envoyClient.controller('UiController', function UiController($scope, $rootScope,
 		$scope.data.current_room = "lobby";
 	}
 	
-	if(settings.getString("username") !== "")
+	if(settings.getString("username") !== "" && typeof settings.getString("username") !== "undefined")
 	{
 		$scope.data.username = settings.getString("username");
 	}
 	
-	if(settings.getString("password") !== "")
+	if(settings.getString("password") !== "" && typeof settings.getString("password") !== "undefined")
 	{
 		$scope.data.password = settings.getString("password");
 	}
 	
-	if($scope.data.username !== "" && $scope.data.password !== "")
+	if($scope.data.username !== "" && typeof $scope.data.username !== "undefined" && $scope.data.password !== "" && typeof $scope.data.password !== "undefined")
 	{
 		/* Trigger automatic login... */
 		$scope.login();

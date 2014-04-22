@@ -204,7 +204,7 @@ var LocalStorageUserSettings = {
 		localStorage["envoy." + key] = value.toString();
 	},
 	createDefault: function() {
-		localStorage["envoy.settings_initialize"] = "true";
+		localStorage["envoy.settings_initialized"] = "true";
 		localStorage["envoy.debug"] = "false";
 		localStorage["envoy.username"] = "";
 		localStorage["envoy.password"] = "";
