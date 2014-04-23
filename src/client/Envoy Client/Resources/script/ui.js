@@ -222,9 +222,19 @@ envoyClient.controller('UiController', function UiController($scope, $rootScope,
 				
 				var vcard = vcardService.get_user(jid);
 				
+				if(!vcard || typeof vcard.full_name == "undefined")
+				{
+					/* FIXME: Logging! */
+					var full_name = new _JID(jid).node;
+				}
+				else
+				{
+					var full_name = vcard.full_name;
+				}
+				
 				$scope.data.private_conversations.push({
 					"type": "user",
-					"name": vcard.full_name,
+					"name": full_name,
 					"jid": jid,
 					"icon": "user"
 				});

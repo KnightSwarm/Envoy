@@ -200,6 +200,13 @@ var event_handlers = {
 				$messageScope.message.preview = data.html;
 			}
 		}
+	},
+	vcard: {
+		scope: ["root"],
+		handler: function($rootScope, data) {
+			var jid = data.jid;
+			$rootScope.data.users[jid].vcard = data;
+		}
 	}
 }
 

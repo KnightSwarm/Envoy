@@ -120,7 +120,9 @@
 			</div>
 			<div class="input" ng-class="{hidden : data.current_room == 'lobby'}">
 				<form ng-submit="send_message()" id="form_message">
-					<textarea id="input_field" ng-model="data.input_message"></textarea>
+					<div class="textarea-wrapper">
+						<textarea id="input_field" ng-model="data.input_message"></textarea>
+					</div>
 					<button type="button" class="send" ng-click="send_message()">Send</button>
 				</form>
 			</div>

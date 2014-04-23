@@ -83,14 +83,23 @@ body
 	right: $userlist_width;
 	background-color: #F3F3F3;
 	
-	textarea
+	.textarea-wrapper
 	{
 		position: absolute;
 		top: 6px;
 		left: 6px;
 		bottom: 6px;
 		right: 92px;
-		padding: 4px;
+		
+		textarea
+		{
+			padding: 4px;
+			box-sizing: border-box;
+			-webkit-box-sizing: border-box;
+			-moz-box-sizing: border-box;
+			width: 100%;
+			height: 100%;
+		}
 	}
 	
 	button.send

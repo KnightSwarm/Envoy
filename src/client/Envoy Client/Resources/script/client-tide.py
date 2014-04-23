@@ -151,7 +151,7 @@ class Client(ClientXMPP):
 	def on_groupchat_presence(self, stanza):
 		nickname = stanza["from"].resource
 		room_jid = stanza["from"].bare
-		# check for 100 (meaning non-anonymous)
+		# FIXME: check for 100 (meaning non-anonymous)
 		real_jid = str(stanza["muc"]["jid"])
 		role = stanza["muc"]["role"]
 		affiliation = stanza["muc"]["affiliation"]
