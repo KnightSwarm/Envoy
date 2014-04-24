@@ -34,6 +34,66 @@ envoyClient.filter("trusted", function($sce) {
 	}
 });
 
+envoyClient.directive("positionalContextMenu", function positionalContextMenu() {
+	return {
+		restrict: "A",
+		scope: {
+			menuSource: "=",
+			menuTarget: "=",
+			menuElement: "@",
+			menuClickType: "@"
+		},
+		link: function($scope, element, attrs) {
+			$scope.opened = false;
+			$scope.menu = $("#" + $scope.menuElement);
+			
+			element.on("click.posmenu", function(event){
+				if((event.which == 3 && $scope.menuClickType == "right")
+				|| (event.which == 2 && $scope.menuClickType == "middle")
+				|| (event.which == 1 && $scope.menuClickType == "left"))
+				{
+					/* Right-clicked attached element. */
+					
+					$scope.opened = true;
+					
+					/* FIXME: Make this positional! */
+					$scope.menu.show();
+					$scope.menu.css({
+						position: "absolute",
+						top: event.mouseY,
+						left: event.mouseX
+					});
+					
+					window.closeContextMenu = function(){
+						/* This can (should!) be called from within the menu when an
+						 * option is selected. */
+						element.off("click.posmenu");
+						$(document).off("click.posmenu");
+						$scope.menu.hide();
+						$scope.opened = false;
+						$scope.$apply();
+					};
+					
+					/* This makes the scope of the attached-to element available
+					 * for context-menu-specific functions to use. */
+					window.contextMenuScope = $scope.parent;
+					/* CURPOS: How to do communication between context menu and
+					 * scope correctly? Would be ideal if Angular-style attributes could
+					 * be used on the menu element directly... */
+					
+					$(document).on("click.posmenu", function(close_event){
+						close_event.stopPropagation();
+						close_event.preventDefault();
+						window.closeContextMenu();
+					});
+					
+					$scope.$apply();
+				}
+			});
+		}
+	};
+});
+
 envoyClient.service("vcardService", function vcardService($rootScope) {
 	this.get_user = function(jid)
 	{
