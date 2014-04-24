@@ -54,10 +54,11 @@
 					<div class="arrow"></div>
 				</div>
 				<!-- Private conversations -->
-				<div class="room" ng-class="{selected : data.current_room == user.jid}" ng-repeat="user in data.private_conversations" ng-click="data.current_room = user.jid" data-jid="{{ user.jid }}" ng-controller="UserController">
+				<div class="room" ng-class="{selected : data.current_room == user.jid}" ng-repeat="user in data.private_conversations" ng-click="switch_user(user);" data-jid="{{ user.jid }}" ng-controller="UserController">
 					<i class="status icon-{{user.icon}} icon-fixed-width"></i>
-					<span class="name">{{ user.name }}</span>
+					<span class="name">{{ user.vcard.full_name }}</span>
 					<a href="#" class="close" ng-click="end_private_conversation(user.jid); $event.stopPropagation();"><i class="icon-remove"></i></a>
+					<span class="unread" ng-show="user.message_count > user.messages_read">{{ user.message_count - user.messages_read }}</span>
 					<div class="arrow"></div>
 				</div>
 			</div>
@@ -66,7 +67,7 @@
 				<div class="list" ng-repeat="room in data.rooms" ng-class="{hidden : data.current_room != room.jid}" ng-controller="RoomController">
 					<div class="user" ng-repeat="user in room.all_users" ng-click="start_private_conversation(user.jid)" ng-controller="UserController">
 						<i class="status {{user.status}} icon-circle"></i>
-						{{ user.fullname }}
+						{{ user.vcard.full_name }}
 					</div>
 				</div>
 				<div class="vcard" ng-repeat="user in data.private_conversations" ng-class="{hidden : data.current_room != user.jid}" ng-controller="UserController">
@@ -89,10 +90,10 @@
 				</div>
 				<!-- Actual chatroom pages -->
 				<div class="chat" ng-repeat="room in data.rooms"  data-jid="{{ room.jid }}" ng-class="{hidden : data.current_room != room.jid}" ng-controller="RoomController">
-					<div class="message" ng-repeat="message in room.all_messages" ng-class="{own : message.jid == own_jid}" data-message-id="{{ message.id }}">
+					<div class="message" ng-repeat="message in room.all_messages" ng-class="{own : message.jid == own_jid}" data-message-id="{{ message.id }}" ng-controller="MessageController">
 						<span class="timestamp">{{ format_time(message.timestamp) }}</span>
 						<span ng-show="message.type == 'message'">
-							<span class="author">{{ message.fullname }}</span>
+							<span class="author">{{ message.vcard.full_name }}</span>
 							<span class="body">{{ message.body }}</span>
 						</span>
 						<span class="event" ng-show="message.type == 'event' && message.event == 'join'">
@@ -107,10 +108,10 @@
 				</div>
 				<!-- Private conversation pages -->
 				<div class="chat" ng-repeat="user in data.private_conversations"  data-jid="{{ user.jid }}" ng-class="{hidden : data.current_room != user.jid}" ng-controller="UserController">
-					<div class="message" ng-repeat="message in user.messages" ng-class="{own : message.jid == own_jid}" data-message-id="{{ message.id }}">
+					<div class="message" ng-repeat="message in user.messages" ng-class="{own : message.jid == own_jid}" data-message-id="{{ message.id }}" ng-controller="MessageController">
 						<span class="timestamp">{{ format_time(message.timestamp) }}</span>
 						<span ng-show="message.type == 'message'">
-							<span class="author">{{ message.fullname }}</span>
+							<span class="author">{{ message.vcard.full_name }}</span>
 							<span class="body">{{ message.body }}</span>
 						</span>
 						<div class="preview" ng-show="message.preview != ''" ng-bind-html="message.preview | trusted"></div>

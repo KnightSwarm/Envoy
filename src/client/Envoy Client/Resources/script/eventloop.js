@@ -175,19 +175,27 @@ var event_handlers = {
 	receive_private_message: {
 		scope: ["user"],
 		get_scope: function(index, item){
+			/* Ensure that a conversation tab for this user exists. */
+			var ui_scope = angular.element("[ng-controller=UiController]").scope();
+			ui_scope.start_private_conversation(item.data.jid, false);
+			/* Force a digest to make sure the element we need, exists... dirty hack. */
+			ui_scope.$apply();
+			
 			return item.data.jid;
 		},
 		handler: function($scope, data) {
+			var ui_scope = angular.element("[ng-controller=UiController]").scope();
+			
 			if(!data.jid.match(/^component\.[^@]+$/) || data.body.match(/^\[/))
 			{
-				/* We need the vcardService here... */
-				var vcardService = angular.element("html").injector().get("vcardService");
-				var vcard = vcardService.get_user(data.jid);
-				console.log("service", vcardService);
 				data["type"] = "message";
-				data["fullname"] = vcard.full_name;
-				data["nickname"] = vcard.nickname;
 				$scope.user.messages.push(data);
+				$scope.user.message_count += 1;
+				
+				if(ui_scope.data.current_room == data.jid)
+				{
+					$scope.user.messages_read = $scope.user.message_count;
+				}
 			}
 		}
 	},
@@ -205,7 +213,21 @@ var event_handlers = {
 		scope: ["root"],
 		handler: function($rootScope, data) {
 			var jid = data.jid;
-			$rootScope.data.users[jid].vcard = data;
+			
+			/* Create a vCard data object if it doesn't yet exist. */
+			if(!$rootScope.data.users[jid].vcard)
+			{
+				$rootScope.data.users[jid].vcard = {};
+			}
+			 
+			 /* To make sure that any references to the old vCard data
+			 * remain functional and are updated with the new vCard
+			 * data, we manually copy over all properties to the existing
+			 * vCard data object. */
+			for(key in data)
+			{
+				$rootScope.data.users[jid].vcard[key] = data[key];
+			}
 		}
 	}
 }

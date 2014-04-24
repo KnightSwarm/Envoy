@@ -287,6 +287,20 @@ body
 				color: white;
 			}
 		}
+		
+		.unread
+		{
+			position: absolute;
+			top: 10px;
+			right: 40px;
+			background-color: #AD1C1C;
+			color: white;
+			font-weight: bold;
+			font-size: 13px;
+			padding: 1px 4px;
+			border-radius: 3px;
+			-webkit-border-radius: 3px;
+		}
 	}
 }
 

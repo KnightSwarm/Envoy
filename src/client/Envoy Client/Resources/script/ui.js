@@ -53,6 +53,11 @@ envoyClient.service("vcardService", function vcardService($rootScope) {
 		}
 		else
 		{
+			if(typeof $rootScope.data.users[jid] == "undefined")
+			{
+				$rootScope.data.users[jid] = {};
+			}
+			
 			var vcard_data = backend.get_vcard(jid);
 			$rootScope.data.users[jid].vcard = vcard_data;
 			return vcard_data;
@@ -76,6 +81,12 @@ envoyClient.service("vcardService", function vcardService($rootScope) {
 envoyClient.controller("UserController", function UserController($scope, vcardService){
 	$scope.user.vcard = vcardService.get_user($scope.user.jid);
 	$scope.user.messages = [];
+	$scope.user.message_count = 0;
+	$scope.user.messages_read = 0;
+});
+ 
+envoyClient.controller("MessageController", function MessageController($scope, vcardService){
+	$scope.message.vcard = vcardService.get_user($scope.message.jid);
 });
  
 envoyClient.controller('UiController', function UiController($scope, $rootScope, vcardService)
@@ -120,6 +131,12 @@ envoyClient.controller('UiController', function UiController($scope, $rootScope,
 		backend.remove_bookmark(jid)
 		/* FIXME: Switch to next closest room */
 		$scope.current_room = "lobby";
+	}
+	
+	$scope.switch_user = function(user)
+	{
+		$scope.data.current_room = user.jid;
+		user.messages_read = user.message_count;
 	}
 	
 	$scope.format_time = function(time)
@@ -171,10 +188,10 @@ envoyClient.controller('UiController', function UiController($scope, $rootScope,
 		{
 			/* We'll assume it's a room. */
 			window.log("Sending group message")
-			if($scope.data.input_message.match(/^\/affiliation /))
+			if($scope.data.input_message.match(/^\/aff(iliation)? /))
 			{
 				/* Command to set affiliation. */
-				var parts = /^\/affiliation (\S+) (\S+)/.exec($scope.data.input_message);
+				var parts = /^\/aff(?:iliation)? (\S+) (\S+)/.exec($scope.data.input_message);
 				var nickname = parts[1];
 				var affiliation = parts[2];
 				var target_jid = vcardService.get_nick(nickname);
@@ -182,6 +199,11 @@ envoyClient.controller('UiController', function UiController($scope, $rootScope,
 				if(target_jid)
 				{
 					backend.set_affiliation($scope.data.current_room, target_jid, affiliation);
+				}
+				else
+				{
+					/* FIXME: Logging! */
+					console.log("No target JID found!", nickname, vcardService, vcardService.get_nick(nickname));
 				}
 			}
 			else
@@ -212,8 +234,10 @@ envoyClient.controller('UiController', function UiController($scope, $rootScope,
 		}
 	}
 	
-	$scope.start_private_conversation = function(jid)
+	$scope.start_private_conversation = function(jid, autofocus)
 	{
+		if(typeof autofocus == "undefined") { var autofocus = true; };
+		
 		if(new _JID(jid).bare !== $scope.data.own_jid)
 		{
 			if(_.contains(_.pluck($scope.data.private_conversations, "jid"), jid) === false)
@@ -240,7 +264,10 @@ envoyClient.controller('UiController', function UiController($scope, $rootScope,
 				});
 			}
 			
-			$scope.data.current_room = jid;
+			if(autofocus)
+			{
+				$scope.data.current_room = jid;
+			}
 		}
 	}
 	

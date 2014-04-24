@@ -324,7 +324,28 @@ WebBackend.prototype.leave_room = function(room_jid)
 
 WebBackend.prototype.bookmark_room = function(room_jid)
 {
+	var self = this;
 	
+	self.client.getBookmarks(function(error, stanza){
+		var bookmarks = stanza.privateStorage.bookmarks;
+		var conferences = bookmarks.conferences;
+		
+		var bookmark_exists = _.contains(_.pluck(conferences, "jid"), room_jid);
+		
+		if(!bookmark_exists)
+		{
+			conferences.push({
+				autoJoin: true,
+				name: room_jid,
+				jid: room_jid,
+				nick: self.username
+			});
+			
+			/* Fire and forget. */
+			bookmarks.conferences = conferences;
+			self.client.setBookmarks(bookmarks);
+		}
+	});
 }
 
 WebBackend.prototype.remove_bookmark = function(jid)
@@ -349,7 +370,7 @@ WebBackend.prototype.get_vcard = function(jid)
 			"jid": jid,
 			"full_name": stanza.vCardTemp.fullName,
 			"job_title": stanza.vCardTemp.title,
-			"nickname": stanza.vCardTemp.nicknames[0],
+			"nickname": stanza.vCardTemp.nicknames,
 			"mobile_number": stanza.vCardTemp.phoneNumbers[0].number,
 			"email_address": stanza.vCardTemp.emails[0].email
 		}});
@@ -392,6 +413,7 @@ WebBackend.prototype.set_affiliation = function(room, jid, affiliation)
 	var self = this;
 	
 	/* CURPOS: This does not work yet, for unclear reasons. */
+	console.log(affiliation);
 	self.client.setRoomAffiliation(room, jid, affiliation);
 }
 

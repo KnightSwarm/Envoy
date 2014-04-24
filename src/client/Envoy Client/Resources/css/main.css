@@ -143,6 +143,17 @@ body {
       text-decoration: none; }
       #room_list .room .close:hover {
         color: white; }
+    #room_list .room .unread {
+      position: absolute;
+      top: 10px;
+      right: 40px;
+      background-color: #AD1C1C;
+      color: white;
+      font-weight: bold;
+      font-size: 13px;
+      padding: 1px 4px;
+      border-radius: 3px;
+      -webkit-border-radius: 3px; }
 
 #user_list {
   background-color: #EBEBEB;

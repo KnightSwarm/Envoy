@@ -86,8 +86,8 @@ function hook_autofocus()
 			|| event.which == 32
 			|| event.which == 8)
 			{
-				/* ... and only if the input area is currently visible. */
-				if($(".input").hasClass("hidden") == false)
+				/* ... and only if the input area is currently visible, and no modifier key (ctrl, alt, command) is pressed. */
+				if($(".input").hasClass("hidden") == false && !event.ctrlKey && !event.metaKey && !event.altKey)
 				{
 					$("#input_field").focus();
 					
