@@ -68,6 +68,7 @@
 					<div class="user" ng-repeat="user in room.all_users" ng-click="start_private_conversation(user.jid)" ng-controller="UserController">
 						<i class="status {{user.status}} icon-circle"></i>
 						{{ user.vcard.full_name }}
+						<a href="#" context-menu-attachment menu-element="ctxmenu_affiliation" menu-click-type="right">(A)</a>
 					</div>
 				</div>
 				<div class="vcard" ng-repeat="user in data.private_conversations" ng-class="{hidden : data.current_room != user.jid}" ng-controller="UserController">
@@ -144,6 +145,9 @@
 					<i class="icon-cog icon-spin icon-2x"></i>
 				</div>
 			</form>
+		</div>
+		<div class="context-menu" id="ctxmenu_affiliation">
+			Username: {{ user.vcard.full_name }}!
 		</div>
 	</body>
 </html>

@@ -25,7 +25,7 @@ function WebBackend(username, fqdn, password, queue)
 	self.client = XMPP.createClient({
 		jid: username + "@" + fqdn,
 		password: password,
-		transport: "websocket",
+		transport: "old-websocket", /* Change to 'websocket' for new (Prosody >= 0.10.x) WebSocket protocol */
 		wsURL: "wss://" + fqdn + ":5281/xmpp-websocket"
 	})
 	
@@ -326,31 +326,19 @@ WebBackend.prototype.bookmark_room = function(room_jid)
 {
 	var self = this;
 	
-	self.client.getBookmarks(function(error, stanza){
-		var bookmarks = stanza.privateStorage.bookmarks;
-		var conferences = bookmarks.conferences;
-		
-		var bookmark_exists = _.contains(_.pluck(conferences, "jid"), room_jid);
-		
-		if(!bookmark_exists)
-		{
-			conferences.push({
-				autoJoin: true,
-				name: room_jid,
-				jid: room_jid,
-				nick: self.username
-			});
-			
-			/* Fire and forget. */
-			bookmarks.conferences = conferences;
-			self.client.setBookmarks(bookmarks);
-		}
+	self.client.addBookmark({
+		autoJoin: true,
+		name: room_jid,
+		jid: room_jid,
+		nick: self.username
 	});
 }
 
 WebBackend.prototype.remove_bookmark = function(jid)
 {
+	var self = this;
 	
+	self.client.removeBookmark(jid);
 }
 
 WebBackend.prototype.get_vcard = function(jid)

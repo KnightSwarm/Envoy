@@ -165,7 +165,7 @@ var event_handlers = {
 			return item.data.room_jid;
 		},
 		handler: function($scope, data) {
-			if(!data.jid.match(/^component\.[^@]+$/) || data.body.match(/^\[/))
+			if((data.jid && !data.jid.match(/^component\.[^@]+$/)) || data.body.match(/^\[/))
 			{
 				data["type"] = "message";
 				$scope.room.messages.push(data);
@@ -186,7 +186,9 @@ var event_handlers = {
 		handler: function($scope, data) {
 			var ui_scope = angular.element("[ng-controller=UiController]").scope();
 			
-			if(!data.jid.match(/^component\.[^@]+$/) || data.body.match(/^\[/))
+			/* FIXME: Corner case; delayed (history) stanzas do not include the real JID.
+			 * This means we cannot check whether it originated from the component. */
+			if((data.jid && !data.jid.match(/^component\.[^@]+$/)) || data.body.match(/^\[/))
 			{
 				data["type"] = "message";
 				$scope.user.messages.push(data);

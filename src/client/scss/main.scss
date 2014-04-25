@@ -423,3 +423,11 @@ body
 	border-radius: 4px;
 	padding: 6px;
 }
+
+.context-menu
+{
+	z-index: 999;
+	background-color: black;
+	color: white;
+	padding: 8px;
+}

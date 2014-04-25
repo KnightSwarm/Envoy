@@ -34,7 +34,7 @@ envoyClient.filter("trusted", function($sce) {
 	}
 });
 
-envoyClient.directive("positionalContextMenu", function positionalContextMenu() {
+envoyClient.directive("contextMenuAttachment", function contextMenuAttachment() {
 	return {
 		restrict: "A",
 		scope: {
@@ -44,50 +44,109 @@ envoyClient.directive("positionalContextMenu", function positionalContextMenu() 
 			menuClickType: "@"
 		},
 		link: function($scope, element, attrs) {
+			/* NOTE: The context menu will create a new child scope for the
+			 * menu element, to allow for direct access to the scope of the
+			 * element that the context menu was called on. This comes
+			 * with some caveats. You must always set data in member
+			 * variables (that is, using The Dot), to avoid those variables
+			 * being thrown away when the temporary scope is discarded
+			 * (upon context menu closure). The closeContextMenu method
+			 * is created on the temporary scope, that allows to close that
+			 * particular context menu and destroy the associated scope -
+			 * this is what should be called after eg. making a selection. */
 			$scope.opened = false;
-			$scope.menu = $("#" + $scope.menuElement);
+			var menu_element = $("#" + $scope.menuElement);
+			
+			element.on("mousedown.posmenu", function(event){
+				if((event.which == 3 && $scope.menuClickType == "right")
+				|| (event.which == 2 && $scope.menuClickType == "middle")
+				|| (event.which == 1 && $scope.menuClickType == "left"))
+				{
+					event.stopPropagation();
+					event.preventDefault();
+						
+					/* Right-clicked attached element. */
+					$scope.opened = true;
+					
+					/* We create a new child scope, that derives from the target element
+					 * scope, and attach this new scope to the menu element. This allows
+					 * for directly manipulating the intended scope from the menu itself. */
+					var child_scope = $scope.$parent.$new(false);
+					
+					$scope.old_scope = menu_element.data("$scope");
+					menu_element.data("$scope", child_scope);
+					
+					if(typeof $scope.old_scope == "undefined")
+					{
+						/* No previous scope existed on this element. */
+						menu_element.addClass("ng-scope");
+					}
+					
+					/* FIXME: Make this positional! */
+					menu_element.show();
+					menu_element.css({
+						position: "absolute",
+						top: event.mouseY,
+						left: event.mouseX
+					});
+					
+					child_scope.test = "somebody";
+					child_scope.closeContextMenu = function(){
+						/* This can (should!) be called from within the menu when an
+						 * option is selected. */
+						element.off("click.posmenu");
+						$(document).off("click.posmenu");
+						menu_element.hide();
+						
+						/* Return the element scope to its previous state. */
+						if($scope.old_scope == "undefined")
+						{
+							menu_element.removeClass("ng-scope");
+						}
+						
+						var child_scope = menu_element.data("$scope");
+						child_scope.$destroy();
+						menu_element.data("$scope", $scope.old_scope);
+						$scope.old_scope = undefined;
+						
+						$scope.opened = false;
+						$scope.$apply();
+					};
+					
+					$(document).on("click.posmenu", function(close_event){
+						close_event.stopPropagation();
+						close_event.preventDefault();
+						child_scope.closeContextMenu();
+					});
+					
+					/* Prevent a click on the menu itself from closing it. */
+					menu_element.on("click.posmenu", function(click_event){
+						click_event.stopPropagation();
+					});
+					
+					child_scope.$apply();
+					$scope.$apply();
+				}
+			});
+			
+			/* Prevent other mouse events. */
+			element.on("mouseup.posmenu", function(event){
+				if((event.which == 3 && $scope.menuClickType == "right")
+				|| (event.which == 2 && $scope.menuClickType == "middle")
+				|| (event.which == 1 && $scope.menuClickType == "left"))
+				{
+					event.stopPropagation();
+					event.preventDefault();
+				}
+			});
 			
 			element.on("click.posmenu", function(event){
 				if((event.which == 3 && $scope.menuClickType == "right")
 				|| (event.which == 2 && $scope.menuClickType == "middle")
 				|| (event.which == 1 && $scope.menuClickType == "left"))
 				{
-					/* Right-clicked attached element. */
-					
-					$scope.opened = true;
-					
-					/* FIXME: Make this positional! */
-					$scope.menu.show();
-					$scope.menu.css({
-						position: "absolute",
-						top: event.mouseY,
-						left: event.mouseX
-					});
-					
-					window.closeContextMenu = function(){
-						/* This can (should!) be called from within the menu when an
-						 * option is selected. */
-						element.off("click.posmenu");
-						$(document).off("click.posmenu");
-						$scope.menu.hide();
-						$scope.opened = false;
-						$scope.$apply();
-					};
-					
-					/* This makes the scope of the attached-to element available
-					 * for context-menu-specific functions to use. */
-					window.contextMenuScope = $scope.parent;
-					/* CURPOS: How to do communication between context menu and
-					 * scope correctly? Would be ideal if Angular-style attributes could
-					 * be used on the menu element directly... */
-					
-					$(document).on("click.posmenu", function(close_event){
-						close_event.stopPropagation();
-						close_event.preventDefault();
-						window.closeContextMenu();
-					});
-					
-					$scope.$apply();
+					event.stopPropagation();
+					event.preventDefault();
 				}
 			});
 		}
