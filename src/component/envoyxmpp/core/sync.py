@@ -93,7 +93,7 @@ class AffiliationSyncer(LocalSingletonBase):
 						user_affiliation = affiliation_provider.find_by_room_user(room_jid, user_jid)
 					except NotFoundException, e:
 						# Not a known user, log and skip
-						logger.warning("Unknown user %s found during affiliation sync!")
+						logger.warning("Unknown user %s found during affiliation sync!" % user_jid)
 						continue
 					
 					if user_affiliation.affiliation != affiliation:

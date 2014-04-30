@@ -14,5 +14,10 @@ err_report() {
 
 trap 'err_report $LINENO' ERR
 
-prosodyctl start >/dev/null
+# We need to start the component first, to make sure that an FQDN configuration exists. Prosody will refuse to start otherwise.
 /vagrant/vagrant-bootstrap/start-component.sh
+
+# Give the component some time to generate configuration files...
+sleep 10
+
+prosodyctl start >/dev/null

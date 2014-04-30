@@ -221,6 +221,35 @@ body {
     text-align: center;
     margin: 24px auto 0px auto; }
 
+.ssl-broken .wrapper {
+  position: absolute;
+  top: 64px;
+  bottom: 64px;
+  left: 64px;
+  right: 64px;
+  background-color: #E6E0BC;
+  border: 1px solid #D5C767; }
+  .ssl-broken .wrapper .explanation {
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    right: 0px;
+    padding: 16px;
+    height: 80px; }
+    .ssl-broken .wrapper .explanation p, .ssl-broken .wrapper .explanation h2 {
+      margin: 9px 0px; }
+  .ssl-broken .wrapper .iframe-wrapper {
+    overflow: hidden;
+    position: absolute;
+    top: 96px;
+    left: 0px;
+    right: 0px;
+    bottom: 0px; }
+    .ssl-broken .wrapper .iframe-wrapper iframe {
+      border: 0px;
+      width: 100%;
+      height: 100%; }
+
 .alert {
   border: 1px solid #BFA51F;
   background-color: #E5DA9F;
@@ -231,4 +260,5 @@ body {
   z-index: 999;
   background-color: black;
   color: white;
-  padding: 8px; }
+  padding: 8px;
+  display: none; }

@@ -82,11 +82,11 @@ class Component(ComponentXMPP):
 		logger.debug("Launched ResolverQueue thread")
 		
 		# Synchronize all data...
-		RoomSyncer.Instance(self.identifier).sync()
 		AffiliationSyncer.Instance(self.identifier).sync()
 		PresenceSyncer.Instance(self.identifier).sync()
 		StatusSyncer.Instance(self.identifier).sync()
 		VcardSyncer.Instance(self.identifier).sync()
+		RoomSyncer.Instance(self.identifier).sync()
 		
 		self.scheduler.add("Sync Rooms", 60, RoomSyncer.Instance(self.identifier).sync, repeat=True)
 		

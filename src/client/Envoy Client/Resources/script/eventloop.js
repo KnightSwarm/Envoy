@@ -3,6 +3,8 @@
  * being executed in the wrong order, as some events may rely on the results of
  * previous events. */
 event_loop_processing = false;
+var ssl_interval = null;
+var reconnect_interval = null;
 
 var event_handlers = {
 	login_success: {
@@ -11,7 +13,21 @@ var event_handlers = {
 			$scope.data.logged_in = true;
 			$scope.data.login_failed = false;
 			$scope.data.login_busy = false;
+			$scope.data.ssl_broken = false;
+			$scope.data.ssl_testing = false;
+			$scope.data.reconnecting = false;
 			$scope.data.own_jid = $scope.data.username;
+			
+			if(ssl_interval !== null)
+			{
+				clearInterval(ssl_interval);
+			}
+			
+			if(reconnect_interval !== null)
+			{
+				clearInterval(reconnect_interval);
+			}
+			
 			settings.setString("username", $scope.data.username);
 			settings.setString("password", $scope.data.password);
 		}
@@ -23,6 +39,63 @@ var event_handlers = {
 			$scope.data.login_failed = true;
 			$scope.data.login_error = data["error_type"];
 			$scope.data.login_busy = false;
+		}
+	},
+	disconnected: {
+		scope: ["ui"],
+		handler: function($scope, data) {
+			$scope.data.login_failed = true;
+			$scope.data.login_busy = false;
+			
+			$scope.$broadcast("reset_client");
+			
+			if($scope.data.logged_in == true)
+			{
+				/* We were previously connected. */
+				$scope.data.login_error = "reconnecting";
+				$scope.data.reconnecting = true;
+				
+				reconnect_interval = setInterval(function(){
+					$scope.login();
+				}, 10000);
+			}
+			else if($scope.data.reconnecting == false)
+			{
+				/* The connection never succeeded. Server down? */
+				$scope.data.login_error = "unavailable";
+				
+				if(!has_tide && $scope.data.ssl_testing == false && $scope.data.ssl_broken == false)
+				{
+					/* If we're running in web client mode, check to see if there might be
+					 * a problem with the SSL certificate for WebSockets. Since browsers
+					 * seem to silently fail if a certificate error occurs (such as a certificate
+					 * being self-signed), the only way we can detect and fix such problems
+					 * is by attempting to initiate a plaintext ws:// connection. If this succeeds,
+					 * the problem is with the certificate, and we should iframe the wss://
+					 * URI with a https:// protocol instead, and instruct the user to click through
+					 * whatever warning might be visible. In the meantime, we will continue
+					 * attempting to connect over wss:// - if this succeeds, that means the
+					 * user successfully marked the certificate as 'trusted', and we can hide
+					 * the iframe. */
+					$scope.data.ssl_testing = true;
+					 
+					var url = "ws://" + target_fqdn + ":5280/xmpp-websocket";
+					var testconn = window['MozWebSocket'] ? new MozWebSocket(url, "xmpp") : new WebSocket(url, "xmpp");
+					
+					testconn.onopen = function(){
+						/* This worked; there is an SSL problem. */
+						$scope.data.ssl_broken = true;
+						$scope.$apply();
+						$(".ssl-broken .insecure-link").attr("href", "https://" + target_fqdn + ":5281/xmpp-websocket");
+						
+						ssl_interval = setInterval(function(){
+							$scope.login();
+						}, 3000);
+					}
+				}
+			}
+			
+			$scope.data.logged_in = false;
 		}
 	},
 	roomlist_add: {
@@ -197,6 +270,17 @@ var event_handlers = {
 				if(ui_scope.data.current_room == data.jid)
 				{
 					$scope.user.messages_read = $scope.user.message_count;
+				}
+				else
+				{
+					$scope.data.total_unread += 1;
+					$scope.update_title();
+					
+					/* Display notification. */
+					Ti.Notification.createNotification({
+						title: "Private message from " + data.jid.split("/")[0],
+						message: data.body
+					}).show();
 				}
 			}
 		}

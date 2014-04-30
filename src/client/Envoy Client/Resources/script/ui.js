@@ -34,6 +34,18 @@ envoyClient.filter("trusted", function($sce) {
 	}
 });
 
+envoyClient.filter("newlines", function($sce) {
+	return function(text) {
+		return $sce.trustAsHtml(text
+			.replace(/&/g, "&amp;")
+			.replace(/</g, "&lt;")
+			.replace(/>/g, "&gt;")
+			.replace(/"/g, "&quot;")
+			.replace(/'/g, "&#039;")
+			.replace(/\n/g, "<br>"));
+	}
+});
+
 envoyClient.directive("contextMenuAttachment", function contextMenuAttachment() {
 	return {
 		restrict: "A",
@@ -202,6 +214,12 @@ envoyClient.controller("UserController", function UserController($scope, vcardSe
 	$scope.user.messages = [];
 	$scope.user.message_count = 0;
 	$scope.user.messages_read = 0;
+	
+	$scope.$on("reset_client", function(){
+		$scope.user.messages = [];
+		$scope.user.message_count = 0;
+		$scope.user.messages_read = 0;
+	});
 });
  
 envoyClient.controller("MessageController", function MessageController($scope, vcardService){
@@ -219,11 +237,25 @@ envoyClient.controller('UiController', function UiController($scope, $rootScope,
 		joined_rooms: [],
 		own_jid: "",
 		all_rooms: [],
+		total_unread: 0,
 		logged_in: false,
 		login_busy: false,
 		login_failed: false,
-		login_error: ""
+		login_error: "",
+		ssl_broken: false,
+		ssl_testing: false,
+		reconnecting: false
 	};
+	
+	$scope.$on("reset_client", function(){
+		$scope.data.rooms = [];
+		$scope.data.private_conversations = [];
+		$scope.data.tabs = [];
+		$scope.data.joined_rooms = [];
+		$scope.data.all_rooms = [];
+		$scope.data.own_jid = "";
+		$scope.data.current_room = "lobby";
+	});
 	
 	/* The rootScope is shared across controllers; we use this as a
 	 * place to keep vCard data, and perhaps other application-wide
@@ -249,13 +281,27 @@ envoyClient.controller('UiController', function UiController($scope, $rootScope,
 		backend.leave_room(jid);
 		backend.remove_bookmark(jid)
 		/* FIXME: Switch to next closest room */
-		$scope.current_room = "lobby";
+		$scope.data.current_room = "lobby";
 	}
 	
 	$scope.switch_user = function(user)
 	{
 		$scope.data.current_room = user.jid;
+		$scope.data.total_unread -= (user.message_count - user.messages_read);
+		$scope.update_title();
 		user.messages_read = user.message_count;
+	}
+	
+	$scope.update_title = function()
+	{
+		if($scope.data.total_unread > 0)
+		{
+			document.title = "(" + $scope.data.total_unread + ") Envoy";
+		}
+		else
+		{
+			document.title = "Envoy";
+		}
 	}
 	
 	$scope.format_time = function(time)

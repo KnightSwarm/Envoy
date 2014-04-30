@@ -416,6 +416,52 @@ body
 	}
 }
 
+.ssl-broken
+{
+	.wrapper
+	{
+		position: absolute;
+		top: 64px;
+		bottom: 64px;
+		left: 64px;
+		right: 64px;
+		background-color: #E6E0BC;
+		border: 1px solid #D5C767;
+		
+		.explanation
+		{
+			position: absolute;
+			top: 0px;
+			left: 0px;
+			right: 0px;
+			padding: 16px;
+			height: 80px;
+			
+			p, h2
+			{
+				margin: 9px 0px;
+			}
+		}
+		
+		.iframe-wrapper
+		{
+			overflow: hidden;
+			position: absolute;
+			top: 96px;
+			left: 0px;
+			right: 0px;
+			bottom: 0px;
+			
+			iframe
+			{
+				border: 0px;
+				width: 100%;
+				height: 100%;
+			}
+		}
+	}
+}
+
 .alert
 {
 	border: 1px solid #BFA51F;
@@ -430,4 +476,5 @@ body
 	background-color: black;
 	color: white;
 	padding: 8px;
+	display: none;
 }

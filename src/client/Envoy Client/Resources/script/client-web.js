@@ -6,6 +6,8 @@ if(has_python === false)
 	}
 }
 
+var target_fqdn;
+
 function WebBackend(username, fqdn, password, queue)
 {
 	/* Constructor */
@@ -13,6 +15,8 @@ function WebBackend(username, fqdn, password, queue)
 	
 	self.username = username;
 	self.fqdn = fqdn;
+	self.jid = username + "@" + fqdn;
+	target_fqdn = fqdn; /* For reconnection code... */
 	self.password = password;
 	self.q = queue;
 	
@@ -23,7 +27,7 @@ function WebBackend(username, fqdn, password, queue)
 	self.jid_map = {};
 	
 	self.client = XMPP.createClient({
-		jid: username + "@" + fqdn,
+		jid: self.jid,
 		password: password,
 		transport: "old-websocket", /* Change to 'websocket' for new (Prosody >= 0.10.x) WebSocket protocol */
 		wsURL: "wss://" + fqdn + ":5281/xmpp-websocket"
@@ -48,7 +52,15 @@ function WebBackend(username, fqdn, password, queue)
 		 * FIXME: Old-style bookmark storage is currently used by the TideSDK client,
 		 * but it seems stanza.io only supports new-style. This should be changed. */
 		self.client.getBookmarks(function(blank, response){
-			console.log("BOOKMARKS", response);
+			for(i in response.privateStorage.bookmarks.conferences)
+			{
+				var bookmark = response.privateStorage.bookmarks.conferences[i];
+				
+				if(bookmark.autoJoin)
+				{
+					self.join_room(bookmark.jid);
+				}
+			}
 		})
 	});
 	
@@ -61,27 +73,54 @@ function WebBackend(username, fqdn, password, queue)
 		});
 	})
 	
-	self.client.on("muc:leave", function(presence){
-		self._process_part(presence);
+	self.client.on("muc:join", function(presence){
+		/* Join successfully finished */
+		var room = presence.from.bare;
+		
+		self.joined_rooms.push(room);
+		
+		self.q.put({"type": "joinlist_add", "data": [{
+			"type": "room",
+			"name": self.known_rooms[room].name,
+			"jid": room,
+			"icon": "comments"
+		}]})
+		
+		/* Process buffered joins. */
+		if(typeof self.buffered_joins[room] !== "undefined")
+		{
+			_.each(self.buffered_joins[room], function(pres){
+				self._process_join(pres);
+			})
+			
+			/* Clear buffer */
+			self.buffered_joins[room] = [];
+		}
+		
+		/* Finally, process our own join. */
+		self._process_join(presence);
 	});
 	
-	self.client.on("muc:join", function(presence){
-		/* Backported from Stanza.io 4.x; the muc:join:self event does not exist in 3.x. */
-		var isSelf = presence.muc.codes && presence.muc.codes.indexOf("110") >= 0;
+	self.client.on("muc:available", function(presence){
+		/* Somebody else joined the room. Also fires for self. */
+		var room = presence.from.bare;
+		var nickname = presence.from.resource;
+		var user = presence.muc.jid;
 		
-		var room_jid = presence.from.bare;
-		var nick = presence.from.resource;
-		var real_jid = presence.muc.jid;
+		if(user.bare === self.jid)
+		{
+			return;
+		}
 		
-		if(false /* FIXME */ && _.contains(self.joined_rooms))
+		if(_.contains(self.joined_rooms, room))
 		{
 			/* Already joined; this is either a status change or a join/part. */
-			if(typeof self.known_users[room_jid] == "undefined")
+			if(typeof self.known_users[room] == "undefined")
 			{
-				self.known_users[room_jid] = [];
+				self.known_users[room] = [];
 			}
 			
-			if(_.contains(self.known_users[room_jid], nick))
+			if(_.contains(self.known_users[room], nick))
 			{
 				/* Status change or part. */
 				if(presence.type == "unavailable")
@@ -103,40 +142,39 @@ function WebBackend(username, fqdn, password, queue)
 		}
 		else
 		{
-			/* Not yet joined; buffer this presence. */
-			
-			if(typeof self.buffered_joins[room_jid] == "undefined")
+			if(typeof self.buffered_joins[room] == "undefined")
 			{
-				self.buffered_joins[room_jid] = [];
+				self.buffered_joins[room] = [];
 			}
 			
-			self.buffered_joins[room_jid].push(presence);
+			self.buffered_joins[room].push(presence);
+		}
+	});
+	
+	self.client.on("muc:leave", function(presence){
+		/* Leave successfully finished. */
+		var room = presence.from.bare;
+		
+		self.joined_rooms = _.without(self.joined_rooms, room);
+		
+		self.q.put({"type": "joinlist_remove", "data":[{
+			"jid": room
+		}]});
+	});
+	
+	self.client.on("muc:unavailable", function(presence){
+		/* Somebody else left the room. Also fires for self. */
+		var room = presence.from.bare;
+		var nickname = presence.from.resource;
+		var user = presence.muc.jid;
+		
+		if(user.bare === self.jid)
+		{
+			return;
 		}
 		
-		if(isSelf)
-		{
-			/* Register own join. */
-			self.joined_rooms.push(room_jid);
-			
-			self.q.put({"type": "joinlist_add", "data": [{
-				"type": "room",
-				"name": self.known_rooms[room_jid].name,
-				"jid": room_jid,
-				"icon": "comments"
-			}]})
-			
-			/* Process buffered joins. */
-			if(typeof self.buffered_joins[room_jid] !== "undefined")
-			{
-				_.each(self.buffered_joins[room_jid], function(pres){
-					self._process_join(pres);
-				})
-				
-				/* Clear buffer */
-				self.buffered_joins[room_jid] = [];
-			}
-		}
-	})
+		self._process_part(presence);
+	});
 	
 	self.client.on("chat", function(stanza){
 		self.q.put({"type": "receive_private_message", "data": {
@@ -152,7 +190,7 @@ function WebBackend(username, fqdn, password, queue)
 		var room_jid = stanza.from.bare;
 		var nick = stanza.from.resource;
 		
-		if(typeof stanza.delay.stamp == "undefined")
+		if(typeof stanza.delay == "undefined" || typeof stanza.delay.stamp == "undefined")
 		{
 			/* Real-time message. */
 			var stamp = Date.now() / 1000;
@@ -176,6 +214,10 @@ function WebBackend(username, fqdn, password, queue)
 			"preview": ""
 		}})
 	});
+	
+	self.client.on("disconnected", function(stanza){
+		self.q.put({type: "disconnected", data: {}});
+	})
 	
 	self.client.on("*", function(event_name, event_data){
 		console.log("EVENT", event_name, event_data);
@@ -245,23 +287,12 @@ WebBackend.prototype._process_join = function(presence)
 
 WebBackend.prototype._process_part = function(presence)
 {
-	var isSelf = presence.muc.codes && presence.muc.codes.indexOf("110") >= 0;
-	var room_jid = presence.from.bare;
-	var self = this;
-	
-	if(isSelf)
-	{
-		self.joined_rooms = _.without(self.joined_rooms, room_jid);
-		
-		self.q.put({"type": "joinlist_remove", "data":[{
-			"jid": room_jid
-		}]})
-	}
+	/* FIXME */
 }
 
 WebBackend.prototype._process_status_change = function(presence)
 {
-	
+	/* FIXME */
 }
 
 WebBackend.prototype._update_roomlist = function()
@@ -400,7 +431,6 @@ WebBackend.prototype.set_affiliation = function(room, jid, affiliation)
 {
 	var self = this;
 	
-	/* CURPOS: This does not work yet, for unclear reasons. */
 	console.log(affiliation);
 	self.client.setRoomAffiliation(room, jid, affiliation);
 }

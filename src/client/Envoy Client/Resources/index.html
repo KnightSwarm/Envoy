@@ -35,6 +35,7 @@
 		<script src="script/menu.js"></script>
 		<script src="script/ui.js"></script>
 		<script src="script/client-all.js"></script>
+		<title>Envoy</title>
 	</head>
 	<body ng-controller="UiController">
 		<div class="application" ng-show="data.logged_in == true">
@@ -95,7 +96,7 @@
 						<span class="timestamp">{{ format_time(message.timestamp) }}</span>
 						<span ng-show="message.type == 'message'">
 							<span class="author">{{ message.vcard.full_name }}</span>
-							<span class="body">{{ message.body }}</span>
+							<span class="body" ng-bind-html="message.body | newlines"></span>
 						</span>
 						<span class="event" ng-show="message.type == 'event' && message.event == 'join'">
 							{{ message.fullname }} joined the room.
@@ -113,7 +114,7 @@
 						<span class="timestamp">{{ format_time(message.timestamp) }}</span>
 						<span ng-show="message.type == 'message'">
 							<span class="author">{{ message.vcard.full_name }}</span>
-							<span class="body">{{ message.body }}</span>
+							<span class="body" ng-bind-html="message.body | newlines"></span>
 						</span>
 						<div class="preview" ng-show="message.preview != ''" ng-bind-html="message.preview | trusted"></div>
 						<div class="clear"></div>
@@ -129,11 +130,13 @@
 				</form>
 			</div>
 		</div>
-		<div class="login" ng-show="data.logged_in == false">
+		<div class="login" ng-show="data.logged_in == false && data.ssl_broken == false">
 			<div class="alert" ng-show="data.login_failed == true">
 				<span ng-show="data.login_error == 'value'">Please enter your full JID, including domain.</span>
 				<span ng-show="data.login_error == 'auth'">The login details you entered are incorrect.</span>
 				<span ng-show="data.login_error == 'unknown'">Could not connect to the server. Verify that the login details you entered are correct.</span>
+				<span ng-show="data.login_error == 'reconnecting'">The connection to the server was lost. Reconnecting...</span>
+				<span ng-show="data.login_error == 'unavailable'">Could not reach the server. Make sure that your username is correct, and try again later if the problem persists.</span>
 			</div>
 			<form ng-submit="login()" class="loginform">
 				<label>XMPP Address</label>
@@ -145,6 +148,30 @@
 					<i class="icon-cog icon-spin icon-2x"></i>
 				</div>
 			</form>
+		</div>
+		<div class="ssl-broken" ng-show="data.ssl_broken == true">
+			<div class="wrapper">
+				<div class="explanation">
+					<h2>There is a problem with the SSL certificate for your provider.</h2>
+					<p>
+						<strong>If you believe the SSL certificate will be secure, please select the "continue" option on the following page. If you are unsure, please contact support.</strong>
+					</p>
+					<p>
+						The "continue" option will, depending on your browser, have one of these descriptions:
+					</p>
+					<ul>
+						<li>"Continue to this website"</li>
+						<li>"Proceed anyway"</li>
+						<li>"I understand the risks" -> "Add exception"</li>
+					</ul>
+					<p>
+						 Please <a class="insecure-link" href="" target="_blank">click here</a> and review the error message. After you have chosen to "continue", you will get an "It works!" message.
+					</p>
+					<p>
+						When this happens, you can close the tab, and return to this page. You will then be logged in.
+					</p>
+				</div>
+			</div>
 		</div>
 		<div class="context-menu" id="ctxmenu_affiliation">
 			Username: {{ user.vcard.full_name }}!

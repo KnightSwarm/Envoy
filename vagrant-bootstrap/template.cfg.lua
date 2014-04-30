@@ -60,28 +60,6 @@ log = {
         error = "/etc/envoy/prosody/prosody.err";
 }
 
--- Virtual hosts
-VirtualHost "envoy.local"
-        enabled = true -- Remove this line to enable this host
-        
-        admins = { "component.envoy.local" }
-
-        -- Assign this host a certificate for TLS, otherwise it would use the one
-        -- set in the global section (if any).
-        -- Note that old-style SSL on port 5223 only supports one certificate, and will always
-        -- use the global one.
-        ssl = {
-                key = "/etc/envoy/certs/envoy.local.key";
-                certificate = "/etc/envoy/certs/envoy.local.cert";
-        }
-
--- The standard MUC component (TODO: this needs to go into host config)
-Component "conference.envoy.local" "muc"
-	name = "Rooms for envoy.local"
-	restrict_room_creation = true
-        admins = { "component.envoy.local" }
-
-
 -- The external Envoy component
 Component "component.envoy.local"
         component_secret = "password"  -- TODO: Make installer generate a password for this.
